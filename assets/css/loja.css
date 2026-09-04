@@ -1,0 +1,82 @@
+/* ==========================================================================
+   ACHEI E POSTEI - loja.css (Página da Loja / Catálogo)
+   Usa o design system definido em style.css
+   ========================================================================== */
+
+/* ===== Header da loja (com botão voltar) ===== */
+.loja-header-content {
+    justify-content: flex-start;
+    gap: 10px;
+}
+
+.loja-header-content .logo {
+    max-width: 110px;
+}
+
+.loja-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    flex: 1;
+}
+
+/* ===== FILTROS DE CATEGORIA ===== */
+.filters-section {
+    padding: 4px 16px 16px;
+    background: #fff;
+}
+
+.filters-container {
+    max-width: 480px;
+    margin: 0 auto;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.filters-container::-webkit-scrollbar {
+    display: none;
+}
+
+.filter-btn {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 16px;
+    background: var(--bg-icon-box);
+    border: 1px solid transparent;
+    border-radius: var(--radius-full);
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: var(--transition-base);
+}
+
+.filter-btn svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.filter-btn:hover {
+    background: #ECEFFB;
+    color: var(--brand-blue);
+}
+
+.filter-btn.active {
+    background: var(--brand-blue);
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(41, 71, 224, 0.28);
+}
+
+/* ===== PRODUTOS NA LOJA ===== */
+.loja-grid {
+    padding-top: 4px;
+}
