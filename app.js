@@ -18,7 +18,7 @@
         const client = initSupabase();
         if (!client) return [];
         const { data, error } = await client
-            .from('products')
+            .from('product')
             .select('*')
             .order('created_at', { ascending: false });
         if (error) {
