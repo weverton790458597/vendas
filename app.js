@@ -126,7 +126,7 @@
         const grid = document.getElementById('featuredProductsGrid');
         if (!grid) return;
 
-        const products = (await getProducts()).map(normalizeProduct);
+        const products = await getProducts();
 
         if (!products.length) {
             grid.innerHTML = '<div class="empty-state"><p>Novidades chegando em breve!</p></div>';
