@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#2947E0">
+    <meta name="description" content="Painel Administrativo Restrito">
+    <meta name="robots" content="noindex,nofollow">
+    <title>Painel Admin - Restrito</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <div class="admin-lock" id="adminLockScreen">
+        <div class="admin-lock-card">
+            <div class="lock-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2.5"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+            </div>
+            <h2>Acesso Restrito</h2>
+            <p id="lockMessage">Faça login com sua conta de administrador para continuar.</p>
+
+            <form id="adminLoginForm" style="display: flex; flex-direction: column; gap: 12px; width: 100%; margin-top: 15px;">
+                <input type="email" id="adminEmailInput" placeholder="E-mail de administrador" required style="padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: inherit;">
+                <input type="password" id="adminPasswordInput" placeholder="Senha" required style="padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: inherit;">
+                <button type="submit" id="adminLoginBtn" class="btn-admin btn-admin-primary" style="width: 100%; justify-content: center;">
+                    Entrar no Painel
+                </button>
+            </form>
+            <div id="loginErrorMsg" style="color: #ff4d4d; font-size: 0.85rem; margin-top: 8px;"></div>
+        </div>
+    </div>
+
+    <div id="adminContent" class="admin-page" style="display:none;">
+        <header class="admin-header">
+            <div class="admin-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2l9 21H3L12 2z"/>
+                    <path d="M12 2v20"/>
+                </svg>
+                Painel Administrativo Secreto
+            </div>
+            <div class="admin-user" id="adminUserInfo">
+                <span>Carregando...</span>
+            </div>
+        </header>
+
+        <section class="admin-form-section">
+            <div class="admin-form-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                Cadastrar Novo Produto
+            </div>
+
+            <div id="formMessage"></div>
+
+            <form id="productForm" class="admin-form-grid">
+                <div class="admin-form-group admin-form-full">
+                    <label for="title">Nome do Produto *</label>
+                    <input type="text" id="title" name="title" placeholder="Ex: Fone Bluetooth Sem Fio" required>
+                </div>
+
+                <div class="admin-form-group">
+                    <label for="price">Preço Atual *</label>
+                    <input type="text" id="price" name="price" placeholder="R$ 00,00" required>
+                </div>
+
+                <div class="admin-form-group">
+                    <label for="priceOld">Preço Antigo (opcional)</label>
+                    <input type="text" id="priceOld" name="priceOld" placeholder="R$ 00,00">
+                </div>
+
+                <div class="admin-form-group">
+                    <label for="discount">Desconto (opcional)</label>
+                    <input type="text" id="discount" name="discount" placeholder="Ex: -50%">
+                </div>
+
+                <div class="admin-form-group admin-form-full">
+                    <label for="image">Link Direto da Imagem *</label>
+                    <input type="url" id="image" name="image" placeholder="https://..." required>
+                </div>
+
+                <div class="admin-form-group admin-form-full">
+                    <label for="affiliateUrl">Link de Afiliado *</label>
+                    <input type="url" id="affiliateUrl" name="affiliateUrl" placeholder="https://..." required>
+                </div>
+
+                <div class="admin-form-group">
+                    <label for="category">Categoria</label>
+                    <input type="text" id="category" name="category" placeholder="Ex: eletronicos">
+                </div>
+
+                <div class="admin-form-group" style="align-self:flex-end;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <input type="checkbox" id="isHot" name="isHot" style="width:auto;">
+                        <label for="isHot" style="margin-bottom:0;">Produto em destaque (hot)</label>
+                    </div>
+                </div>
+
+                <div class="admin-actions">
+                    <button type="submit" class="btn-admin btn-admin-primary">Salvar Produto</button>
+                    <button type="reset" class="btn-admin btn-admin-secondary">Limpar</button>
+                </div>
+            </form>
+        </section>
+
+        <section>
+            <h2 class="admin-form-title" style="margin-bottom:16px;">Produtos Cadastrados</h2>
+            <div id="productsGrid" class="admin-table-container">
+                <div class="admin-message loading">Carregando...</div>
+            </div>
+        </section>
+    </div>
+
+    <script src="supabase.min.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>
