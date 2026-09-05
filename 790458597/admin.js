@@ -16,13 +16,12 @@
 
     function getClient() {
         return new Promise((resolve, reject) => {
-            // supabase.min.js agora é servido localmente (assets/js/supabase.min.js)
-            // e carregado via <script> antes deste arquivo no admin.html, então
-            // window.supabase já deve estar disponível de imediato — sem precisar
-            // de CDN externo nem de timeout de rede.
+            // supabase.min.js é servido localmente (790458597/supabase.min.js)
+            // e carregado via <script> antes deste arquivo no index.html, então
+            // window.supabase já deve estar disponível de imediato.
             const client = initSupabase();
             if (client) resolve(client);
-            else reject(new Error('Biblioteca do Supabase não encontrada. Verifique se assets/js/supabase.min.js está incluído antes de admin.js no admin.html.'));
+            else reject(new Error('Biblioteca do Supabase não encontrada. Verifique se supabase.min.js está incluído antes de admin.js no index.html.'));
         });
     }
 
@@ -128,7 +127,7 @@
         const el = document.getElementById('adminUserInfo');
         if (el && user) {
             el.innerHTML =
-                '<img src="assets/img/avatar.png" alt="avatar" width="32" height="32" style="border-radius:50%">' +
+                '<img src="../logo.png" alt="avatar" width="32" height="32" style="border-radius:50%">' +
                 '<span>' + escapeHtml(user.email || '') + '</span>' +
                 '<button class="logout-btn" onclick="window.adminLogout()">Sair</button>';
         }
@@ -168,25 +167,33 @@
                     return '<tr data-id="' + id + '">' +
                         '<td>' + (i + 1) + '</td>' +
                         '<td style="display:flex;align-items:center;gap:8px;">' +
-                            '<img src="' + image + '" alt="' + title + '" class="product-thumb" onerror="this.src=\'assets/img/avatar.png\'">' +
+                            '<img src="' + image + '" alt="' + title + '" class="product-thumb" onerror="this.src=\'../logo.png\'">' +
                             title +
                         '</td>' +
                         '<td>' + category + '</td>' +
                         '<td>' + price + '</td>' +
                         '<td><span class="status-badge ' + (isHot ? 'hot' : 'normal') + '">' + (isHot ? 'Destaque' : 'Normal') + '</span></td>' +
                         '<td>' +
-                            '<button class="btn-admin btn-admin-secondary" style="font-size:0.72rem;padding:4px 8px;" onclick="window.deleteProduct(' + id + ')">Excluir</button>' +
+                            '<button class="btn-admin btn-admin-secondary btn-delete-product" style="font-size:0.72rem;padding:4px 8px;" data-id="' + id + '">Excluir</button>' +
                         '</td>' +
                     '</tr>';
                 }).join('') +
                 '</tbody>' +
                 '</table>';
+
+            // Delegação de evento em vez de onclick inline: evita quebrar o HTML
+            // quando o id não é um número puro (ex: UUID) e evita injeção de código.
+            grid.querySelectorAll('.btn-delete-product').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    deleteProduct(btn.getAttribute('data-id'));
+                });
+            });
         } catch (err) {
             grid.innerHTML = '<div class="admin-message" style="color:#EF4444;">Erro ao carregar produtos: ' + escapeHtml(err.message || '') + '</div>';
         }
     }
 
-    window.deleteProduct = async function (id) {
+    async function deleteProduct(id) {
         if (!confirm('Deseja excluir este produto?')) return;
         try {
             const client = await getClient();
@@ -200,7 +207,7 @@
         } catch (e) {
             alert('Erro: ' + e.message);
         }
-    };
+    }
 
     async function submitProductForm(e) {
         e.preventDefault();
@@ -215,8 +222,8 @@
             image: form.image.value.trim(),
             affiliate_url: form.affiliateUrl.value.trim(),
             category: form.category.value.trim() || 'outros',
-            is_hot: form.isHot.checked,
-            created_at: new Date().toISOString()
+            is_hot: form.isHot.checked
+            // created_at é preenchido automaticamente pelo banco (default now())
         };
 
         msgEl.innerHTML = '<div class="admin-message loading">Salvando produto...</div>';
