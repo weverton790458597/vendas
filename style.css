@@ -89,15 +89,26 @@ h3, .product-title {
     z-index: 100;
     box-shadow: var(--shadow-sm);
     border-bottom: 1px solid var(--border-color-light);
+    transform: translateZ(0);
+    will-change: transform;
+    isolation: isolate;
 }
 
 .header-content {
+    position: relative;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     gap: 12px;
     max-width: 480px;
     margin: 0 auto;
+}
+
+.header-content #menuBtn {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
 }
 
 .icon-btn {
@@ -240,9 +251,11 @@ h3, .product-title {
     gap: 12px;
     background: linear-gradient(135deg, var(--brand-blue) 0%, #3357EC 55%, var(--brand-blue-dark) 100%);
     border-radius: var(--radius-lg);
-    padding: 26px 18px;
+    padding: 22px 18px;
     overflow: hidden;
     box-shadow: 0 14px 28px rgba(41, 71, 224, 0.28);
+    isolation: isolate;
+    transform: translateZ(0);
 }
 
 .hero-text h1 {
