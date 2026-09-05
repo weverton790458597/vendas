@@ -151,7 +151,7 @@
             .forEach(function (cat) {
                 const item = document.createElement('a');
                 item.className = 'category-item';
-                item.href = 'loja.html?categoria=' + encodeURIComponent(cat.id);
+                item.href = 'achadinhos/?categoria=' + encodeURIComponent(cat.id);
                 item.innerHTML = [
                     '<span class="category-icon-box">' + cat.svg + '</span>',
                     '<span class="category-label">' + escapeHtml(cat.name) + '</span>'
@@ -168,8 +168,8 @@
         function performSearch() {
             const term = searchInput.value.trim();
             window.location.href = term
-                ? 'loja.html?busca=' + encodeURIComponent(term)
-                : 'loja.html';
+                ? 'achadinhos/?busca=' + encodeURIComponent(term)
+                : 'achadinhos/';
         }
 
         searchButton.addEventListener('click', performSearch);
@@ -203,7 +203,7 @@
         });
         drawer.innerHTML = [
             '<a href="index.html" class="mobile-menu-item">Início</a>',
-            '<a href="loja.html" class="mobile-menu-item">Loja</a>'
+            '<a href="achadinhos/" class="mobile-menu-item">Loja</a>'
         ].join('');
         document.body.appendChild(drawer);
 
