@@ -144,7 +144,7 @@
     }
 
     async function loadProducts() {
-        allProducts = (await getProducts()).map(normalizeProduct);
+        allProducts = await getProducts();
         return allProducts;
     }
 
