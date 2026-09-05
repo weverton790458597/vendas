@@ -285,9 +285,15 @@ h3, .product-title {
     max-width: 480px;
     margin: 0 auto;
     padding: 22px 12px 6px;
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 6px;
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.categories-row::-webkit-scrollbar {
+    display: none;
 }
 
 .category-item {
@@ -300,6 +306,8 @@ h3, .product-title {
     cursor: pointer;
     font-family: inherit;
     padding: 4px 2px;
+    flex: 0 0 auto;
+    width: 64px;
 }
 
 .category-icon-box {
