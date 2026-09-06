@@ -517,25 +517,12 @@
         return;
       }
 
-      // Extrai o shortcode da URL se for um link
+      // Extrai o shortcode de forma segura no navegador sem erro de CORS
       const shortcode = extractShortcode(mediaIdRaw);
 
-      showStatus("Processando post do Instagram...", "success");
+      showStatus("Salvando automação...", "success");
 
       try {
-        // Se for um shortcode (alfanumérico), precisamos converter para o ID numérico chamando a Edge Function ou Graph API
-        let finalMediaId = shortcode;
-
-        // Se o painel tiver a URL da Edge Function ou se quisermos converter via endpoint de conversão / Graph API pública do Instagram
-        // Vamos extrair diretamente via API pública oembed ou o shortcode limpo
-        const oembedRes = await fetch(`https://api.instagram.com/oembed/?url=https://www.instagram.com/p/${shortcode}/`);
-        if (oembedRes.ok) {
-          const oembedData = await oembedRes.json();
-          // Oembed retorna o media_id ou author_id, mas a forma mais garantida é salvar o shortcode e a Edge Function tratar, 
-          // OU passar direto para a Edge Function converter. Vamos salvar o shortcode e deixar a Edge Function robusta.
-        }
-
-        // Para garantir 100%, salvamos o shortcode ou ID tratado
         const { error } = await supabaseClient
           .from("posts_automacao")
           .insert({
