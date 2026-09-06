@@ -45,6 +45,18 @@
         return cat ? cat.name : id;
     }
 
+    // Normaliza texto para comparação: remove acentos, espaços extras e
+    // diferenças de maiúsculas/minúsculas. Isso evita que "Eletrônicos",
+    // " eletronicos", "ELETRONICOS" etc. deixem de bater com o id "eletronicos".
+    function normalizeCategoryValue(str) {
+        return (str || '')
+            .toString()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .trim()
+            .toLowerCase();
+    }
+
     function escapeHtml(str) {
         const div = document.createElement('div');
         div.textContent = str == null ? '' : String(str);
@@ -151,7 +163,8 @@
     function filterProducts(categoryId) {
         let products = allProducts;
         if (categoryId !== 'all') {
-            products = products.filter(p => (p.category || '') === categoryId);
+            const normalizedFilter = normalizeCategoryValue(categoryId);
+            products = products.filter(p => normalizeCategoryValue(p.category) === normalizedFilter);
         }
         renderProductList(products);
     }
@@ -296,4 +309,3 @@
         init();
     }
 })();
-
