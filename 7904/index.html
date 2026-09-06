@@ -571,16 +571,15 @@
       }
     }
 
-    // Extrai o media_id de uma URL do Instagram ou retorna o valor digitado
+    // Extrai o media_id perfeitamente de qualquer URL ou ID puro do Instagram
     function extractMediaId(input) {
-      if (!input.includes("instagram.com")) return input;
-
-      const match =
-        input.match(/\/reel\/(\d+)\//) ||
-        input.match(/\/p\/(\d+)\//) ||
-        input.match(/\/(?:reel|p)\/(\d+)/);
-
-      return match ? match[1] : input;
+      if (!input.includes("instagram.com")) return input.trim();
+      
+      // Remove parâmetros de query/traling slashes se houver
+      const cleanUrl = input.split('?')[0];
+      const match = cleanUrl.match(/\/(?:p|reel|tv)\/([A-Za-z0-9_-]+)/);
+      
+      return match ? match[1] : input.trim();
     }
 
     // Utilitários
