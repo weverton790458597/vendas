@@ -38,6 +38,7 @@
     .btn-outline:hover { background-color: var(--border); }
     .btn-sm { padding: 6px 12px; font-size: 13px; }
     .btn-block { width: 100%; }
+    .btn:disabled { opacity: .6; cursor: not-allowed; }
     .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
     .badge-ativo { background-color: rgba(40,167,69,.15); color: var(--success); }
     .badge-inativo { background-color: rgba(108,117,125,.15); color: var(--muted); }
@@ -65,6 +66,10 @@
     .hidden { display: none !important; }
     .blocked-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px; }
     .blocked-screen .card { max-width: 420px; }
+    .ig-connect-box { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 16px; border: 1px solid var(--border); border-radius: 8px; }
+    .ig-connect-box .ig-status-text { font-size: 14px; }
+    .ig-connect-box .ig-status-text strong { color: var(--text); }
+    .ig-connect-box .ig-status-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
     @media (max-width: 600px) { .form-row { flex-direction: column; } }
   </style>
 </head>
@@ -141,20 +146,27 @@
         <div class="card">
           <h2>1. Conexão com o Instagram</h2>
           <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">
-            Cole o ID da sua conta comercial do Instagram e o token de acesso de página gerado no Meta for Developers.
-            Isso é salvo com segurança no banco, vinculado só à sua conta (RLS).
+            Conecte sua conta profissional do Instagram com um clique. A gente cuida de tudo
+            por trás — você não precisa mexer com nenhuma configuração técnica.
           </p>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="igBusinessId">Instagram Business Account ID</label>
-              <input type="text" id="igBusinessId" placeholder="17841400..." />
+          <div id="igLoadingStatus" class="loading-overlay" style="padding:16px;">Verificando conexão...</div>
+          <div id="igDisconnectedBox" class="ig-connect-box hidden">
+            <div class="ig-status-text">
+              <strong>Instagram não conectado</strong>
+              <div class="ig-status-sub">Conecte sua conta para ativar as automações de direct.</div>
             </div>
-            <div class="form-group">
-              <label for="igAccessToken">Page Access Token</label>
-              <input type="password" id="igAccessToken" placeholder="Token gerado no Meta for Developers" />
+            <button id="connectIgBtn" class="btn btn-primary">Conectar Instagram</button>
+          </div>
+          <div id="igConnectedBox" class="ig-connect-box hidden">
+            <div class="ig-status-text">
+              <strong>Instagram conectado <span id="igConnectedUsername"></span></strong>
+              <div class="ig-status-sub">Suas automações já podem receber e responder comentários.</div>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button id="reconnectIgBtn" class="btn btn-outline btn-sm">Reconectar</button>
+              <button id="disconnectIgBtn" class="btn btn-danger btn-sm">Desconectar</button>
             </div>
           </div>
-          <button id="saveIgConfigBtn" class="btn btn-primary">Salvar conexão</button>
         </div>
 
         <div class="card">
@@ -230,14 +242,21 @@
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.44.4/+esm";
 
     // ---------------------------------------------------------------
-    // Estas duas constantes NÃO são segredo: a anon key do Supabase é
-    // feita para rodar no navegador — a segurança real vem do RLS que
-    // criamos no schema.sql. Por isso elas ficam fixas aqui em vez de
-    // digitadas/guardadas pelo usuário final, evitando que alguém troque
-    // por um projeto Supabase arbitrário.
+    // Estas constantes NÃO são segredo: a anon key do Supabase e o
+    // Instagram App ID são feitos para rodar no navegador — a
+    // segurança real vem do RLS (schema.sql) e do App Secret, que
+    // fica só na edge function, nunca aqui.
     // ---------------------------------------------------------------
     const SUPABASE_URL = "https://abdliioyzkylccfylils.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFiZGxpaW95emt5bGNjZnlsaWxzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNzkxMzIsImV4cCI6MjA4MzY1NTEzMn0.5s0zEdAgxx92pbC9yx75hHMfysHr2Aad86GhC1-tEmU";
+
+    // TROQUE pelo App ID do seu App "Instagram API with Instagram Login"
+    // (é público, aparece na URL de autorização — não é o App Secret).
+    const INSTAGRAM_APP_ID = "1432929018522131";
+    // Precisa ser IDÊNTICA à URL da edge function instagram-oauth-callback
+    // e também estar cadastrada como "Valid OAuth Redirect URI" no App Dashboard.
+    const INSTAGRAM_REDIRECT_URI = SUPABASE_URL + "/functions/v1/instagram-oauth-callback";
+    const INSTAGRAM_SCOPES = "instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments";
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       auth: { persistSession: true, autoRefreshToken: true },
@@ -296,10 +315,6 @@
     $("logoutBtn").addEventListener("click", () => supabase.auth.signOut().then(() => location.reload()));
 
     // ---------------- LINK DE CONVITE / RECUPERAÇÃO DE SENHA ----------------
-    // Quando o usuário clica no e-mail de convite, o Supabase redireciona pra cá
-    // com #access_token=...&type=invite (ou type=recovery). O supabase-js já
-    // detecta isso automaticamente (detectSessionInUrl) e cria a sessão; aqui a
-    // gente só decide mostrar a tela de "definir senha" em vez do dashboard.
     function isInviteOrRecoveryLink() {
       const hash = window.location.hash || "";
       return hash.includes("type=invite") || hash.includes("type=recovery");
@@ -314,12 +329,32 @@
       try {
         const { error } = await supabase.auth.updateUser({ password: newPassword });
         if (error) throw error;
-        history.replaceState(null, "", window.location.pathname); // limpa o hash com o token
+        history.replaceState(null, "", window.location.pathname);
         await bootstrapSession();
       } catch (error) {
         showBanner("setPasswordBanner", error.message, "error");
       }
     });
+
+    // ---------------- RETORNO DO OAUTH DO INSTAGRAM ----------------
+    // A edge function instagram-oauth-callback redireciona de volta pra
+    // cá com ?ig_connected=1 ou ?ig_error=mensagem depois do login.
+    function handleInstagramOauthReturn() {
+      const params = new URLSearchParams(window.location.search);
+      const connected = params.get("ig_connected");
+      const error = params.get("ig_error");
+      if (connected) {
+        showBanner("statusBanner", "Instagram conectado com sucesso!", "success");
+      } else if (error) {
+        showBanner("statusBanner", "Erro ao conectar Instagram: " + error, "error");
+      }
+      if (connected || error) {
+        params.delete("ig_connected");
+        params.delete("ig_error");
+        const clean = window.location.pathname + (params.toString() ? "?" + params.toString() : "");
+        history.replaceState(null, "", clean);
+      }
+    }
 
     // ---------------- SESSION BOOTSTRAP ----------------
     async function bootstrapSession() {
@@ -356,6 +391,7 @@
       $("userEmailLabel").textContent = currentUser.email;
       $("adminTabBtn").classList.toggle("hidden", !profile.is_admin);
       showScreen("app");
+      handleInstagramOauthReturn();
       await loadIgConfig();
       await loadAutomations();
     }
@@ -379,43 +415,74 @@
       });
     });
 
-    // ---------------- INSTAGRAM CONFIG ----------------
-    async function loadIgConfig() {
-      const { data, error } = await supabase
-        .from("instagram_config")
-        .select("*")
-        .eq("user_id", currentUser.id)
-        .maybeSingle();
-      if (error) {
-        console.error(error.message);
-        return;
-      }
-      if (data) {
-        $("igBusinessId").value = data.instagram_business_account_id || "";
-        $("igAccessToken").value = data.page_access_token || "";
+    // ---------------- INSTAGRAM: CONEXÃO COM UM CLIQUE (OAuth) ----------------
+    async function startInstagramConnect() {
+      try {
+        // cria um "state" de uso único vinculado a este usuário — a edge
+        // function de callback usa isso pra saber quem está conectando.
+        const { data, error } = await supabase
+          .from("oauth_states")
+          .insert({ user_id: currentUser.id })
+          .select("id")
+          .single();
+        if (error) throw error;
+
+        const params = new URLSearchParams({
+          client_id: INSTAGRAM_APP_ID,
+          redirect_uri: INSTAGRAM_REDIRECT_URI,
+          response_type: "code",
+          scope: INSTAGRAM_SCOPES,
+          state: data.id,
+        });
+        window.location.href = "https://api.instagram.com/oauth/authorize?" + params.toString();
+      } catch (error) {
+        showBanner("statusBanner", "Não foi possível iniciar a conexão: " + error.message, "error");
       }
     }
 
-    $("saveIgConfigBtn").addEventListener("click", async () => {
-      const igBusinessId = $("igBusinessId").value.trim();
-      const igAccessToken = $("igAccessToken").value.trim();
-      if (!igBusinessId || !igAccessToken) {
-        showBanner("statusBanner", "Preencha o Business Account ID e o Access Token.", "error");
-        return;
-      }
+    $("connectIgBtn").addEventListener("click", startInstagramConnect);
+    $("reconnectIgBtn").addEventListener("click", startInstagramConnect);
+
+    $("disconnectIgBtn").addEventListener("click", async () => {
+      if (!confirm("Tem certeza que deseja desconectar sua conta do Instagram? Suas automações vão parar de funcionar até você reconectar.")) return;
       try {
-        const { error } = await supabase
-          .from("instagram_config")
-          .upsert(
-            { user_id: currentUser.id, instagram_business_account_id: igBusinessId, page_access_token: igAccessToken, updated_at: new Date().toISOString() },
-            { onConflict: "user_id" }
-          );
+        const { error } = await supabase.from("instagram_config").delete().eq("user_id", currentUser.id);
         if (error) throw error;
-        showBanner("statusBanner", "Conexão com o Instagram salva.", "success");
+        showBanner("statusBanner", "Instagram desconectado.", "success");
+        await loadIgConfig();
       } catch (error) {
-        showBanner("statusBanner", "Erro ao salvar conexão: " + error.message, "error");
+        showBanner("statusBanner", "Erro ao desconectar: " + error.message, "error");
       }
     });
+
+    async function loadIgConfig() {
+      const loading = $("igLoadingStatus");
+      const connectedBox = $("igConnectedBox");
+      const disconnectedBox = $("igDisconnectedBox");
+      loading.style.display = "block";
+      connectedBox.classList.add("hidden");
+      disconnectedBox.classList.add("hidden");
+      try {
+        const { data, error } = await supabase
+          .from("instagram_config")
+          .select("instagram_business_account_id, instagram_username")
+          .eq("user_id", currentUser.id)
+          .maybeSingle();
+        if (error) throw error;
+
+        if (data) {
+          $("igConnectedUsername").textContent = data.instagram_username ? "(@" + data.instagram_username + ")" : "";
+          connectedBox.classList.remove("hidden");
+        } else {
+          disconnectedBox.classList.remove("hidden");
+        }
+      } catch (error) {
+        console.error(error.message);
+        disconnectedBox.classList.remove("hidden");
+      } finally {
+        loading.style.display = "none";
+      }
+    }
 
     // ---------------- AUTOMATIONS (dashboard do usuário) ----------------
     async function loadAutomations() {
