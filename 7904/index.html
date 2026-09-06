@@ -6,354 +6,221 @@
   <title>Achei e Postei — Automação de Direct Instagram</title>
   <style>
     :root {
-      --bg: #f4f6f9;
-      --card: #ffffff;
-      --primary: #0066cc;
-      --primary-dark: #0052a3;
-      --success: #28a745;
-      --danger: #dc3545;
-      --warning: #ffc107;
-      --border: #e0e0e0;
-      --text: #333333;
-      --muted: #888888;
+      --bg: #f4f6f9; --card: #ffffff; --primary: #0066cc; --primary-dark: #0052a3;
+      --success: #28a745; --danger: #dc3545; --warning: #ffc107;
+      --border: #e0e0e0; --text: #333333; --muted: #888888;
     }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      background-color: var(--bg);
-      color: var(--text);
-      line-height: 1.6;
-    }
-
-    .header {
-      background-color: var(--primary);
-      color: #fff;
-      padding: 20px 30px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    }
-
-    .header h1 {
-      font-size: 22px;
-      font-weight: 600;
-    }
-
-    .header p {
-      font-size: 13px;
-      opacity: 0.85;
-      margin-top: 4px;
-    }
-
-    .container {
-      max-width: 960px;
-      margin: 0 auto;
-      padding: 30px 20px;
-    }
-
-    .card {
-      background-color: var(--card);
-      border-radius: 10px;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-      padding: 24px;
-      margin-bottom: 24px;
-    }
-
-    .card h2 {
-      font-size: 17px;
-      color: var(--primary-dark);
-      margin-bottom: 16px;
-      border-bottom: 2px solid var(--border);
-      padding-bottom: 10px;
-    }
-
-    .form-group {
-      margin-bottom: 16px;
-    }
-
-    .form-group label {
-      display: block;
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 6px;
-      color: var(--text);
-    }
-
-    .form-group input[type="text"],
-    .form-group input[type="url"] {
-      width: 100%;
-      padding: 10px 14px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 14px;
-      transition: border-color 0.2s;
-    }
-
-    .form-group input:focus {
-      outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.15);
-    }
-
-    .form-row {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-
-    .form-row .form-group {
-      flex: 1;
-      min-width: 200px;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 10px 20px;
-      border-radius: 6px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      border: none;
-      transition: opacity 0.2s, transform 0.1s;
-    }
-
-    .btn:active {
-      transform: scale(0.97);
-    }
-
-    .btn-primary {
-      background-color: var(--primary);
-      color: #fff;
-    }
-
-    .btn-primary:hover {
-      background-color: var(--primary-dark);
-    }
-
-    .btn-success {
-      background-color: var(--success);
-      color: #fff;
-    }
-
-    .btn-success:hover {
-      opacity: 0.9;
-    }
-
-    .btn-danger {
-      background-color: var(--danger);
-      color: #fff;
-    }
-
-    .btn-danger:hover {
-      opacity: 0.9;
-    }
-
-    .btn-outline {
-      background-color: transparent;
-      border: 1px solid var(--border);
-      color: var(--text);
-    }
-
-    .btn-outline:hover {
-      background-color: var(--border);
-    }
-
-    .btn-sm {
-      padding: 6px 12px;
-      font-size: 13px;
-    }
-
-    .config-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-
-    .config-actions {
-      display: flex;
-      gap: 12px;
-      align-items: flex-end;
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 3px 10px;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 600;
-    }
-
-    .badge-ativo {
-      background-color: rgba(40, 167, 69, 0.15);
-      color: var(--success);
-    }
-
-    .badge-inativo {
-      background-color: rgba(108, 117, 125, 0.15);
-      color: var(--muted);
-    }
-
-    .table-container {
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-    }
-
-    table th,
-    table td {
-      padding: 12px 14px;
-      text-align: left;
-      border-bottom: 1px solid var(--border);
-    }
-
-    table th {
-      background-color: #f8f9fa;
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-      font-size: 12px;
-      letter-spacing: 0.5px;
-    }
-
-    table tr:hover {
-      background-color: #f8f9fa;
-    }
-
-    .table-actions {
-      display: flex;
-      gap: 6px;
-    }
-
-    .status-banner {
-      padding: 12px 16px;
-      border-radius: 8px;
-      margin-bottom: 16px;
-      font-size: 14px;
-      display: none;
-    }
-
-    .status-banner.success {
-      background-color: rgba(40, 167, 69, 0.15);
-      color: var(--success);
-      border: 1px solid rgba(40, 167, 69, 0.3);
-      display: block;
-    }
-
-    .status-banner.error {
-      background-color: rgba(220, 53, 69, 0.15);
-      color: var(--danger);
-      border: 1px solid rgba(220, 53, 69, 0.3);
-      display: block;
-    }
-
-    .loading-overlay {
-      text-align: center;
-      padding: 40px;
-      color: var(--muted);
-      display: none;
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 40px 20px;
-      color: var(--muted);
-    }
-
-    @media (max-width: 600px) {
-      .config-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .config-actions {
-        flex-direction: column;
-      }
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); color: var(--text); line-height: 1.6; }
+    .header { background-color: var(--primary); color: #fff; padding: 20px 30px; box-shadow: 0 2px 8px rgba(0,0,0,.15); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .header h1 { font-size: 22px; font-weight: 600; }
+    .header p { font-size: 13px; opacity: .85; margin-top: 4px; }
+    .header-actions { display: flex; align-items: center; gap: 12px; }
+    .header-actions span { font-size: 13px; opacity: .9; }
+    .container { max-width: 960px; margin: 0 auto; padding: 30px 20px; }
+    .card { background-color: var(--card); border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,.06); padding: 24px; margin-bottom: 24px; }
+    .card h2 { font-size: 17px; color: var(--primary-dark); margin-bottom: 16px; border-bottom: 2px solid var(--border); padding-bottom: 10px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+    .form-group input { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
+    .form-group input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(0,102,204,.15); }
+    .form-row { display: flex; gap: 16px; flex-wrap: wrap; }
+    .form-row .form-group { flex: 1; min-width: 200px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: opacity .2s, transform .1s; }
+    .btn:active { transform: scale(.97); }
+    .btn-primary { background-color: var(--primary); color: #fff; }
+    .btn-primary:hover { background-color: var(--primary-dark); }
+    .btn-success { background-color: var(--success); color: #fff; }
+    .btn-success:hover { opacity: .9; }
+    .btn-danger { background-color: var(--danger); color: #fff; }
+    .btn-danger:hover { opacity: .9; }
+    .btn-outline { background-color: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn-outline:hover { background-color: var(--border); }
+    .btn-sm { padding: 6px 12px; font-size: 13px; }
+    .btn-block { width: 100%; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+    .badge-ativo { background-color: rgba(40,167,69,.15); color: var(--success); }
+    .badge-inativo { background-color: rgba(108,117,125,.15); color: var(--muted); }
+    .table-container { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    table th, table td { padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+    table th { background-color: #f8f9fa; font-weight: 600; color: var(--muted); text-transform: uppercase; font-size: 12px; letter-spacing: .5px; }
+    table tr:hover { background-color: #f8f9fa; }
+    .table-actions { display: flex; gap: 6px; }
+    .status-banner { padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; display: none; }
+    .status-banner.success { background-color: rgba(40,167,69,.15); color: var(--success); border: 1px solid rgba(40,167,69,.3); display: block; }
+    .status-banner.error { background-color: rgba(220,53,69,.15); color: var(--danger); border: 1px solid rgba(220,53,69,.3); display: block; }
+    .status-banner.warning { background-color: rgba(255,193,7,.2); color: #8a6500; border: 1px solid rgba(255,193,7,.4); display: block; }
+    .loading-overlay { text-align: center; padding: 40px; color: var(--muted); display: none; }
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
+    .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+    .tab-btn { padding: 8px 16px; border-radius: 6px; border: 1px solid var(--border); background: #fff; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--muted); }
+    .tab-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .auth-wrapper { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .auth-card { width: 100%; max-width: 380px; background: #fff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,.1); padding: 32px; }
+    .auth-card h1 { font-size: 20px; margin-bottom: 4px; color: var(--primary-dark); }
+    .auth-card p.subtitle { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+    .auth-toggle { text-align: center; margin-top: 16px; font-size: 13px; }
+    .auth-toggle a { color: var(--primary); cursor: pointer; font-weight: 600; text-decoration: none; }
+    .hidden { display: none !important; }
+    .blocked-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+    .blocked-screen .card { max-width: 420px; }
+    @media (max-width: 600px) { .form-row { flex-direction: column; } }
   </style>
 </head>
 <body>
-  <div class="header">
-    <h1>Achei e Postei — Automação de Direct Instagram</h1>
-    <p>Cadastre regras para envio automático de links de produtos no direct.</p>
+
+  <!-- ===================== TELA DE AUTENTICAÇÃO ===================== -->
+  <!-- Cadastro público foi removido de propósito: acesso é só por convite do admin. -->
+  <div id="authScreen" class="auth-wrapper">
+    <div class="auth-card">
+      <h1>Entrar</h1>
+      <p class="subtitle">Achei e Postei — automação de Direct no Instagram</p>
+      <div id="authBanner" class="status-banner"></div>
+      <div class="form-group">
+        <label for="authEmail">E-mail</label>
+        <input type="email" id="authEmail" placeholder="voce@exemplo.com" />
+      </div>
+      <div class="form-group">
+        <label for="authPassword">Senha</label>
+        <input type="password" id="authPassword" placeholder="Sua senha" />
+      </div>
+      <button id="authSubmitBtn" class="btn btn-primary btn-block">Entrar</button>
+      <div class="auth-toggle">
+        <span>Não tem conta? Peça um convite ao administrador.</span>
+      </div>
+    </div>
   </div>
 
-  <div class="container">
-    <!-- Banner de status -->
-    <div id="statusBanner" class="status-banner"></div>
-
-    <!-- Configurações do Supabase -->
-    <div class="card">
-      <h2>1. Configurações do Supabase</h2>
-      <div class="config-grid">
-        <div class="form-group">
-          <label for="supabaseUrl">URL do Supabase</label>
-          <input type="url" id="supabaseUrl" placeholder="https://seudoprojeto.supabase.co" />
-        </div>
-        <div class="form-group">
-          <label for="supabaseKey">Anon Public Key</label>
-          <input type="text" id="supabaseKey" placeholder="Cole sua anon key aqui" />
-        </div>
-      </div>
-      <div class="config-actions">
-        <button id="saveConfigBtn" class="btn btn-primary">Salvar Configurações</button>
-        <button id="clearConfigBtn" class="btn btn-outline">Limpar</button>
-      </div>
-    </div>
-
-    <!-- Formulário de Nova Automação -->
-    <div class="card">
-      <h2>2. Nova Automação</h2>
+  <!-- ===================== TELA DE DEFINIR SENHA (link de convite/recuperação) ===================== -->
+  <div id="setPasswordScreen" class="auth-wrapper hidden">
+    <div class="auth-card">
+      <h1>Definir sua senha</h1>
+      <p class="subtitle">Escolha uma senha para acessar sua conta.</p>
+      <div id="setPasswordBanner" class="status-banner"></div>
       <div class="form-group">
-        <label for="instagramMediaId">Link ou ID do Post / Reels no Instagram</label>
-        <input type="text" id="instagramMediaId" placeholder="URL do post ou media_id numérico" />
+        <label for="newPassword">Nova senha</label>
+        <input type="password" id="newPassword" placeholder="Mínimo 6 caracteres" />
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label for="palavraChave">Palavra-Chave</label>
-          <input type="text" id="palavraChave" placeholder="Ex: QUERO" />
-        </div>
-        <div class="form-group">
-          <label for="produtoUrl">Link do Produto (Achei e Postei)</label>
-          <input type="url" id="produtoUrl" placeholder="https://www.acheieposteie.com.br/produto/123" />
-        </div>
+      <button id="setPasswordBtn" class="btn btn-primary btn-block">Salvar e entrar</button>
+    </div>
+  </div>
+
+  <!-- ===================== TELA DE BLOQUEADO ===================== -->
+  <div id="blockedScreen" class="blocked-screen hidden">
+    <div class="card">
+      <h2 style="border:none;">Acesso suspenso</h2>
+      <p style="margin: 10px 0 20px;">Sua conta está inativa no momento (ex.: pendência de mensalidade). Fale com o administrador para reativar o acesso.</p>
+      <button id="blockedLogoutBtn" class="btn btn-outline">Sair</button>
+    </div>
+  </div>
+
+  <!-- ===================== APP PRINCIPAL ===================== -->
+  <div id="appScreen" class="hidden">
+    <div class="header">
+      <div>
+        <h1>Achei e Postei — Automação de Direct Instagram</h1>
+        <p>Cadastre regras para envio automático de links de produtos no direct.</p>
       </div>
-      <button id="saveAutomationBtn" class="btn btn-success">Salvar Automação</button>
+      <div class="header-actions">
+        <span id="userEmailLabel"></span>
+        <button id="logoutBtn" class="btn btn-outline btn-sm">Sair</button>
+      </div>
     </div>
 
-    <!-- Lista de Automações -->
-    <div class="card">
-      <h2>3. Automações Cadastradas</h2>
-      <div id="loadingAutomations" class="loading-overlay">Carregando automações...</div>
-      <div id="automationsTableWrapper">
-        <div class="table-container">
-          <table id="automationsTable">
-            <thead>
-              <tr>
-                <th>Post (media_id)</th>
-                <th>Palavra-Chave</th>
-                <th>Link do Produto</th>
-                <th>Status</th>
-                <th>Criado em</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody id="automationsTableBody">
-              <tr>
-                <td colspan="6" class="empty-state">
-                  Nenhuma automação cadastrada.
-                </td>
-              </tr>
-            </tbody>
-          </table>
+    <div class="container">
+      <div id="statusBanner" class="status-banner"></div>
+
+      <div class="tabs" id="tabsNav">
+        <button class="tab-btn active" data-tab="dashboard">Minhas automações</button>
+        <button class="tab-btn hidden" id="adminTabBtn" data-tab="admin">Painel admin</button>
+      </div>
+
+      <!-- ---------- ABA: DASHBOARD DO USUÁRIO ---------- -->
+      <div id="tab-dashboard">
+        <div class="card">
+          <h2>1. Conexão com o Instagram</h2>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">
+            Cole o ID da sua conta comercial do Instagram e o token de acesso de página gerado no Meta for Developers.
+            Isso é salvo com segurança no banco, vinculado só à sua conta (RLS).
+          </p>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="igBusinessId">Instagram Business Account ID</label>
+              <input type="text" id="igBusinessId" placeholder="17841400..." />
+            </div>
+            <div class="form-group">
+              <label for="igAccessToken">Page Access Token</label>
+              <input type="password" id="igAccessToken" placeholder="Token gerado no Meta for Developers" />
+            </div>
+          </div>
+          <button id="saveIgConfigBtn" class="btn btn-primary">Salvar conexão</button>
+        </div>
+
+        <div class="card">
+          <h2>2. Nova Automação</h2>
+          <div class="form-group">
+            <label for="instagramMediaId">Link ou ID do Post / Reels no Instagram</label>
+            <input type="text" id="instagramMediaId" placeholder="URL do post ou media_id numérico" />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="palavraChave">Palavra-Chave</label>
+              <input type="text" id="palavraChave" placeholder="Ex: QUERO" />
+            </div>
+            <div class="form-group">
+              <label for="produtoUrl">Link do Produto</label>
+              <input type="url" id="produtoUrl" placeholder="https://www.acheieposteie.com.br/produto/123" />
+            </div>
+          </div>
+          <button id="saveAutomationBtn" class="btn btn-success">Salvar Automação</button>
+        </div>
+
+        <div class="card">
+          <h2>3. Automações Cadastradas</h2>
+          <div id="loadingAutomations" class="loading-overlay">Carregando automações...</div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr><th>Post (media_id)</th><th>Palavra-Chave</th><th>Link do Produto</th><th>Status</th><th>Criado em</th><th>Ações</th></tr>
+              </thead>
+              <tbody id="automationsTableBody">
+                <tr><td colspan="6" class="empty-state">Nenhuma automação cadastrada.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------- ABA: ADMIN ---------- -->
+      <div id="tab-admin" class="hidden">
+        <div class="card">
+          <h2>Convidar novo usuário</h2>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">
+            O acesso é só por convite. A pessoa recebe um e-mail com um link para definir a própria senha.
+          </p>
+          <div class="form-row">
+            <div class="form-group" style="flex:2;">
+              <label for="inviteEmail">E-mail do novo cliente</label>
+              <input type="email" id="inviteEmail" placeholder="cliente@exemplo.com" />
+            </div>
+            <div class="form-group" style="flex:1;display:flex;align-items:flex-end;">
+              <button id="inviteUserBtn" class="btn btn-primary btn-block">Enviar convite</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Usuários cadastrados</h2>
+          <div id="loadingUsers" class="loading-overlay">Carregando usuários...</div>
+          <div class="table-container">
+            <table>
+              <thead><tr><th>E-mail</th><th>Cadastrado em</th><th>Status</th><th>Ações</th></tr></thead>
+              <tbody id="usersTableBody">
+                <tr><td colspan="4" class="empty-state">Nenhum usuário encontrado.</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -362,194 +229,32 @@
   <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.44.4/+esm";
 
-    let supabaseClient = null;
+    // ---------------------------------------------------------------
+    // Estas duas constantes NÃO são segredo: a anon key do Supabase é
+    // feita para rodar no navegador — a segurança real vem do RLS que
+    // criamos no schema.sql. Por isso elas ficam fixas aqui em vez de
+    // digitadas/guardadas pelo usuário final, evitando que alguém troque
+    // por um projeto Supabase arbitrário.
+    // ---------------------------------------------------------------
+    const SUPABASE_URL = "https://abdliioyzkylccfylils.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFiZGxpaW95emt5bGNjZnlsaWxzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNzkxMzIsImV4cCI6MjA4MzY1NTEzMn0.5s0zEdAgxx92pbC9yx75hHMfysHr2Aad86GhC1-tEmU";
 
-    function loadConfig() {
-      const savedUrl = localStorage.getItem("supabase_url");
-      const savedKey = localStorage.getItem("supabase_anon_key");
-      if (savedUrl) document.getElementById("supabaseUrl").value = savedUrl;
-      if (savedKey) document.getElementById("supabaseKey").value = savedKey;
-    }
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true },
+      db: { schema: "public" },
+    });
 
-    function showStatus(message, type) {
-      const banner = document.getElementById("statusBanner");
-      banner.textContent = message;
-      banner.className = "status-banner " + type;
-      banner.style.display = "block";
-      setTimeout(() => {
-        banner.style.display = "none";
-      }, 5000);
-    }
+    let currentUser = null;
+    let currentProfile = null;
 
-    function initSupabase() {
-      const url = document.getElementById("supabaseUrl").value.trim();
-      const key = document.getElementById("supabaseKey").value.trim();
+    const $ = (id) => document.getElementById(id);
 
-      if (!url || !key) {
-        showStatus("Configure a URL e a Anon Key do Supabase.", "error");
-        return null;
-      }
-
-      try {
-        supabaseClient = createClient(url, key, {
-          auth: { persistSession: false, autoRefreshToken: true },
-          db: { schema: "public" },
-        });
-        localStorage.setItem("supabase_url", url);
-        localStorage.setItem("supabase_anon_key", key);
-        showStatus("Configurações salvas e cliente Supabase inicializado.", "success");
-        return supabaseClient;
-      } catch (error) {
-        showStatus("Erro ao inicializar Supabase: " + error.message, "error");
-        return null;
-      }
-    }
-
-    async function loadAutomations() {
-      if (!supabaseClient) return;
-
-      const tbody = document.getElementById("automationsTableBody");
-      const loading = document.getElementById("loadingAutomations");
-      loading.style.display = "block";
-      tbody.innerHTML = "";
-
-      try {
-        const { data, error } = await supabaseClient
-          .from("posts_automacao")
-          .select("*")
-          .order("created_at", { ascending: false });
-
-        if (error) throw error;
-
-        if (!data || data.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhuma automação cadastrada.</td></tr>';
-          return;
-        }
-
-        tbody.innerHTML = data.map(function (row) {
-          const statusClass = row.ativo ? "badge-ativo" : "badge-inativo";
-          const statusText = row.ativo ? "Ativo" : "Inativo";
-          const created = new Date(row.created_at).toLocaleString("pt-BR");
-
-          return (
-            '<tr data-id="' + row.id + '">' +
-            "<td>" + escapeHtml(row.instagram_media_id) + "</td>" +
-            "<td>" + escapeHtml(row.palavra_chave) + "</td>" +
-            '<td><a href="' + escapeHtml(row.produto_url) + '" target="_blank" rel="noopener">' +
-            truncateUrl(row.produto_url, 50) +
-            "</a></td>" +
-            '<td><span class="badge ' + statusClass + '">' + statusText + "</span></td>" +
-            "<td>" + created + "</td>" +
-            '<td class="table-actions">' +
-            '<button class="btn btn-outline btn-sm toggle-btn" title="' + (row.ativo ? "Desativar" : "Ativar") + '">' + (row.ativo ? "🔇" : "🔊") + "</button>" +
-            '<button class="btn btn-danger btn-sm delete-btn" title="Excluir">🗑️</button>' +
-            "</td>" +
-            "</tr>"
-          );
-        }).join("");
-
-        document.querySelectorAll(".toggle-btn").forEach(btn => btn.addEventListener("click", toggleActive));
-        document.querySelectorAll(".delete-btn").forEach(btn => btn.addEventListener("click", deleteAutomation));
-      } catch (error) {
-        showStatus("Erro ao carregar automações: " + error.message, "error");
-      } finally {
-        loading.style.display = "none";
-      }
-    }
-
-    async function toggleActive(event) {
-      const btn = event.currentTarget;
-      const row = btn.closest("tr");
-      const id = row.getAttribute("data-id");
-      const currentAtivo = btn.title === "Desativar";
-
-      try {
-        const { error } = await supabaseClient
-          .from("posts_automacao")
-          .update({ ativo: !currentAtivo })
-          .eq("id", id);
-
-        if (error) throw error;
-        showStatus("Automação " + (currentAtivo ? "desativada" : "ativada") + ".", "success");
-        await loadAutomations();
-      } catch (error) {
-        showStatus("Erro ao alternar status: " + error.message, "error");
-      }
-    }
-
-    async function deleteAutomation(event) {
-      const btn = event.currentTarget;
-      const row = btn.closest("tr");
-      const id = row.getAttribute("data-id");
-
-      if (!confirm("Tem certeza que deseja excluir esta automação?")) return;
-
-      try {
-        const { error } = await supabaseClient
-          .from("posts_automacao")
-          .delete()
-          .eq("id", id);
-
-        if (error) throw error;
-        showStatus("Automação excluída com sucesso.", "success");
-        await loadAutomations();
-      } catch (error) {
-        showStatus("Erro ao excluir: " + error.message, "error");
-      }
-    }
-
-    async function saveAutomation() {
-      if (!supabaseClient) {
-        showStatus("Salve as configurações do Supabase primeiro.", "error");
-        return;
-      }
-
-      const mediaIdInput = document.getElementById("instagramMediaId");
-      const palavraChaveInput = document.getElementById("palavraChave");
-      const produtoUrlInput = document.getElementById("produtoUrl");
-
-      const mediaIdRaw = mediaIdInput.value.trim();
-      const palavraChave = palavraChaveInput.value.trim();
-      const produtoUrl = produtoUrlInput.value.trim();
-
-      if (!mediaIdRaw || !palavraChave || !produtoUrl) {
-        showStatus("Todos os campos são obrigatórios.", "error");
-        return;
-      }
-
-      // Extrai o shortcode de forma segura no navegador sem erro de CORS
-      const shortcode = extractShortcode(mediaIdRaw);
-
-      showStatus("Salvando automação...", "success");
-
-      try {
-        const { error } = await supabaseClient
-          .from("posts_automacao")
-          .insert({
-            instagram_media_id: shortcode,
-            palavra_chave: palavraChave,
-            produto_url: produtoUrl,
-            ativo: true,
-            created_at: new Date().toISOString(),
-          });
-
-        if (error) throw error;
-
-        showStatus("Automação salva com sucesso!", "success");
-        mediaIdInput.value = "";
-        palavraChaveInput.value = "";
-        produtoUrlInput.value = "";
-        await loadAutomations();
-      } catch (error) {
-        showStatus("Erro ao salvar automação: " + error.message, "error");
-      }
-    }
-
-    function extractShortcode(input) {
-      if (!input.includes("instagram.com")) return input.trim();
-      const cleanUrl = input.split('?')[0];
-      const match = cleanUrl.match(/\/(?:p|reel|tv)\/([A-Za-z0-9_-]+)/);
-      return match ? match[1] : input.trim();
+    function showBanner(elId, message, type) {
+      const el = $(elId);
+      el.textContent = message;
+      el.className = "status-banner " + type;
+      el.style.display = "block";
+      setTimeout(() => { el.style.display = "none"; }, 5000);
     }
 
     function escapeHtml(text) {
@@ -560,29 +265,346 @@
     }
 
     function truncateUrl(url, maxLen) {
-      if (url.length <= maxLen) return url;
-      return url.substring(0, maxLen) + "...";
+      return url.length <= maxLen ? url : url.substring(0, maxLen) + "...";
     }
 
-    document.getElementById("saveConfigBtn").addEventListener("click", () => initSupabase());
-    document.getElementById("saveAutomationBtn").addEventListener("click", saveAutomation);
-    document.getElementById("clearConfigBtn").addEventListener("click", function () {
-      if (!confirm("Tem certeza que deseja limpar as configurações salvas?")) return;
-      localStorage.removeItem("supabase_url");
-      localStorage.removeItem("supabase_anon_key");
-      document.getElementById("supabaseUrl").value = "";
-      document.getElementById("supabaseKey").value = "";
-      supabaseClient = null;
-      showStatus("Configurações limpas.", "success");
+    function extractShortcode(input) {
+      if (!input.includes("instagram.com")) return input.trim();
+      const cleanUrl = input.split("?")[0];
+      const match = cleanUrl.match(/\/(?:p|reel|tv)\/([A-Za-z0-9_-]+)/);
+      return match ? match[1] : input.trim();
+    }
+
+    // ---------------- AUTH SCREEN (só login — cadastro é por convite do admin) ----------------
+    $("authSubmitBtn").addEventListener("click", async () => {
+      const email = $("authEmail").value.trim();
+      const password = $("authPassword").value;
+      if (!email || !password) {
+        showBanner("authBanner", "Preencha e-mail e senha.", "error");
+        return;
+      }
+      try {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        await bootstrapSession();
+      } catch (error) {
+        showBanner("authBanner", error.message, "error");
+      }
     });
 
-    loadConfig();
-    const savedUrl = localStorage.getItem("supabase_url");
-    const savedKey = localStorage.getItem("supabase_anon_key");
-    if (savedUrl && savedKey) {
-      supabaseClient = initSupabase();
-      if (supabaseClient) loadAutomations();
+    $("blockedLogoutBtn").addEventListener("click", () => supabase.auth.signOut().then(() => location.reload()));
+    $("logoutBtn").addEventListener("click", () => supabase.auth.signOut().then(() => location.reload()));
+
+    // ---------------- LINK DE CONVITE / RECUPERAÇÃO DE SENHA ----------------
+    // Quando o usuário clica no e-mail de convite, o Supabase redireciona pra cá
+    // com #access_token=...&type=invite (ou type=recovery). O supabase-js já
+    // detecta isso automaticamente (detectSessionInUrl) e cria a sessão; aqui a
+    // gente só decide mostrar a tela de "definir senha" em vez do dashboard.
+    function isInviteOrRecoveryLink() {
+      const hash = window.location.hash || "";
+      return hash.includes("type=invite") || hash.includes("type=recovery");
     }
+
+    $("setPasswordBtn").addEventListener("click", async () => {
+      const newPassword = $("newPassword").value;
+      if (!newPassword || newPassword.length < 6) {
+        showBanner("setPasswordBanner", "A senha precisa ter pelo menos 6 caracteres.", "error");
+        return;
+      }
+      try {
+        const { error } = await supabase.auth.updateUser({ password: newPassword });
+        if (error) throw error;
+        history.replaceState(null, "", window.location.pathname); // limpa o hash com o token
+        await bootstrapSession();
+      } catch (error) {
+        showBanner("setPasswordBanner", error.message, "error");
+      }
+    });
+
+    // ---------------- SESSION BOOTSTRAP ----------------
+    async function bootstrapSession() {
+      if (isInviteOrRecoveryLink()) {
+        showScreen("setPassword");
+        return;
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        showScreen("auth");
+        return;
+      }
+      currentUser = session.user;
+
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", currentUser.id)
+        .maybeSingle();
+
+      if (error || !profile) {
+        showBanner("authBanner", "Erro ao carregar perfil. Tente novamente.", "error");
+        showScreen("auth");
+        return;
+      }
+      currentProfile = profile;
+
+      if (!profile.is_active) {
+        showScreen("blocked");
+        return;
+      }
+
+      $("userEmailLabel").textContent = currentUser.email;
+      $("adminTabBtn").classList.toggle("hidden", !profile.is_admin);
+      showScreen("app");
+      await loadIgConfig();
+      await loadAutomations();
+    }
+
+    function showScreen(name) {
+      $("authScreen").classList.toggle("hidden", name !== "auth");
+      $("setPasswordScreen").classList.toggle("hidden", name !== "setPassword");
+      $("blockedScreen").classList.toggle("hidden", name !== "blocked");
+      $("appScreen").classList.toggle("hidden", name !== "app");
+    }
+
+    // ---------------- TABS ----------------
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        const tab = btn.getAttribute("data-tab");
+        $("tab-dashboard").classList.toggle("hidden", tab !== "dashboard");
+        $("tab-admin").classList.toggle("hidden", tab !== "admin");
+        if (tab === "admin") loadUsers();
+      });
+    });
+
+    // ---------------- INSTAGRAM CONFIG ----------------
+    async function loadIgConfig() {
+      const { data, error } = await supabase
+        .from("instagram_config")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .maybeSingle();
+      if (error) {
+        console.error(error.message);
+        return;
+      }
+      if (data) {
+        $("igBusinessId").value = data.instagram_business_account_id || "";
+        $("igAccessToken").value = data.page_access_token || "";
+      }
+    }
+
+    $("saveIgConfigBtn").addEventListener("click", async () => {
+      const igBusinessId = $("igBusinessId").value.trim();
+      const igAccessToken = $("igAccessToken").value.trim();
+      if (!igBusinessId || !igAccessToken) {
+        showBanner("statusBanner", "Preencha o Business Account ID e o Access Token.", "error");
+        return;
+      }
+      try {
+        const { error } = await supabase
+          .from("instagram_config")
+          .upsert(
+            { user_id: currentUser.id, instagram_business_account_id: igBusinessId, page_access_token: igAccessToken, updated_at: new Date().toISOString() },
+            { onConflict: "user_id" }
+          );
+        if (error) throw error;
+        showBanner("statusBanner", "Conexão com o Instagram salva.", "success");
+      } catch (error) {
+        showBanner("statusBanner", "Erro ao salvar conexão: " + error.message, "error");
+      }
+    });
+
+    // ---------------- AUTOMATIONS (dashboard do usuário) ----------------
+    async function loadAutomations() {
+      const tbody = $("automationsTableBody");
+      const loading = $("loadingAutomations");
+      loading.style.display = "block";
+      tbody.innerHTML = "";
+      try {
+        const { data, error } = await supabase
+          .from("posts_automacao")
+          .select("*")
+          .eq("user_id", currentUser.id)
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhuma automação cadastrada.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.map((row) => {
+          const statusClass = row.ativo ? "badge-ativo" : "badge-inativo";
+          const statusText = row.ativo ? "Ativo" : "Inativo";
+          const created = new Date(row.created_at).toLocaleString("pt-BR");
+          return (
+            '<tr data-id="' + row.id + '">' +
+            "<td>" + escapeHtml(row.instagram_media_id) + "</td>" +
+            "<td>" + escapeHtml(row.palavra_chave) + "</td>" +
+            '<td><a href="' + escapeHtml(row.produto_url) + '" target="_blank" rel="noopener">' + truncateUrl(row.produto_url, 50) + "</a></td>" +
+            '<td><span class="badge ' + statusClass + '">' + statusText + "</span></td>" +
+            "<td>" + created + "</td>" +
+            '<td class="table-actions">' +
+            '<button class="btn btn-outline btn-sm toggle-btn" title="' + (row.ativo ? "Desativar" : "Ativar") + '">' + (row.ativo ? "🔇" : "🔊") + "</button>" +
+            '<button class="btn btn-danger btn-sm delete-btn" title="Excluir">🗑️</button>' +
+            "</td></tr>"
+          );
+        }).join("");
+
+        document.querySelectorAll(".toggle-btn").forEach((btn) => btn.addEventListener("click", toggleActive));
+        document.querySelectorAll(".delete-btn").forEach((btn) => btn.addEventListener("click", deleteAutomation));
+      } catch (error) {
+        showBanner("statusBanner", "Erro ao carregar automações: " + error.message, "error");
+      } finally {
+        loading.style.display = "none";
+      }
+    }
+
+    async function toggleActive(event) {
+      const row = event.currentTarget.closest("tr");
+      const id = row.getAttribute("data-id");
+      const currentAtivo = event.currentTarget.title === "Desativar";
+      try {
+        const { error } = await supabase.from("posts_automacao").update({ ativo: !currentAtivo }).eq("id", id);
+        if (error) throw error;
+        await loadAutomations();
+      } catch (error) {
+        showBanner("statusBanner", "Erro ao alternar status: " + error.message, "error");
+      }
+    }
+
+    async function deleteAutomation(event) {
+      const row = event.currentTarget.closest("tr");
+      const id = row.getAttribute("data-id");
+      if (!confirm("Tem certeza que deseja excluir esta automação?")) return;
+      try {
+        const { error } = await supabase.from("posts_automacao").delete().eq("id", id);
+        if (error) throw error;
+        showBanner("statusBanner", "Automação excluída.", "success");
+        await loadAutomations();
+      } catch (error) {
+        showBanner("statusBanner", "Erro ao excluir: " + error.message, "error");
+      }
+    }
+
+    $("saveAutomationBtn").addEventListener("click", async () => {
+      const mediaIdInput = $("instagramMediaId");
+      const palavraChaveInput = $("palavraChave");
+      const produtoUrlInput = $("produtoUrl");
+      const mediaIdRaw = mediaIdInput.value.trim();
+      const palavraChave = palavraChaveInput.value.trim();
+      const produtoUrl = produtoUrlInput.value.trim();
+
+      if (!mediaIdRaw || !palavraChave || !produtoUrl) {
+        showBanner("statusBanner", "Todos os campos são obrigatórios.", "error");
+        return;
+      }
+
+      const shortcode = extractShortcode(mediaIdRaw);
+      try {
+        const { error } = await supabase.from("posts_automacao").insert({
+          user_id: currentUser.id,
+          instagram_media_id: shortcode,
+          palavra_chave: palavraChave,
+          produto_url: produtoUrl,
+          ativo: true,
+        });
+        if (error) throw error;
+        showBanner("statusBanner", "Automação salva com sucesso!", "success");
+        mediaIdInput.value = "";
+        palavraChaveInput.value = "";
+        produtoUrlInput.value = "";
+        await loadAutomations();
+      } catch (error) {
+        showBanner("statusBanner", "Erro ao salvar automação: " + error.message, "error");
+      }
+    });
+
+    // ---------------- ADMIN PANEL ----------------
+    $("inviteUserBtn").addEventListener("click", async () => {
+      const emailInput = $("inviteEmail");
+      const email = emailInput.value.trim();
+      if (!email) {
+        showBanner("statusBanner", "Informe o e-mail do novo cliente.", "error");
+        return;
+      }
+      $("inviteUserBtn").disabled = true;
+      try {
+        const { data, error } = await supabase.functions.invoke("admin-invite-user", {
+          body: { email },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        showBanner("statusBanner", "Convite enviado para " + email + ".", "success");
+        emailInput.value = "";
+        await loadUsers();
+      } catch (error) {
+        showBanner("statusBanner", "Erro ao convidar: " + error.message, "error");
+      } finally {
+        $("inviteUserBtn").disabled = false;
+      }
+    });
+
+    async function loadUsers() {
+      const tbody = $("usersTableBody");
+      const loading = $("loadingUsers");
+      loading.style.display = "block";
+      tbody.innerHTML = "";
+      try {
+        const { data, error } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Nenhum usuário encontrado.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.map((u) => {
+          const statusClass = u.is_active ? "badge-ativo" : "badge-inativo";
+          const statusText = u.is_active ? "Ativo" : "Inativo";
+          const created = new Date(u.created_at).toLocaleString("pt-BR");
+          const disableSelfToggle = u.id === currentUser.id ? "disabled title='Você não pode desativar a própria conta'" : "";
+          return (
+            '<tr data-id="' + u.id + '">' +
+            "<td>" + escapeHtml(u.email) + (u.is_admin ? ' <span class="badge badge-ativo">admin</span>' : "") + "</td>" +
+            "<td>" + created + "</td>" +
+            '<td><span class="badge ' + statusClass + '">' + statusText + "</span></td>" +
+            '<td class="table-actions">' +
+            '<button class="btn btn-outline btn-sm user-toggle-btn" ' + disableSelfToggle + ' data-active="' + u.is_active + '">' +
+            (u.is_active ? "Desativar" : "Ativar") + "</button></td></tr>"
+          );
+        }).join("");
+
+        document.querySelectorAll(".user-toggle-btn").forEach((btn) => btn.addEventListener("click", toggleUserActive));
+      } catch (error) {
+        showBanner("statusBanner", "Erro ao carregar usuários: " + error.message, "error");
+      } finally {
+        loading.style.display = "none";
+      }
+    }
+
+    async function toggleUserActive(event) {
+      const row = event.currentTarget.closest("tr");
+      const id = row.getAttribute("data-id");
+      const currentActive = event.currentTarget.getAttribute("data-active") === "true";
+      try {
+        const { error } = await supabase.from("profiles").update({ is_active: !currentActive }).eq("id", id);
+        if (error) throw error;
+        await loadUsers();
+      } catch (error) {
+        showBanner("statusBanner", "Erro ao alternar status do usuário: " + error.message, "error");
+      }
+    }
+
+    // ---------------- START ----------------
+    supabase.auth.onAuthStateChange((_event, _session) => {
+      // opcional: reagir a mudanças de sessão em outras abas
+    });
+
+    bootstrapSession();
   </script>
 </body>
 </html>
