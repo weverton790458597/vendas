@@ -269,6 +269,20 @@
       color: var(--muted);
     }
 
+    .thumb {
+      width: 40px;
+      height: 40px;
+      object-fit: cover;
+      border-radius: 6px;
+      display: block;
+    }
+
+    .wrapper-link {
+      font-size: 12px;
+      color: var(--muted);
+      word-break: break-all;
+    }
+
     @media (max-width: 600px) {
       .config-grid {
         grid-template-columns: 1fr;
@@ -326,6 +340,16 @@
           <input type="url" id="produtoUrl" placeholder="https://www.acheieposteie.com.br/produto/123" />
         </div>
       </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="imagemUrl">URL da Imagem do Produto (para preview no Instagram)</label>
+          <input type="url" id="imagemUrl" placeholder="https://.../foto-do-produto.jpg" />
+        </div>
+        <div class="form-group">
+          <label for="tituloProduto">Título do Produto (opcional)</label>
+          <input type="text" id="tituloProduto" placeholder="Ex: Mini Ventilador Portátil" />
+        </div>
+      </div>
       <button id="saveAutomationBtn" class="btn btn-success">Salvar Automação</button>
     </div>
 
@@ -338,9 +362,11 @@
           <table id="automationsTable">
             <thead>
               <tr>
+                <th>Imagem</th>
                 <th>Post (media_id)</th>
                 <th>Palavra-Chave</th>
                 <th>Link do Produto</th>
+                <th>Link de Preview (Instagram)</th>
                 <th>Status</th>
                 <th>Criado em</th>
                 <th>Ações</th>
@@ -348,7 +374,7 @@
             </thead>
             <tbody id="automationsTableBody">
               <tr>
-                <td colspan="6" class="empty-state">
+                <td colspan="8" class="empty-state">
                   Nenhuma automação cadastrada.
                 </td>
               </tr>
@@ -363,6 +389,7 @@
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.44.4/+esm";
 
     let supabaseClient = null;
+    let currentSupabaseUrl = "";
 
     function loadConfig() {
       const savedUrl = localStorage.getItem("supabase_url");
@@ -395,6 +422,7 @@
           auth: { persistSession: false, autoRefreshToken: true },
           db: { schema: "public" },
         });
+        currentSupabaseUrl = url.replace(/\/+$/, "");
         localStorage.setItem("supabase_url", url);
         localStorage.setItem("supabase_anon_key", key);
         showStatus("Configurações salvas e cliente Supabase inicializado.", "success");
@@ -403,6 +431,11 @@
         showStatus("Erro ao inicializar Supabase: " + error.message, "error");
         return null;
       }
+    }
+
+    function buildWrapperUrl(rowId) {
+      if (!currentSupabaseUrl) return "";
+      return currentSupabaseUrl + "/functions/v1/redirecionar-produto?id=" + rowId;
     }
 
     async function loadAutomations() {
@@ -422,7 +455,7 @@
         if (error) throw error;
 
         if (!data || data.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhuma automação cadastrada.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nenhuma automação cadastrada.</td></tr>';
           return;
         }
 
@@ -430,14 +463,17 @@
           const statusClass = row.ativo ? "badge-ativo" : "badge-inativo";
           const statusText = row.ativo ? "Ativo" : "Inativo";
           const created = new Date(row.created_at).toLocaleString("pt-BR");
+          const wrapperUrl = buildWrapperUrl(row.id);
 
           return (
             '<tr data-id="' + row.id + '">' +
+            "<td>" + (row.imagem_url ? '<img class="thumb" src="' + escapeHtml(row.imagem_url) + '" alt="" onerror="this.style.display=\'none\'" />' : "—") + "</td>" +
             "<td>" + escapeHtml(row.instagram_media_id) + "</td>" +
             "<td>" + escapeHtml(row.palavra_chave) + "</td>" +
             '<td><a href="' + escapeHtml(row.produto_url) + '" target="_blank" rel="noopener">' +
-            truncateUrl(row.produto_url, 50) +
+            truncateUrl(row.produto_url, 40) +
             "</a></td>" +
+            '<td><span class="wrapper-link">' + (wrapperUrl ? escapeHtml(wrapperUrl) : "—") + "</span></td>" +
             '<td><span class="badge ' + statusClass + '">' + statusText + "</span></td>" +
             "<td>" + created + "</td>" +
             '<td class="table-actions">' +
@@ -507,13 +543,17 @@
       const mediaIdInput = document.getElementById("instagramMediaId");
       const palavraChaveInput = document.getElementById("palavraChave");
       const produtoUrlInput = document.getElementById("produtoUrl");
+      const imagemUrlInput = document.getElementById("imagemUrl");
+      const tituloProdutoInput = document.getElementById("tituloProduto");
 
       const mediaIdRaw = mediaIdInput.value.trim();
       const palavraChave = palavraChaveInput.value.trim();
       const produtoUrl = produtoUrlInput.value.trim();
+      const imagemUrl = imagemUrlInput.value.trim();
+      const tituloProduto = tituloProdutoInput.value.trim();
 
       if (!mediaIdRaw || !palavraChave || !produtoUrl) {
-        showStatus("Todos os campos são obrigatórios.", "error");
+        showStatus("Os campos Post, Palavra-Chave e Link do Produto são obrigatórios.", "error");
         return;
       }
 
@@ -529,6 +569,8 @@
             instagram_media_id: shortcode,
             palavra_chave: palavraChave,
             produto_url: produtoUrl,
+            imagem_url: imagemUrl || null,
+            titulo_produto: tituloProduto || null,
             ativo: true,
             created_at: new Date().toISOString(),
           });
@@ -539,6 +581,8 @@
         mediaIdInput.value = "";
         palavraChaveInput.value = "";
         produtoUrlInput.value = "";
+        imagemUrlInput.value = "";
+        tituloProdutoInput.value = "";
         await loadAutomations();
       } catch (error) {
         showStatus("Erro ao salvar automação: " + error.message, "error");
@@ -573,6 +617,7 @@
       document.getElementById("supabaseUrl").value = "";
       document.getElementById("supabaseKey").value = "";
       supabaseClient = null;
+      currentSupabaseUrl = "";
       showStatus("Configurações limpas.", "success");
     });
 
