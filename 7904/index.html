@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Achei e Postei — Automação de Direct Instagram</title>
+  <style>
+    :root {
+      --bg: #f4f6f9;
+      --card: #ffffff;
+      --primary: #0066cc;
+      --primary-dark: #0052a3;
+      --success: #28a745;
+      --danger: #dc3545;
+      --warning: #ffc107;
+      --border: #e0e0e0;
+      --text: #333333;
+      --muted: #888888;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .header {
+      background-color: var(--primary);
+      color: #fff;
+      padding: 20px 30px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .header h1 {
+      font-size: 22px;
+      font-weight: 600;
+    }
+
+    .header p {
+      font-size: 13px;
+      opacity: 0.85;
+      margin-top: 4px;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 30px 20px;
+    }
+
+    .card {
+      background-color: var(--card);
+      border-radius: 10px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .card h2 {
+      font-size: 17px;
+      color: var(--primary-dark);
+      margin-bottom: 16px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 10px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+
+    .form-group input[type="text"],
+    .form-group input[type="url"] {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.15);
+    }
+
+    .form-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .form-row .form-group {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--primary-dark);
+    }
+
+    .btn-success {
+      background-color: var(--success);
+      color: #fff;
+    }
+
+    .btn-success:hover {
+      opacity: 0.9;
+    }
+
+    .btn-danger {
+      background-color: var(--danger);
+      color: #fff;
+    }
+
+    .btn-danger:hover {
+      opacity: 0.9;
+    }
+
+    .btn-outline {
+      background-color: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .btn-outline:hover {
+      background-color: var(--border);
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 13px;
+    }
+
+    .config-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .config-actions {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .badge-ativo {
+      background-color: rgba(40, 167, 69, 0.15);
+      color: var(--success);
+    }
+
+    .badge-inativo {
+      background-color: rgba(108, 117, 125, 0.15);
+      color: var(--muted);
+    }
+
+    .table-container {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    table th,
+    table td {
+      padding: 12px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    table th {
+      background-color: #f8f9fa;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+    }
+
+    table tr:hover {
+      background-color: #f8f9fa;
+    }
+
+    .table-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .status-banner {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .status-banner.success {
+      background-color: rgba(40, 167, 69, 0.15);
+      color: var(--success);
+      border: 1px solid rgba(40, 167, 69, 0.3);
+      display: block;
+    }
+
+    .status-banner.error {
+      background-color: rgba(220, 53, 69, 0.15);
+      color: var(--danger);
+      border: 1px solid rgba(220, 53, 69, 0.3);
+      display: block;
+    }
+
+    .loading-overlay {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+      display: none;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 600px) {
+      .config-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .config-actions {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Achei e Postei — Automação de Direct Instagram</h1>
+    <p>Cadastre regras para envio automático de links de produtos no direct.</p>
+  </div>
+
+  <div class="container">
+    <!-- Banner de status -->
+    <div id="statusBanner" class="status-banner"></div>
+
+    <!-- Configurações do Supabase -->
+    <div class="card">
+      <h2>1. Configurações do Supabase</h2>
+      <div class="config-grid">
+        <div class="form-group">
+          <label for="supabaseUrl">URL do Supabase</label>
+          <input type="url" id="supabaseUrl" placeholder="https://seudoprojeto.supabase.co" />
+        </div>
+        <div class="form-group">
+          <label for="supabaseKey">Anon Public Key</label>
+          <input type="text" id="supabaseKey" placeholder="Cole sua anon key aqui" />
+        </div>
+      </div>
+      <div class="config-actions">
+        <button id="saveConfigBtn" class="btn btn-primary">Salvar Configurações</button>
+        <button id="clearConfigBtn" class="btn btn-outline">Limpar</button>
+      </div>
+    </div>
+
+    <!-- Formulário de Nova Automação -->
+    <div class="card">
+      <h2>2. Nova Automação</h2>
+      <div class="form-group">
+        <label for="instagramMediaId">Link ou ID do Post / Reels no Instagram</label>
+        <input type="text" id="instagramMediaId" placeholder="URL do post ou media_id numérico" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="palavraChave">Palavra-Chave</label>
+          <input type="text" id="palavraChave" placeholder="Ex: QUERO" />
+        </div>
+        <div class="form-group">
+          <label for="produtoUrl">Link do Produto (Achei e Postei)</label>
+          <input type="url" id="produtoUrl" placeholder="https://www.acheieposteie.com.br/produto/123" />
+        </div>
+      </div>
+      <button id="saveAutomationBtn" class="btn btn-success">Salvar Automação</button>
+    </div>
+
+    <!-- Lista de Automações -->
+    <div class="card">
+      <h2>3. Automações Cadastradas</h2>
+      <div id="loadingAutomations" class="loading-overlay">Carregando automações...</div>
+      <div id="automationsTableWrapper">
+        <div class="table-container">
+          <table id="automationsTable">
+            <thead>
+              <tr>
+                <th>Post (media_id)</th>
+                <th>Palavra-Chave</th>
+                <th>Link do Produto</th>
+                <th>Status</th>
+                <th>Criado em</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="automationsTableBody">
+              <tr>
+                <td colspan="6" class="empty-state">
+                  Nenhuma automação cadastrada.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.44.4/+esm";
+
+    let supabaseClient = null;
+
+    // Carrega configurações do localStorage ao iniciar
+    function loadConfig() {
+      const savedUrl = localStorage.getItem("supabase_url");
+      const savedKey = localStorage.getItem("supabase_anon_key");
+      if (savedUrl) document.getElementById("supabaseUrl").value = savedUrl;
+      if (savedKey) document.getElementById("supabaseKey").value = savedKey;
+    }
+
+    // Mostra banner de status
+    function showStatus(message, type) {
+      const banner = document.getElementById("statusBanner");
+      banner.textContent = message;
+      banner.className = "status-banner " + type;
+      banner.style.display = "block";
+      setTimeout(() => {
+        banner.style.display = "none";
+      }, 5000);
+    }
+
+    // Inicializa ou recria o cliente Supabase
+    function initSupabase() {
+      const url = document.getElementById("supabaseUrl").value.trim();
+      const key = document.getElementById("supabaseKey").value.trim();
+
+      if (!url || !key) {
+        showStatus("Configure a URL e a Anon Key do Supabase.", "error");
+        return null;
+      }
+
+      try {
+        supabaseClient = createClient(url, key, {
+          auth: { persistSession: false, autoRefreshToken: true },
+          db: { schema: "public" },
+        });
+        localStorage.setItem("supabase_url", url);
+        localStorage.setItem("supabase_anon_key", key);
+        showStatus("Configurações salvas e cliente Supabase inicializado.", "success");
+        return supabaseClient;
+      } catch (error) {
+        showStatus("Erro ao inicializar Supabase: " + error.message, "error");
+        return null;
+      }
+    }
+
+    // Carrega a lista de automações do Supabase
+    async function loadAutomations() {
+      if (!supabaseClient) {
+        showStatus("Clique em 'Salvar Configurações' antes de carregar automações.", "error");
+        return;
+      }
+
+      const tbody = document.getElementById("automationsTableBody");
+      const loading = document.getElementById("loadingAutomations");
+      loading.style.display = "block";
+      tbody.innerHTML = "";
+
+      try {
+        const { data, error } = await supabaseClient
+          .from("posts_automacao")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          tbody.innerHTML =
+            '<tr><td colspan="6" class="empty-state">' +
+            "Nenhuma automação cadastrada. Cadastre uma nova acima." +
+            "</td></tr>";
+          loading.style.display = "none";
+          return;
+        }
+
+        tbody.innerHTML = data.map(function (row) {
+          const statusClass = row.ativo ? "badge-ativo" : "badge-inativo";
+          const statusText = row.ativo ? "Ativo" : "Inativo";
+          const created = new Date(row.created_at).toLocaleString("pt-BR");
+
+          return (
+            '<tr data-id="' + row.id + '">' +
+            "<td>" + escapeHtml(row.instagram_media_id) + "</td>" +
+            "<td>" + escapeHtml(row.palavra_chave) + "</td>" +
+            '<td><a href="' + escapeHtml(row.produto_url) + '" target="_blank" rel="noopener">' +
+            truncateUrl(row.produto_url, 50) +
+            "</a></td>" +
+            '<td><span class="badge ' + statusClass + '">' + statusText + "</span></td>" +
+            "<td>" + created + "</td>" +
+            '<td class="table-actions">' +
+            '<button class="btn btn-outline btn-sm toggle-btn" title="' +
+            (row.ativo ? "Desativar" : "Ativar") +
+            '">' +
+            (row.ativo ? "🔇" : "🔊") +
+            "</button>" +
+            '<button class="btn btn-danger btn-sm delete-btn" title="Excluir">🗑️</button>' +
+            "</td>" +
+            "</tr>"
+          );
+        }).join("");
+
+        // Anexa eventos de clique nos botões de toggle
+        document.querySelectorAll(".toggle-btn").forEach(function (btn) {
+          btn.addEventListener("click", toggleActive);
+        });
+
+        // Anexa eventos de clique nos botões de exclusão
+        document.querySelectorAll(".delete-btn").forEach(function (btn) {
+          btn.addEventListener("click", deleteAutomation);
+        });
+      } catch (error) {
+        showStatus("Erro ao carregar automações: " + error.message, "error");
+      } finally {
+        loading.style.display = "none";
+      }
+    }
+
+    // Alterna ativo/inativo de uma automação
+    async function toggleActive(event) {
+      const btn = event.currentTarget;
+      const row = btn.closest("tr");
+      const id = row.getAttribute("data-id");
+      const currentTitle = btn.title;
+      const currentAtivo = currentTitle === "Desativar";
+
+      try {
+        const { error } = await supabaseClient
+          .from("posts_automacao")
+          .update({ ativo: !currentAtivo })
+          .eq("id", id);
+
+        if (error) throw error;
+
+        showStatus("Automação " + (currentAtivo ? "desativada" : "ativada") + ".", "success");
+        await loadAutomations();
+      } catch (error) {
+        showStatus("Erro ao alternar status: " + error.message, "error");
+      }
+    }
+
+    // Exclui uma automação com confirmação
+    async function deleteAutomation(event) {
+      const btn = event.currentTarget;
+      const row = btn.closest("tr");
+      const id = row.getAttribute("data-id");
+
+      if (!confirm("Tem certeza que deseja excluir esta automação?")) return;
+
+      try {
+        const { error } = await supabaseClient
+          .from("posts_automacao")
+          .delete()
+          .eq("id", id);
+
+        if (error) throw error;
+
+        showStatus("Automação excluída com sucesso.", "success");
+        await loadAutomations();
+      } catch (error) {
+        showStatus("Erro ao excluir: " + error.message, "error");
+      }
+    }
+
+    // Salva uma nova automação
+    async function saveAutomation() {
+      if (!supabaseClient) {
+        showStatus("Salve as configurações do Supabase primeiro.", "error");
+        return;
+      }
+
+      const mediaIdInput = document.getElementById("instagramMediaId");
+      const palavraChaveInput = document.getElementById("palavraChave");
+      const produtoUrlInput = document.getElementById("produtoUrl");
+
+      const mediaIdRaw = mediaIdInput.value.trim();
+      const palavraChave = palavraChaveInput.value.trim();
+      const produtoUrl = produtoUrlInput.value.trim();
+
+      if (!mediaIdRaw || !palavraChave || !produtoUrl) {
+        showStatus("Todos os campos são obrigatórios.", "error");
+        return;
+      }
+
+      // Extrai media_id da URL se for um link do Instagram
+      const mediaId = extractMediaId(mediaIdRaw);
+
+      try {
+        const { error } = await supabaseClient
+          .from("posts_automacao")
+          .insert({
+            instagram_media_id: mediaId,
+            palavra_chave: palavraChave,
+            produto_url: produtoUrl,
+            ativo: true,
+            created_at: new Date().toISOString(),
+          });
+
+        if (error) throw error;
+
+        showStatus("Automação salva com sucesso!", "success");
+        mediaIdInput.value = "";
+        palavraChaveInput.value = "";
+        produtoUrlInput.value = "";
+        await loadAutomations();
+      } catch (error) {
+        showStatus("Erro ao salvar automação: " + error.message, "error");
+      }
+    }
+
+    // Extrai o media_id de uma URL do Instagram ou retorna o valor digitado
+    function extractMediaId(input) {
+      if (!input.includes("instagram.com")) return input;
+
+      const match =
+        input.match(/\/reel\/(\d+)\//) ||
+        input.match(/\/p\/(\d+)\//) ||
+        input.match(/\/(?:reel|p)\/(\d+)/);
+
+      return match ? match[1] : input;
+    }
+
+    // Utilitários
+    function escapeHtml(text) {
+      if (text === null || text === undefined) return "";
+      const div = document.createElement("div");
+      div.textContent = String(text);
+      return div.innerHTML;
+    }
+
+    function truncateUrl(url, maxLen) {
+      if (url.length <= maxLen) return url;
+      return url.substring(0, maxLen) + "...";
+    }
+
+    // Eventos de clique nos botões principais
+    document.getElementById("saveConfigBtn").addEventListener("click", function () {
+      initSupabase();
+    });
+
+    document.getElementById("saveAutomationBtn").addEventListener("click", saveAutomation);
+
+    // Botão de limpar configurações
+    document.getElementById("clearConfigBtn").addEventListener("click", function () {
+      if (!confirm("Tem certeza que deseja limpar as configurações salvas?")) return;
+      localStorage.removeItem("supabase_url");
+      localStorage.removeItem("supabase_anon_key");
+      document.getElementById("supabaseUrl").value = "";
+      document.getElementById("supabaseKey").value = "";
+      supabaseClient = null;
+      showStatus("Configurações limpas.", "success");
+    });
+
+    // Inicialização: carrega configurações do localStorage
+    loadConfig();
+    const savedUrl = localStorage.getItem("supabase_url");
+    const savedKey = localStorage.getItem("supabase_anon_key");
+    if (savedUrl && savedKey) {
+      supabaseClient = initSupabase();
+      if (supabaseClient) {
+        loadAutomations();
+      }
+    }
+  </script>
+</body>
+</html>
