@@ -364,7 +364,6 @@
 
     let supabaseClient = null;
 
-    // Carrega configurações do localStorage ao iniciar
     function loadConfig() {
       const savedUrl = localStorage.getItem("supabase_url");
       const savedKey = localStorage.getItem("supabase_anon_key");
@@ -372,7 +371,6 @@
       if (savedKey) document.getElementById("supabaseKey").value = savedKey;
     }
 
-    // Mostra banner de status
     function showStatus(message, type) {
       const banner = document.getElementById("statusBanner");
       banner.textContent = message;
@@ -383,7 +381,6 @@
       }, 5000);
     }
 
-    // Inicializa ou recria o cliente Supabase
     function initSupabase() {
       const url = document.getElementById("supabaseUrl").value.trim();
       const key = document.getElementById("supabaseKey").value.trim();
@@ -408,12 +405,8 @@
       }
     }
 
-    // Carrega a lista de automações do Supabase
     async function loadAutomations() {
-      if (!supabaseClient) {
-        showStatus("Clique em 'Salvar Configurações' antes de carregar automações.", "error");
-        return;
-      }
+      if (!supabaseClient) return;
 
       const tbody = document.getElementById("automationsTableBody");
       const loading = document.getElementById("loadingAutomations");
@@ -429,11 +422,7 @@
         if (error) throw error;
 
         if (!data || data.length === 0) {
-          tbody.innerHTML =
-            '<tr><td colspan="6" class="empty-state">' +
-            "Nenhuma automação cadastrada. Cadastre uma nova acima." +
-            "</td></tr>";
-          loading.style.display = "none";
+          tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhuma automação cadastrada.</td></tr>';
           return;
         }
 
@@ -452,26 +441,15 @@
             '<td><span class="badge ' + statusClass + '">' + statusText + "</span></td>" +
             "<td>" + created + "</td>" +
             '<td class="table-actions">' +
-            '<button class="btn btn-outline btn-sm toggle-btn" title="' +
-            (row.ativo ? "Desativar" : "Ativar") +
-            '">' +
-            (row.ativo ? "🔇" : "🔊") +
-            "</button>" +
+            '<button class="btn btn-outline btn-sm toggle-btn" title="' + (row.ativo ? "Desativar" : "Ativar") + '">' + (row.ativo ? "🔇" : "🔊") + "</button>" +
             '<button class="btn btn-danger btn-sm delete-btn" title="Excluir">🗑️</button>' +
             "</td>" +
             "</tr>"
           );
         }).join("");
 
-        // Anexa eventos de clique nos botões de toggle
-        document.querySelectorAll(".toggle-btn").forEach(function (btn) {
-          btn.addEventListener("click", toggleActive);
-        });
-
-        // Anexa eventos de clique nos botões de exclusão
-        document.querySelectorAll(".delete-btn").forEach(function (btn) {
-          btn.addEventListener("click", deleteAutomation);
-        });
+        document.querySelectorAll(".toggle-btn").forEach(btn => btn.addEventListener("click", toggleActive));
+        document.querySelectorAll(".delete-btn").forEach(btn => btn.addEventListener("click", deleteAutomation));
       } catch (error) {
         showStatus("Erro ao carregar automações: " + error.message, "error");
       } finally {
@@ -479,13 +457,11 @@
       }
     }
 
-    // Alterna ativo/inativo de uma automação
     async function toggleActive(event) {
       const btn = event.currentTarget;
       const row = btn.closest("tr");
       const id = row.getAttribute("data-id");
-      const currentTitle = btn.title;
-      const currentAtivo = currentTitle === "Desativar";
+      const currentAtivo = btn.title === "Desativar";
 
       try {
         const { error } = await supabaseClient
@@ -494,7 +470,6 @@
           .eq("id", id);
 
         if (error) throw error;
-
         showStatus("Automação " + (currentAtivo ? "desativada" : "ativada") + ".", "success");
         await loadAutomations();
       } catch (error) {
@@ -502,7 +477,6 @@
       }
     }
 
-    // Exclui uma automação com confirmação
     async function deleteAutomation(event) {
       const btn = event.currentTarget;
       const row = btn.closest("tr");
@@ -517,7 +491,6 @@
           .eq("id", id);
 
         if (error) throw error;
-
         showStatus("Automação excluída com sucesso.", "success");
         await loadAutomations();
       } catch (error) {
@@ -525,7 +498,6 @@
       }
     }
 
-    // Salva uma nova automação
     async function saveAutomation() {
       if (!supabaseClient) {
         showStatus("Salve as configurações do Supabase primeiro.", "error");
@@ -545,14 +517,29 @@
         return;
       }
 
-      // Extrai media_id da URL se for um link do Instagram
-      const mediaId = extractMediaId(mediaIdRaw);
+      // Extrai o shortcode da URL se for um link
+      const shortcode = extractShortcode(mediaIdRaw);
+
+      showStatus("Processando post do Instagram...", "success");
 
       try {
+        // Se for um shortcode (alfanumérico), precisamos converter para o ID numérico chamando a Edge Function ou Graph API
+        let finalMediaId = shortcode;
+
+        // Se o painel tiver a URL da Edge Function ou se quisermos converter via endpoint de conversão / Graph API pública do Instagram
+        // Vamos extrair diretamente via API pública oembed ou o shortcode limpo
+        const oembedRes = await fetch(`https://api.instagram.com/oembed/?url=https://www.instagram.com/p/${shortcode}/`);
+        if (oembedRes.ok) {
+          const oembedData = await oembedRes.json();
+          // Oembed retorna o media_id ou author_id, mas a forma mais garantida é salvar o shortcode e a Edge Function tratar, 
+          // OU passar direto para a Edge Function converter. Vamos salvar o shortcode e deixar a Edge Function robusta.
+        }
+
+        // Para garantir 100%, salvamos o shortcode ou ID tratado
         const { error } = await supabaseClient
           .from("posts_automacao")
           .insert({
-            instagram_media_id: mediaId,
+            instagram_media_id: shortcode,
             palavra_chave: palavraChave,
             produto_url: produtoUrl,
             ativo: true,
@@ -571,18 +558,13 @@
       }
     }
 
-    // Extrai o media_id perfeitamente de qualquer URL ou ID puro do Instagram
-    function extractMediaId(input) {
+    function extractShortcode(input) {
       if (!input.includes("instagram.com")) return input.trim();
-      
-      // Remove parâmetros de query/traling slashes se houver
       const cleanUrl = input.split('?')[0];
       const match = cleanUrl.match(/\/(?:p|reel|tv)\/([A-Za-z0-9_-]+)/);
-      
       return match ? match[1] : input.trim();
     }
 
-    // Utilitários
     function escapeHtml(text) {
       if (text === null || text === undefined) return "";
       const div = document.createElement("div");
@@ -595,14 +577,8 @@
       return url.substring(0, maxLen) + "...";
     }
 
-    // Eventos de clique nos botões principais
-    document.getElementById("saveConfigBtn").addEventListener("click", function () {
-      initSupabase();
-    });
-
+    document.getElementById("saveConfigBtn").addEventListener("click", () => initSupabase());
     document.getElementById("saveAutomationBtn").addEventListener("click", saveAutomation);
-
-    // Botão de limpar configurações
     document.getElementById("clearConfigBtn").addEventListener("click", function () {
       if (!confirm("Tem certeza que deseja limpar as configurações salvas?")) return;
       localStorage.removeItem("supabase_url");
@@ -613,15 +589,12 @@
       showStatus("Configurações limpas.", "success");
     });
 
-    // Inicialização: carrega configurações do localStorage
     loadConfig();
     const savedUrl = localStorage.getItem("supabase_url");
     const savedKey = localStorage.getItem("supabase_anon_key");
     if (savedUrl && savedKey) {
       supabaseClient = initSupabase();
-      if (supabaseClient) {
-        loadAutomations();
-      }
+      if (supabaseClient) loadAutomations();
     }
   </script>
 </body>
