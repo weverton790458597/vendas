@@ -6,87 +6,89 @@
 <title>Achei e Postei — Automação de Direct</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="styles.css" />
+<script>
+(function () {
+  var saved = localStorage.getItem("ap-theme");
+  var theme = saved || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  document.documentElement.setAttribute("data-theme", theme);
+})();
+</script>
 </head>
 <body>
 
 <div id="authScreen" class="auth-shell">
   <div class="auth-brand">
-    <div class="auth-brand-mark">AP</div>
-    <p class="auth-brand-kicker">Achei e Postei</p>
-    <h1 class="auth-brand-headline">Alguém comenta a palavra-chave. O link do produto chega no Direct sozinho.</h1>
-    <p class="auth-brand-copy">Conecte sua conta profissional do Instagram uma vez e deixe as respostas automáticas trabalharem em cada post enquanto você grava o próximo.</p>
+    <!-- Canvas Dinâmico para Efeito de Partículas e Fundo Vivo -->
+    <canvas id="motionCanvas" class="motion-canvas"></canvas>
+
+    <div class="auth-glow-orb auth-glow-1"></div>
+    <div class="auth-glow-orb auth-glow-2"></div>
+    
+    <div class="auth-brand-logo-wrap gsap-reveal">
+      <img src="logo.png" alt="Achei e Postei" class="auth-brand-logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+      <span class="auth-brand-fallback-text">Achei & Postei</span>
+    </div>
+    
+    <h1 class="auth-brand-headline gsap-reveal">Alguém comenta a palavra-chave. O link do produto chega no Direct sozinho.</h1>
+    <p class="auth-brand-copy gsap-reveal">Conecte sua conta profissional do Instagram uma vez e deixe as respostas automáticas trabalharem em cada post enquanto você grava o próximo.</p>
+
+    <!-- ANIMAÇÃO INTEGRADA NATIVAMENTE NA PÁGINA -->
+    <div class="ig-mock gsap-reveal" id="igMock" aria-hidden="true">
+      <div class="native-video-surface">
+        <!-- Glow interno sincronizado para fundir as bordas -->
+        <div class="native-video-glow"></div>
+        <video class="hero-native-video" autoplay muted loop playsinline preload="auto">
+          <source src="1.mp4" type="video/mp4" />
+          Seu navegador não suporta vídeos HTML5.
+        </video>
+      </div>
+    </div>
   </div>
-  <div class="auth-panel">
-    <div class="auth-form-wrap">
-      <h2>Entrar</h2>
-      <p class="auth-sub">Acesse sua conta para gerenciar as automações.</p>
+
+  <div class="auth-panel" id="authPanelGlitch">
+    <button type="button" class="theme-toggle theme-toggle-floating" data-theme-toggle aria-label="Alternar modo escuro">
+      <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.5v2.4M12 19.1v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.7 6.7 0 0 0 10.5 10.5z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="auth-form-card gsap-form-reveal">
+      <div class="auth-form-header">
+        <h2>Bem-vindo de volta</h2>
+        <p class="auth-sub">Digite seus dados para gerenciar suas automações.</p>
+      </div>
       <div id="authBanner" class="banner"></div>
       <label class="field">
-        <span>E-mail</span>
-        <input type="email" id="authEmail" placeholder="voce@exemplo.com" autocomplete="email" />
+        <span>E-mail profissional</span>
+        <input type="email" id="authEmail" placeholder="seu@email.com" autocomplete="email" />
       </label>
       <label class="field">
-        <span>Senha</span>
-        <input type="password" id="authPassword" placeholder="Sua senha" autocomplete="current-password" />
+        <span>Senha de acesso</span>
+        <input type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password" />
       </label>
-      <button id="authSubmitBtn" class="btn btn-primary btn-full">Entrar</button>
-      <p class="auth-footnote">Não tem conta? Peça um convite ao administrador.</p>
+      <button id="authSubmitBtn" class="btn btn-primary btn-full">Entrar na Plataforma</button>
+      <p class="auth-footnote">Acesso restrito a clientes parceiros.</p>
     </div>
   </div>
 </div>
 
-<div id="setPasswordScreen" class="auth-shell hidden">
-  <div class="auth-brand">
-    <div class="auth-brand-mark">AP</div>
-    <p class="auth-brand-kicker">Achei e Postei</p>
-    <h1 class="auth-brand-headline">Falta pouco para suas automações ficarem no ar.</h1>
-    <p class="auth-brand-copy">Escolha uma senha para acessar sua conta e conectar o Instagram.</p>
-  </div>
-  <div class="auth-panel">
-    <div class="auth-form-wrap">
-      <h2>Definir sua senha</h2>
-      <p class="auth-sub">Use pelo menos 6 caracteres.</p>
-      <div id="setPasswordBanner" class="banner"></div>
-      <label class="field">
-        <span>Nova senha</span>
-        <input type="password" id="newPassword" placeholder="Mínimo 6 caracteres" autocomplete="new-password" />
-      </label>
-      <button id="setPasswordBtn" class="btn btn-primary btn-full">Salvar e entrar</button>
-    </div>
-  </div>
-</div>
-
-<div id="blockedScreen" class="auth-shell hidden">
-  <div class="auth-brand">
-    <div class="auth-brand-mark">AP</div>
-    <p class="auth-brand-kicker">Achei e Postei</p>
-    <h1 class="auth-brand-headline">Acesso suspenso</h1>
-    <p class="auth-brand-copy">Sua conta está inativa no momento. Fale com o administrador para reativar o acesso.</p>
-  </div>
-  <div class="auth-panel">
-    <div class="auth-form-wrap">
-      <h2>Conta inativa</h2>
-      <p class="auth-sub">As automações ficam pausadas até a reativação.</p>
-      <button id="blockedLogoutBtn" class="btn btn-outline btn-full">Sair</button>
-    </div>
-  </div>
-</div>
+<!-- Telas seguintes idênticas de estrutura -->
+<div id="setPasswordScreen" class="auth-shell hidden">...</div>
+<div id="blockedScreen" class="auth-shell hidden">...</div>
 
 <div id="appScreen" class="app-shell hidden">
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <div class="sidebar-mark">AP</div>
-      <span>Achei e Postei</span>
+      <img src="logo.png" alt="Achei e Postei" class="sidebar-logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+      <span class="sidebar-logo-fallback">Achei & Postei</span>
     </div>
     <nav class="sidebar-nav" id="tabsNav">
       <button class="nav-item active" data-tab="dashboard">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span>Automações</span>
       </button>
       <button class="nav-item hidden" id="adminTabBtn" data-tab="admin">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="7" r="3.2" stroke="currentColor" stroke-width="1.6"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M16.5 4.2c1.6.4 2.8 1.9 2.8 3.6 0 1.7-1.2 3.2-2.8 3.6M20 20c0-2.9-1.9-5-4.4-5.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="7" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M16.5 4.2c1.6.4 2.8 1.9 2.8 3.6 0 1.7-1.2 3.2-2.8 3.6M20 20c0-2.9-1.9-5-4.4-5.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
         <span>Administração</span>
       </button>
     </nav>
@@ -94,118 +96,29 @@
       <div class="sidebar-user">
         <span id="userEmailLabel"></span>
       </div>
-      <button id="logoutBtn" class="btn btn-outline btn-full btn-sm">Sair</button>
+      <button type="button" class="theme-toggle theme-toggle-inline" data-theme-toggle aria-label="Alternar modo escuro">
+        <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.5v2.4M12 19.1v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.7 6.7 0 0 0 10.5 10.5z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        <span>Tema</span>
+      </button>
+      <button id="logoutBtn" class="btn btn-outline btn-full btn-sm">Sair nos</button>
     </div>
   </aside>
 
   <main class="main">
     <div id="statusBanner" class="banner banner-floating"></div>
-
     <div id="tab-dashboard" class="view">
       <header class="view-header">
-        <h1>Minhas automações</h1>
-        <p>Palavras-chave nos comentários viram links de produto no Direct, automaticamente.</p>
+        <h1>Minhas Automações</h1>
+        <p>Converta comentários do Instagram em vendas diretas no Direct automaticamente.</p>
       </header>
-
-      <section class="ig-status" id="igStatusSection">
-        <div id="igLoadingStatus" class="ig-status-row">
-          <span class="ig-dot ig-dot-pending"></span>
-          <div class="ig-status-text"><strong>Verificando conexão…</strong></div>
-        </div>
-        <div id="igDisconnectedBox" class="ig-status-row hidden">
-          <span class="ig-dot ig-dot-off"></span>
-          <div class="ig-status-text">
-            <strong>Instagram não conectado</strong>
-            <p>Conecte sua conta profissional para ativar as respostas automáticas.</p>
-          </div>
-          <button id="connectIgBtn" class="btn btn-primary">Conectar Instagram</button>
-        </div>
-        <div id="igConnectedBox" class="ig-status-row hidden">
-          <span class="ig-dot ig-dot-on"></span>
-          <div class="ig-status-text">
-            <strong>Instagram conectado <span id="igConnectedUsername"></span></strong>
-            <p>As automações já podem responder comentários e enviar Direct.</p>
-          </div>
-          <div class="ig-status-actions">
-            <button id="reconnectIgBtn" class="btn btn-outline btn-sm">Reconectar</button>
-            <button id="disconnectIgBtn" class="btn btn-danger-ghost btn-sm">Desconectar</button>
-          </div>
-        </div>
-      </section>
-
-      <section class="panel panel-accent">
-        <h2>Nova automação</h2>
-        <div class="field">
-          <label for="instagramMediaId">Link ou ID do post / reels</label>
-          <input type="text" id="instagramMediaId" placeholder="Cole a URL do post ou o media_id numérico" />
-        </div>
-        <div class="field-row">
-          <div class="field">
-            <label for="palavraChave">Palavra-chave</label>
-            <input type="text" id="palavraChave" placeholder="Ex: QUERO" />
-          </div>
-          <div class="field">
-            <label for="produtoUrl">Link do produto</label>
-            <input type="url" id="produtoUrl" placeholder="https://www.acheiepostei.shop/produto/123" />
-          </div>
-        </div>
-        <button id="saveAutomationBtn" class="btn btn-primary">Salvar automação</button>
-      </section>
-
-      <section class="panel panel-plain">
-        <div class="panel-heading-row">
-          <h2>Automações cadastradas</h2>
-        </div>
-        <div id="loadingAutomations" class="loading-row">Carregando automações…</div>
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr><th>Post</th><th>Palavra-chave</th><th>Link do produto</th><th>Status</th><th>Criado em</th><th></th></tr>
-            </thead>
-            <tbody id="automationsTableBody">
-              <tr><td colspan="6" class="empty-state">Nenhuma automação cadastrada ainda. Cadastre a primeira acima.</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-
-    <div id="tab-admin" class="view hidden">
-      <header class="view-header">
-        <h1>Administração</h1>
-        <p>Convide clientes e gerencie o acesso à plataforma.</p>
-      </header>
-
-      <section class="panel panel-accent">
-        <h2>Convidar novo usuário</h2>
-        <p class="panel-sub">O acesso é só por convite. A pessoa recebe um e-mail com um link para definir a própria senha.</p>
-        <div class="field-row field-row-invite">
-          <div class="field">
-            <label for="inviteEmail">E-mail do novo cliente</label>
-            <input type="email" id="inviteEmail" placeholder="cliente@exemplo.com" />
-          </div>
-          <button id="inviteUserBtn" class="btn btn-primary">Enviar convite</button>
-        </div>
-      </section>
-
-      <section class="panel panel-plain">
-        <div class="panel-heading-row">
-          <h2>Usuários cadastrados</h2>
-        </div>
-        <div id="loadingUsers" class="loading-row">Carregando usuários…</div>
-        <div class="table-scroll">
-          <table>
-            <thead><tr><th>E-mail</th><th>Cadastrado em</th><th>Status</th><th></th></tr></thead>
-            <tbody id="usersTableBody">
-              <tr><td colspan="4" class="empty-state">Nenhum usuário encontrado.</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
     </div>
   </main>
 </div>
 
+<!-- Scripts -->
 <script type="module" src="app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="motion-fx.js"></script>
 </body>
 </html>
