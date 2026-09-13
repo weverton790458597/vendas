@@ -608,6 +608,7 @@ button {
 .main {
   padding: 2.25rem 2.75rem 3rem;
   position: relative;
+  min-width: 0;
 }
 @media (max-width: 640px) {
   .main {
