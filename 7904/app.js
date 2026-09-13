@@ -1,13 +1,3 @@
-/*
- * app.js — lógica principal do Achei & Postei
- *
- * este arquivo é carregado como ES module pelo index.html
- * ( veja <script type="module" src="app.js"> )
- *
- * TODO futuro: se rodar este arquivo no node para teste, usar extensão .mjs
- * ou adicionar "type": "module" no package.json do projeto de teste.
- */
-
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
 const SUPABASE_URL = "https://abdliioyzkylccfylils.supabase.co";
