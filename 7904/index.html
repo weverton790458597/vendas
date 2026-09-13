@@ -6,7 +6,7 @@
 <title>Achei e Postei — Automação de Direct</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="styles.css" />
 <script>
 (function () {
@@ -17,37 +17,58 @@
 </script>
 </head>
 <body>
-
-<!-- Tela de Login / Autenticação -->
 <div id="authScreen" class="auth-shell">
   <div class="auth-brand">
-    <!-- Canvas Dinâmico para Efeito de Partículas e Fundo Vivo -->
     <canvas id="motionCanvas" class="motion-canvas"></canvas>
-
     <div class="auth-glow-orb auth-glow-1"></div>
     <div class="auth-glow-orb auth-glow-2"></div>
-
-    <div class="auth-brand-logo-wrap gsap-reveal">
-      <img src="logo.png" alt="Achei e Postei" class="auth-brand-logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
-      <span class="auth-brand-fallback-text">Achei & Postei</span>
+    <div class="brand-mark gsap-reveal">
+      <img src="logo.png" alt="Achei e Postei" class="brand-mark-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';" />
+      <span class="brand-mark-fallback">Achei &amp; Postei</span>
     </div>
-
-    <h1 class="auth-brand-headline gsap-reveal">Alguém comenta a palavra-chave. O link do produto chega no Direct sozinho.</h1>
-    <p class="auth-brand-copy gsap-reveal">Conecte sua conta profissional do Instagram uma vez e deixe as respostas automáticas trabalharem em cada post enquanto você grava o próximo.</p>
-
-    <!-- ANIMAÇÃO INTEGRADA NATIVAMENTE NA PÁGINA -->
-    <div class="ig-mock gsap-reveal" id="igMock" aria-hidden="true">
-      <div class="native-video-surface">
-        <!-- Glow interno sincronizado para fundir as bordas -->
-        <div class="native-video-glow"></div>
-        <video class="hero-native-video" autoplay muted loop playsinline preload="auto">
-          <source src="1.mp4" type="video/mp4" />
-          Seu navegador não suporta vídeos HTML5.
-        </video>
+    <h1 class="brand-headline gsap-reveal">Alguém comenta a palavra certa. O link do produto chega no Direct sozinho.</h1>
+    <p class="brand-copy gsap-reveal">Conecte sua conta profissional do Instagram uma vez. A partir daí, cada comentário com a palavra-chave certa vira uma venda em potencial — sem você tocar no celular.</p>
+    <div class="brand-stats gsap-reveal">
+      <div class="brand-stat"><strong>24/7</strong><span>respondendo sozinho</span></div>
+      <div class="brand-stat"><strong>&lt;1 min</strong><span>do comentário ao Direct</span></div>
+      <div class="brand-stat"><strong>0</strong><span>linhas de código pra você</span></div>
+    </div>
+    <div class="demo-phone gsap-reveal" id="demoPhone" aria-hidden="true">
+      <div class="demo-phone-glow"></div>
+      <div class="demo-post">
+        <div class="demo-post-head">
+          <span class="demo-avatar"></span>
+          <span class="demo-username">sua.loja</span>
+        </div>
+        <div class="demo-post-media">
+          <div class="demo-media-gradient"></div>
+        </div>
+        <div class="demo-post-actions">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M12 20s-7-4.35-9.5-8.8C.8 7.7 2.4 4 6 4c2.1 0 3.6 1.2 4.5 2.6C11.4 5.2 12.9 4 15 4c3.6 0 5.2 3.7 3.5 7.2C19 15.65 12 20 12 20z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 20l1.1-5.4A8.5 8.5 0 1 1 21 11.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M4 12l16-8-6 16-3-6-7-2z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        </div>
+        <p class="demo-caption"><strong>sua.loja</strong> Comente <span class="demo-keyword">QUERO</span> pra receber o link do produto 👇</p>
+      </div>
+      <div class="demo-comment-pop">
+        <span class="demo-comment-avatar"></span>
+        <span class="demo-comment-bubble"><strong>cliente_ana</strong> QUERO 🙌</span>
+      </div>
+      <div class="demo-dm-pop">
+        <div class="demo-dm-head">
+          <span class="demo-dm-dot"></span>
+          Direct enviado automaticamente
+        </div>
+        <div class="demo-dm-card">
+          <div class="demo-dm-thumb"></div>
+          <div class="demo-dm-info">
+            <strong>Vestido Linho Bege</strong>
+            <span>acheiepostei.shop/produto/128</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-
   <div class="auth-panel" id="authPanelGlitch">
     <button type="button" class="theme-toggle theme-toggle-floating" data-theme-toggle aria-label="Alternar modo escuro">
       <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.5v2.4M12 19.1v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
@@ -67,25 +88,25 @@
         <span>Senha de acesso</span>
         <input type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password" />
       </label>
-      <button id="authSubmitBtn" class="btn btn-primary btn-full">Entrar na Plataforma</button>
+      <button id="authSubmitBtn" class="btn btn-primary btn-full">Entrar na plataforma</button>
       <p class="auth-footnote">Acesso restrito a clientes parceiros.</p>
     </div>
   </div>
 </div>
-
-<!-- Tela de Definir Senha -->
 <div id="setPasswordScreen" class="auth-shell hidden">
-  <div class="auth-brand">
-    <div class="auth-brand-logo-wrap">
-      <span class="auth-brand-fallback-text" style="display:block;">Achei & Postei</span>
+  <div class="auth-brand auth-brand-simple">
+    <div class="brand-mark">
+      <span class="brand-mark-fallback" style="display:inline-flex;">Achei &amp; Postei</span>
     </div>
-    <h1 class="auth-brand-headline">Falta pouco para suas automações ficarem no ar.</h1>
-    <p class="auth-brand-copy">Escolha uma senha para acessar sua conta e conectar o Instagram.</p>
+    <h1 class="brand-headline">Falta pouco para suas automações ficarem no ar.</h1>
+    <p class="brand-copy">Escolha uma senha para acessar sua conta e conectar o Instagram.</p>
   </div>
   <div class="auth-panel">
     <div class="auth-form-card">
-      <h2>Definir sua senha</h2>
-      <p class="auth-sub">Use pelo menos 6 caracteres.</p>
+      <div class="auth-form-header">
+        <h2>Definir sua senha</h2>
+        <p class="auth-sub">Use pelo menos 6 caracteres.</p>
+      </div>
       <div id="setPasswordBanner" class="banner"></div>
       <label class="field">
         <span>Nova senha</span>
@@ -95,31 +116,29 @@
     </div>
   </div>
 </div>
-
-<!-- Tela de Conta Bloqueada / Suspensa -->
 <div id="blockedScreen" class="auth-shell hidden">
-  <div class="auth-brand">
-    <div class="auth-brand-logo-wrap">
-      <span class="auth-brand-fallback-text" style="display:block;">Achei & Postei</span>
+  <div class="auth-brand auth-brand-simple">
+    <div class="brand-mark">
+      <span class="brand-mark-fallback" style="display:inline-flex;">Achei &amp; Postei</span>
     </div>
-    <h1 class="auth-brand-headline">Acesso suspenso</h1>
-    <p class="auth-brand-copy">Sua conta está inativa no momento. Fale com o administrador para reativar o acesso.</p>
+    <h1 class="brand-headline">Acesso suspenso</h1>
+    <p class="brand-copy">Sua conta está inativa no momento. Fale com o administrador para reativar o acesso.</p>
   </div>
   <div class="auth-panel">
     <div class="auth-form-card">
-      <h2>Conta inativa</h2>
-      <p class="auth-sub">As automações ficam pausadas até a reativação.</p>
+      <div class="auth-form-header">
+        <h2>Conta inativa</h2>
+        <p class="auth-sub">As automações ficam pausadas até a reativação.</p>
+      </div>
       <button id="blockedLogoutBtn" class="btn btn-outline btn-full">Sair</button>
     </div>
   </div>
 </div>
-
-<!-- Painel Interno da Aplicação (Pós-Login) -->
 <div id="appScreen" class="app-shell hidden">
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <img src="logo.png" alt="Achei e Postei" class="sidebar-logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
-      <span class="sidebar-logo-fallback" style="display:block;">Achei & Postei</span>
+      <img src="logo.png" alt="Achei e Postei" class="sidebar-logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';" />
+      <span class="sidebar-logo-fallback">Achei &amp; Postei</span>
     </div>
     <nav class="sidebar-nav" id="tabsNav">
       <button class="nav-item active" data-tab="dashboard">
@@ -133,6 +152,7 @@
     </nav>
     <div class="sidebar-footer">
       <div class="sidebar-user">
+        <span class="sidebar-user-avatar" id="userAvatar"></span>
         <span id="userEmailLabel"></span>
       </div>
       <button type="button" class="theme-toggle theme-toggle-inline" data-theme-toggle aria-label="Alternar modo escuro">
@@ -143,17 +163,13 @@
       <button id="logoutBtn" class="btn btn-outline btn-full btn-sm">Sair</button>
     </div>
   </aside>
-
   <main class="main">
     <div id="statusBanner" class="banner banner-floating"></div>
-
-    <!-- Aba de Dashboard / Automações -->
     <div id="tab-dashboard" class="view">
       <header class="view-header">
-        <h1>Minhas Automações</h1>
+        <h1>Minhas automações</h1>
         <p>Palavras-chave nos comentários viram links de produto no Direct, automaticamente.</p>
       </header>
-
       <section class="ig-status" id="igStatusSection">
         <div id="igLoadingStatus" class="ig-status-row">
           <span class="ig-dot ig-dot-pending"></span>
@@ -179,7 +195,20 @@
           </div>
         </div>
       </section>
-
+      <section class="kpi-row">
+        <div class="kpi-card">
+          <span class="kpi-value" id="kpiTotal">0</span>
+          <span class="kpi-label">Automações cadastradas</span>
+        </div>
+        <div class="kpi-card kpi-card-teal">
+          <span class="kpi-value" id="kpiAtivas">0</span>
+          <span class="kpi-label">Ativas agora</span>
+        </div>
+        <div class="kpi-card kpi-card-muted">
+          <span class="kpi-value" id="kpiPausadas">0</span>
+          <span class="kpi-label">Pausadas</span>
+        </div>
+      </section>
       <section class="panel panel-accent">
         <h2>Nova automação</h2>
         <div class="field">
@@ -198,32 +227,38 @@
         </div>
         <button id="saveAutomationBtn" class="btn btn-primary">Salvar automação</button>
       </section>
-
       <section class="panel panel-plain">
         <div class="panel-heading-row">
           <h2>Automações cadastradas</h2>
+          <input type="search" id="automationSearch" class="search-input" placeholder="Buscar por palavra-chave ou link" />
         </div>
         <div id="loadingAutomations" class="loading-row">Carregando automações…</div>
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr><th>Post</th><th>Palavra-chave</th><th>Link do produto</th><th>Status</th><th>Criado em</th><th></th></tr>
-            </thead>
-            <tbody id="automationsTableBody">
-              <tr><td colspan="6" class="empty-state">Nenhuma automação cadastrada ainda. Cadastre a primeira acima.</td></tr>
-            </tbody>
-          </table>
-        </div>
+        <div class="automation-grid" id="automationsTableBody"></div>
       </section>
     </div>
-
-    <!-- Aba de Administração -->
     <div id="tab-admin" class="view hidden">
       <header class="view-header">
         <h1>Administração</h1>
         <p>Convide clientes e gerencie o acesso à plataforma.</p>
       </header>
-
+      <section class="kpi-row" id="adminKpiRow">
+        <div class="kpi-card">
+          <span class="kpi-value" id="kpiUsers">0</span>
+          <span class="kpi-label">Clientes cadastrados</span>
+        </div>
+        <div class="kpi-card kpi-card-teal">
+          <span class="kpi-value" id="kpiActiveUsers">0</span>
+          <span class="kpi-label">Contas ativas</span>
+        </div>
+        <div class="kpi-card kpi-card-gold">
+          <span class="kpi-value" id="kpiMrr">R$ 0</span>
+          <span class="kpi-label">Recorrência em dia</span>
+        </div>
+        <div class="kpi-card kpi-card-coral">
+          <span class="kpi-value" id="kpiLate">0</span>
+          <span class="kpi-label">Pagamentos atrasados</span>
+        </div>
+      </section>
       <section class="panel panel-accent">
         <h2>Convidar novo usuário</h2>
         <p class="panel-sub">O acesso é só por convite. A pessoa recebe um e-mail com um link para definir a própria senha.</p>
@@ -235,10 +270,10 @@
           <button id="inviteUserBtn" class="btn btn-primary">Enviar convite</button>
         </div>
       </section>
-
       <section class="panel panel-plain">
         <div class="panel-heading-row">
           <h2>Usuários cadastrados</h2>
+          <input type="search" id="userSearch" class="search-input" placeholder="Buscar por e-mail" />
         </div>
         <div id="loadingUsers" class="loading-row">Carregando usuários…</div>
         <div class="table-scroll">
@@ -248,7 +283,6 @@
                 <th>E-mail</th>
                 <th>Cadastrado em</th>
                 <th>Status</th>
-                <!-- NOVAS COLUNAS DE COBRANÇA -->
                 <th>Pagamento</th>
                 <th>Vencimento</th>
                 <th>Plano (R$)</th>
@@ -264,8 +298,6 @@
     </div>
   </main>
 </div>
-
-<!-- Scripts -->
 <script type="module" src="app.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script src="motion-fx.js"></script>
