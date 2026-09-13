@@ -20,7 +20,7 @@ let currentUserTable = null; // nome da tabela de automações do usuário logad
 const $ = (selector) => document.querySelector(selector);
 
 function showBanner(elId, message, type) {
-  const el = $(elId);
+  const el = $("#" + elId);
   el.textContent = message;
   el.className = "banner " + type;
   setTimeout(() => { el.className = "banner"; }, 5000);
