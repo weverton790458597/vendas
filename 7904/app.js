@@ -144,8 +144,10 @@ document.querySelectorAll(".nav-item").forEach((btn) => {
     btn.classList.add("active");
     const tab = btn.getAttribute("data-tab");
     $("#tab-dashboard").classList.toggle("hidden", tab !== "dashboard");
+    $("#tab-accounts").classList.toggle("hidden", tab !== "accounts");
     $("#tab-admin").classList.toggle("hidden", tab !== "admin");
     if (tab === "admin") loadUsers();
+    if (tab === "accounts") loadIgConfig();
   });
 });
 let currentIgAccounts = [];
