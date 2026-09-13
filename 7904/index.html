@@ -175,24 +175,10 @@
           <span class="ig-dot ig-dot-pending"></span>
           <div class="ig-status-text"><strong>Verificando conexão…</strong></div>
         </div>
-        <div id="igDisconnectedBox" class="ig-status-row hidden">
-          <span class="ig-dot ig-dot-off"></span>
-          <div class="ig-status-text">
-            <strong>Instagram não conectado</strong>
-            <p>Conecte sua conta profissional para ativar as respostas automáticas.</p>
-          </div>
-          <button id="connectIgBtn" class="btn btn-primary">Conectar Instagram</button>
-        </div>
-        <div id="igConnectedBox" class="ig-status-row hidden">
-          <span class="ig-dot ig-dot-on"></span>
-          <div class="ig-status-text">
-            <strong>Instagram conectado <span id="igConnectedUsername"></span></strong>
-            <p>As automações já podem responder comentários e enviar Direct.</p>
-          </div>
-          <div class="ig-status-actions">
-            <button id="reconnectIgBtn" class="btn btn-outline btn-sm">Reconectar</button>
-            <button id="disconnectIgBtn" class="btn btn-danger-ghost btn-sm">Desconectar</button>
-          </div>
+        <div id="igAccountsList" class="ig-accounts-list hidden"></div>
+        <div id="igStatusFooter" class="ig-status-footer hidden">
+          <span id="igLimitText" class="ig-limit-text"></span>
+          <button id="addIgAccountBtn" class="btn btn-primary btn-sm">Conectar Instagram</button>
         </div>
       </section>
       <section class="kpi-row">
@@ -211,6 +197,10 @@
       </section>
       <section class="panel panel-accent">
         <h2>Nova automação</h2>
+        <div class="field hidden" id="automationIgAccountField">
+          <label for="automationIgAccount">Conta do Instagram</label>
+          <select id="automationIgAccount"></select>
+        </div>
         <div class="field">
           <label for="instagramMediaId">Link ou ID do post / reels</label>
           <input type="text" id="instagramMediaId" placeholder="Cole a URL do post ou o media_id numérico" />
@@ -286,6 +276,7 @@
                 <th>Pagamento</th>
                 <th>Vencimento</th>
                 <th>Plano (R$)</th>
+                <th>Contas IG</th>
                 <th>Ações</th>
               </tr>
             </thead>
