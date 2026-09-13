@@ -456,12 +456,20 @@ button {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
 }
+.btn:disabled,
+.btn[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(0.3);
+  box-shadow: none;
+  transform: none !important;
+}
 .btn-primary {
   background: linear-gradient(135deg, var(--gold), var(--gold-dark));
   color: #1a1206;
   box-shadow: 0 6px 16px rgba(240, 169, 58, 0.35);
 }
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 8px 20px rgba(240, 169, 58, 0.48);
   filter: brightness(1.03);
