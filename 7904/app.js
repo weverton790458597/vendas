@@ -232,7 +232,7 @@ function renderIgAccounts() {
   addBtn.textContent = count === 0 ? "Conectar Instagram" : "+ Adicionar conta do Instagram";
   addBtn.disabled = atLimit;
   addBtn.title = atLimit ? "Limite de contas do seu plano atingido. Fale com o suporte para aumentar o limite." : "";
-  limitText.textContent = count + " de " + limit + " conta" + (limit === 1 ? "" : "s") + " do plano em uso";
+  limitText.textContent = count + " de " + limit + " conta" + (limit === 1 ? "" : "s") + " do plano em uso" + (atLimit ? " — limite atingido" : "");
   footer.classList.remove("hidden");
   updateAutomationIgSelector();
 }
