@@ -759,6 +759,37 @@ button {
   background-color: var(--teal);
   box-shadow: 0 0 0 4px var(--teal-light);
 }
+.ig-accounts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.ig-account-row {
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--border-color);
+}
+.ig-account-row:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+.ig-status-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.1rem;
+  padding-top: 1.1rem;
+  border-top: 1px dashed var(--border-color);
+}
+.ig-limit-text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.field-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 0.3rem;
+}
 .automation-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
