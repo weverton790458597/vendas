@@ -26,12 +26,12 @@
 
     <div class="auth-glow-orb auth-glow-1"></div>
     <div class="auth-glow-orb auth-glow-2"></div>
-    
+
     <div class="auth-brand-logo-wrap gsap-reveal">
       <img src="logo.png" alt="Achei e Postei" class="auth-brand-logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
       <span class="auth-brand-fallback-text">Achei & Postei</span>
     </div>
-    
+
     <h1 class="auth-brand-headline gsap-reveal">Alguém comenta a palavra-chave. O link do produto chega no Direct sozinho.</h1>
     <p class="auth-brand-copy gsap-reveal">Conecte sua conta profissional do Instagram uma vez e deixe as respostas automáticas trabalharem em cada post enquanto você grava o próximo.</p>
 
@@ -146,7 +146,7 @@
 
   <main class="main">
     <div id="statusBanner" class="banner banner-floating"></div>
-    
+
     <!-- Aba de Dashboard / Automações -->
     <div id="tab-dashboard" class="view">
       <header class="view-header">
@@ -243,9 +243,20 @@
         <div id="loadingUsers" class="loading-row">Carregando usuários…</div>
         <div class="table-scroll">
           <table>
-            <thead><tr><th>E-mail</th><th>Cadastrado em</th><th>Status</th><th></th></tr></thead>
+            <thead>
+              <tr>
+                <th>E-mail</th>
+                <th>Cadastrado em</th>
+                <th>Status</th>
+                <!-- NOVAS COLUNAS DE COBRANÇA -->
+                <th>Pagamento</th>
+                <th>Vencimento</th>
+                <th>Plano (R$)</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
             <tbody id="usersTableBody">
-              <tr><td colspan="4" class="empty-state">Nenhum usuário encontrado.</td></tr>
+              <tr><td colspan="7" class="empty-state">Nenhum usuário encontrado.</td></tr>
             </tbody>
           </table>
         </div>
