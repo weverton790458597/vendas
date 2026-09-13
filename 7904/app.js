@@ -148,11 +148,21 @@ document.querySelectorAll(".nav-item").forEach((btn) => {
     if (tab === "admin") loadUsers();
   });
 });
-async function startInstagramConnect() {
+let currentIgAccounts = [];
+// Preço sugerido pelo modelo: 1 conta R$49,90 | até 3 contas R$79,90 | cada conta extra além de 3, +R$19,90
+function suggestPlanValue(limit) {
+  const n = Number(limit) || 1;
+  if (n <= 1) return 49.9;
+  if (n <= 3) return 79.9;
+  return Math.round((79.9 + (n - 3) * 19.9) * 100) / 100;
+}
+async function startInstagramConnect(configId) {
   try {
+    const insertPayload = { user_id: currentUser.id };
+    if (configId) insertPayload.instagram_config_id = configId;
     const { data, error } = await supabase
       .from("oauth_states")
-      .insert({ user_id: currentUser.id })
+      .insert(insertPayload)
       .select("id")
       .single();
     if (error) throw error;
@@ -168,42 +178,98 @@ async function startInstagramConnect() {
     showBanner("statusBanner", "Não foi possível iniciar a conexão: " + error.message, "error");
   }
 }
-$("#connectIgBtn").addEventListener("click", startInstagramConnect);
-$("#reconnectIgBtn").addEventListener("click", startInstagramConnect);
-$("#disconnectIgBtn").addEventListener("click", async () => {
-  if (!confirm("Tem certeza que deseja desconectar sua conta do Instagram? Suas automações vão parar de funcionar até você reconectar.")) return;
+async function disconnectIgAccount(configId) {
+  if (!confirm("Tem certeza que deseja desconectar esta conta do Instagram? As automações ligadas a ela vão parar de funcionar até você reconectar.")) return;
   try {
-    const { error } = await supabase.from("instagram_config").delete().eq("user_id", currentUser.id);
+    const { error } = await supabase.from("instagram_config").delete().eq("id", configId).eq("user_id", currentUser.id);
     if (error) throw error;
     showBanner("statusBanner", "Instagram desconectado.", "success");
     await loadIgConfig();
   } catch (error) {
     showBanner("statusBanner", "Erro ao desconectar: " + error.message, "error");
   }
-});
+}
+function renderIgAccounts() {
+  const list = $("#igAccountsList");
+  const footer = $("#igStatusFooter");
+  const limitText = $("#igLimitText");
+  const addBtn = $("#addIgAccountBtn");
+  const limit = (currentProfile && currentProfile.ig_account_limit) || 1;
+  const count = currentIgAccounts.length;
+  if (count === 0) {
+    list.innerHTML =
+      '<div class="ig-status-row">' +
+      '<span class="ig-dot ig-dot-off"></span>' +
+      '<div class="ig-status-text">' +
+      "<strong>Instagram não conectado</strong>" +
+      "<p>Conecte sua conta profissional para ativar as respostas automáticas.</p>" +
+      "</div></div>";
+  } else {
+    list.innerHTML = currentIgAccounts.map((acc) => {
+      const username = acc.instagram_username ? "@" + escapeHtml(acc.instagram_username) : "Conta conectada";
+      return (
+        '<div class="ig-status-row ig-account-row" data-id="' + acc.id + '">' +
+        '<span class="ig-dot ig-dot-on"></span>' +
+        '<div class="ig-status-text">' +
+        "<strong>" + username + "</strong>" +
+        "<p>As automações já podem responder comentários e enviar Direct.</p>" +
+        "</div>" +
+        '<div class="ig-status-actions">' +
+        '<button class="btn btn-outline btn-sm ig-reconnect-btn" data-id="' + acc.id + '">Reconectar</button>' +
+        '<button class="btn btn-danger-ghost btn-sm ig-disconnect-btn" data-id="' + acc.id + '">Desconectar</button>' +
+        "</div></div>"
+      );
+    }).join("");
+  }
+  list.classList.remove("hidden");
+  document.querySelectorAll(".ig-reconnect-btn").forEach((btn) =>
+    btn.addEventListener("click", () => startInstagramConnect(btn.getAttribute("data-id")))
+  );
+  document.querySelectorAll(".ig-disconnect-btn").forEach((btn) =>
+    btn.addEventListener("click", () => disconnectIgAccount(btn.getAttribute("data-id")))
+  );
+  const atLimit = count >= limit;
+  addBtn.textContent = count === 0 ? "Conectar Instagram" : "+ Adicionar conta do Instagram";
+  addBtn.disabled = atLimit;
+  addBtn.title = atLimit ? "Limite de contas do seu plano atingido. Fale com o suporte para aumentar o limite." : "";
+  limitText.textContent = count + " de " + limit + " conta" + (limit === 1 ? "" : "s") + " do plano em uso";
+  footer.classList.remove("hidden");
+  updateAutomationIgSelector();
+}
+$("#addIgAccountBtn").addEventListener("click", () => startInstagramConnect());
+function updateAutomationIgSelector() {
+  const field = $("#automationIgAccountField");
+  const select = $("#automationIgAccount");
+  if (currentIgAccounts.length <= 1) {
+    field.classList.add("hidden");
+    select.innerHTML = currentIgAccounts[0]
+      ? '<option value="' + currentIgAccounts[0].id + '">' + currentIgAccounts[0].id + "</option>"
+      : "";
+    return;
+  }
+  field.classList.remove("hidden");
+  select.innerHTML = currentIgAccounts.map((acc) =>
+    '<option value="' + acc.id + '">' + (acc.instagram_username ? "@" + escapeHtml(acc.instagram_username) : "Conta " + acc.id.slice(0, 8)) + "</option>"
+  ).join("");
+}
 async function loadIgConfig() {
   const loading = $("#igLoadingStatus");
-  const connectedBox = $("#igConnectedBox");
-  const disconnectedBox = $("#igDisconnectedBox");
   loading.classList.remove("hidden");
-  connectedBox.classList.add("hidden");
-  disconnectedBox.classList.add("hidden");
+  $("#igAccountsList").classList.add("hidden");
+  $("#igStatusFooter").classList.add("hidden");
   try {
     const { data, error } = await supabase
       .from("instagram_config")
-      .select("instagram_business_account_id, instagram_username")
+      .select("id, instagram_business_account_id, instagram_username")
       .eq("user_id", currentUser.id)
-      .maybeSingle();
+      .order("created_at", { ascending: true });
     if (error) throw error;
-    if (data) {
-      $("#igConnectedUsername").textContent = data.instagram_username ? "(@" + data.instagram_username + ")" : "";
-      connectedBox.classList.remove("hidden");
-    } else {
-      disconnectedBox.classList.remove("hidden");
-    }
+    currentIgAccounts = data || [];
+    renderIgAccounts();
   } catch (error) {
     console.error(error.message);
-    disconnectedBox.classList.remove("hidden");
+    currentIgAccounts = [];
+    renderIgAccounts();
   } finally {
     loading.classList.add("hidden");
   }
@@ -312,8 +378,17 @@ $("#saveAutomationBtn").addEventListener("click", async () => {
   const mediaIdRaw = mediaIdInput.value.trim();
   const palavraChave = palavraChaveInput.value.trim();
   const produtoUrl = produtoUrlInput.value.trim();
+  const igAccountId = $("#automationIgAccount").value || null;
   if (!mediaIdRaw || !palavraChave || !produtoUrl) {
     showBanner("statusBanner", "Todos os campos são obrigatórios.", "error");
+    return;
+  }
+  if (currentIgAccounts.length === 0) {
+    showBanner("statusBanner", "Conecte uma conta do Instagram antes de criar uma automação.", "error");
+    return;
+  }
+  if (currentIgAccounts.length > 1 && !igAccountId) {
+    showBanner("statusBanner", "Selecione a conta do Instagram desta automação.", "error");
     return;
   }
   const shortcode = extractShortcode(mediaIdRaw);
@@ -322,6 +397,7 @@ $("#saveAutomationBtn").addEventListener("click", async () => {
       instagram_media_id: shortcode,
       palavra_chave: palavraChave,
       produto_url: produtoUrl,
+      instagram_config_id: igAccountId,
       ativo: true,
     });
     if (error) throw error;
@@ -372,7 +448,7 @@ function updateAdminKpis(rows) {
 function renderUsers(rows) {
   const tbody = $("#usersTableBody");
   if (!rows || rows.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum usuário encontrado.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nenhum usuário encontrado.</td></tr>';
     return;
   }
   tbody.innerHTML = rows.map((u) => {
@@ -408,6 +484,7 @@ function renderUsers(rows) {
       "<td>" + paymentBadge + "</td>" +
       "<td>" + escapeHtml(dueDateStr) + "</td>" +
       "<td>" + escapeHtml(planValueStr) + "</td>" +
+      "<td>" + (u.ig_account_limit || 1) + "</td>" +
       '<td class="table-actions">' +
       '<button class="btn btn-outline btn-sm user-toggle-btn" ' + disableSelfToggle +
       ' data-active="' + u.is_active + '">' +
@@ -499,6 +576,12 @@ async function openEditPaymentModal(event) {
           <label for="editPaymentValue">Valor do plano (R$)</label>
           <input type="number" id="editPaymentValue" step="0.01" min="0" placeholder="0,00" />
         </div>
+        <div class="field">
+          <label for="editIgLimit">Limite de contas do Instagram</label>
+          <input type="number" id="editIgLimit" step="1" min="1" placeholder="1" />
+          <p class="field-hint">1 conta = R$49,90 · até 3 contas = R$79,90 · cada conta extra = +R$19,90</p>
+        </div>
+        <button type="button" class="btn btn-outline btn-sm" id="suggestPlanValueBtn">Sugerir valor do plano com base no limite</button>
       </div>
       <div class="modal-footer">
         <button class="btn btn-outline" id="cancelEditPayment">Cancelar</button>
@@ -511,13 +594,14 @@ async function openEditPaymentModal(event) {
   try {
     const { data, error } = await supabase
       .from("profiles")
-      .select("payment_status, payment_due_date, monthly_plan_value")
+      .select("payment_status, payment_due_date, monthly_plan_value, ig_account_limit")
       .eq("id", userId)
       .single();
     if (error) throw error;
     $("#editPaymentStatus").value = data.payment_status || "em_dia";
     $("#editPaymentDue").value = data.payment_due_date || "";
     $("#editPaymentValue").value = data.monthly_plan_value || "";
+    $("#editIgLimit").value = data.ig_account_limit || 1;
   } catch (err) {
     showBanner("statusBanner", "Erro ao carregar dados de cobrança: " + err.message, "error");
     closeModal();
@@ -525,12 +609,18 @@ async function openEditPaymentModal(event) {
   }
   $("#closeEditPaymentModal").addEventListener("click", closeModal);
   $("#cancelEditPayment").addEventListener("click", closeModal);
+  $("#suggestPlanValueBtn").addEventListener("click", () => {
+    const limit = parseInt($("#editIgLimit").value, 10) || 1;
+    $("#editPaymentValue").value = suggestPlanValue(limit).toFixed(2);
+  });
   $("#saveEditPayment").addEventListener("click", async () => {
     const status = $("#editPaymentStatus").value;
     const dueRaw = $("#editPaymentDue").value;
     const valueRaw = $("#editPaymentValue").value;
+    const igLimitRaw = $("#editIgLimit").value;
     const dueDate = dueRaw ? dueRaw : null;
     const monthlyPlanValue = valueRaw ? parseFloat(valueRaw) : null;
+    const igAccountLimit = igLimitRaw ? Math.max(1, parseInt(igLimitRaw, 10)) : 1;
     try {
       const { error } = await supabase
         .from("profiles")
@@ -538,6 +628,7 @@ async function openEditPaymentModal(event) {
           payment_status: status,
           payment_due_date: dueDate,
           monthly_plan_value: monthlyPlanValue,
+          ig_account_limit: igAccountLimit,
         })
         .eq("id", userId);
       if (error) throw error;
