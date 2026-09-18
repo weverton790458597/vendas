@@ -235,6 +235,29 @@
           <button id="addIgAccountBtn" class="btn btn-primary btn-sm">Conectar Instagram</button>
         </div>
       </section>
+      <section class="panel panel-plain ig-tester-onboarding" id="igTesterOnboarding">
+        <div id="igTesterFormStep" class="ig-tester-step">
+          <form id="igTesterForm">
+            <label class="field">
+              <span>Seu @ do Instagram</span>
+              <input type="text" id="igTesterUsernameInput" placeholder="@sua.loja" autocomplete="off" />
+            </label>
+            <div id="igTesterFormError" class="banner error hidden"></div>
+            <button type="submit" id="igTesterSubmitBtn" class="btn btn-primary btn-full">Conectar Instagram</button>
+          </form>
+        </div>
+        <div id="igTesterLoadingStep" class="ig-tester-step hidden">
+          <span class="ig-tester-spinner" aria-hidden="true"></span>
+          <p>Aguarde alguns instantes enquanto fazemos todas as configurações da sua conta…</p>
+        </div>
+        <div id="igTesterApprovedStep" class="ig-tester-step hidden">
+          <p>
+            Tudo pronto por aqui! Agora, acesse o seu Instagram no celular, vá até as
+            configurações e aceite o convite de parceria/testador para autorizar
+            nossa plataforma a enviar mensagens no seu perfil.
+          </p>
+        </div>
+      </section>
     </div>
     <div id="tab-admin" class="view hidden">
       <header class="view-header">
@@ -296,10 +319,19 @@
           </table>
         </div>
       </section>
+      <section class="panel panel-plain">
+        <div class="panel-heading-row">
+          <h2>Solicitações de conexão do Instagram</h2>
+          <button id="igTesterAdminRefreshBtn" class="btn btn-outline btn-sm">Atualizar</button>
+        </div>
+        <div id="igTesterAdminList"></div>
+      </section>
     </div>
   </main>
 </div>
 <script type="module" src="app.js"></script>
+<script type="module" src="instagram-tester-onboarding.js"></script>
+<script type="module" src="instagram-tester-admin.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script src="motion-fx.js"></script>
 </body>
