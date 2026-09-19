@@ -1169,6 +1169,15 @@ tr:hover td {
   font-weight: 700;
   text-decoration: underline;
 }
+.ig-tester-row-note p {
+  margin-bottom: 0.4rem;
+}
+.ig-tester-row-note ol {
+  margin: 0.25rem 0 0 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
 
 /* =========================================================================
    MOBILE — estilo de app nativo
