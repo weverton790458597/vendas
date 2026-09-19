@@ -1,0 +1,58 @@
+{
+  "name": "Achei & Postei — Automação de Direct",
+  "short_name": "Achei & Postei",
+  "description": "Automação de comentários e Direct do Instagram: cada palavra-chave certa vira uma venda em potencial, sem toque manual.",
+  "id": "/",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "background_color": "#fafafa",
+  "theme_color": "#d62976",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "categories": ["business", "productivity", "social"],
+  "icons": [
+    {
+      "src": "icons/favicon-64.png",
+      "sizes": "64x64",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nova automação",
+      "short_name": "Nova automação",
+      "description": "Cadastrar uma nova palavra-chave e link de produto",
+      "url": "/?tab=dashboard&action=new",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Contas do Instagram",
+      "short_name": "Contas IG",
+      "description": "Ver contas conectadas e solicitações",
+      "url": "/?tab=accounts",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
