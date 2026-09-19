@@ -502,50 +502,126 @@ a { color: inherit; text-decoration: none; }
 .panel-heading-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
 .panel-heading-row h2 { margin-bottom: 0; }
 
+/* ===================== Topbar (chip da conta) ===================== */
+.topbar { display: flex; justify-content: flex-end; margin-bottom: 1rem; }
+.topbar-account {
+  display: inline-flex; align-items: center; gap: 0.55rem;
+  padding: 0.4rem 0.9rem 0.4rem 0.4rem;
+  border-radius: 999px; background: var(--surface); border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm); font-size: 0.84rem; font-weight: 600;
+}
+.topbar-account-avatar {
+  width: 28px; height: 28px; border-radius: 50%; background: var(--ig-gradient);
+  color: #fff; font-weight: 700; font-size: 0.78rem;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+
+/* ===================== Eyebrow (rótulo de seção) ===================== */
+.eyebrow {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--ig-gradient);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  margin-bottom: 0.35rem;
+}
+
 /* two-column dashboard layout */
-.dash-grid { display: grid; grid-template-columns: 1.7fr 1fr; gap: 1.4rem; align-items: start; }
+.dash-grid { display: grid; grid-template-columns: 1.7fr 1fr; gap: 1.4rem; align-items: start; margin-bottom: 1.4rem; }
 @media (max-width: 1080px) { .dash-grid { grid-template-columns: 1fr; } }
 
-/* ===================== Lista de automações ===================== */
-.automation-grid { display: flex; flex-direction: column; gap: 0.7rem; }
+/* ===================== Lista de campanhas/automações ===================== */
+.automation-grid { display: flex; flex-direction: column; gap: 0.6rem; }
 .automation-card {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 1rem 1.1rem;
+  padding: 0.95rem 1.1rem;
   background: var(--surface-2);
-  position: relative;
-  padding-left: 1.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem 0.9rem;
+  flex-wrap: wrap;
 }
-.automation-card::before {
+/* linha 1: título (com pontinho de status) + badge/ações à direita */
+.automation-card-keyword {
+  order: 1;
+  margin: 0;
+  display: flex; align-items: center; gap: 0.55rem;
+}
+.automation-card-keyword::before {
   content: "";
-  position: absolute; left: 0; top: 0.9rem; bottom: 0.9rem; width: 4px; border-radius: 4px;
+  width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
   background: var(--ig-gradient);
 }
-.automation-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.8rem; margin-bottom: 0.55rem; }
-.automation-card-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
-.automation-card-keyword { margin-bottom: 0.4rem; }
-.keyword-chip {
-  display: inline-block; font-weight: 700; font-size: 0.9rem;
-  background: var(--ig-gradient); -webkit-background-clip: text; background-clip: text; color: transparent;
+.automation-card:has(.badge-ativo) .automation-card-keyword::before { background: var(--teal); box-shadow: 0 0 0 4px var(--teal-light); }
+.automation-card:has(.badge-inativo) .automation-card-keyword::before { background: var(--text-faint); }
+.keyword-chip { display: inline-block; font-weight: 700; font-size: 0.95rem; color: var(--text-main); }
+.automation-card-top {
+  order: 2;
+  display: flex; align-items: center; gap: 0.5rem;
+  margin-left: auto;
 }
-.automation-card-post { font-size: 0.84rem; color: var(--text-muted); margin-bottom: 0.3rem; }
-.automation-card-link { font-size: 0.82rem; color: var(--pink); font-weight: 600; word-break: break-all; }
+.automation-card-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
+/* linha 2: post + link + data, ocupando a largura toda, abaixo do título */
+.automation-card-post { order: 3; flex-basis: 100%; font-size: 0.82rem; color: var(--text-muted); }
+.automation-card-link { order: 4; flex-basis: 100%; font-size: 0.8rem; color: var(--pink); font-weight: 600; word-break: break-all; }
 .automation-card-link:hover { text-decoration: underline; }
-.automation-card-footer { font-size: 0.74rem; color: var(--text-faint); margin-top: 0.6rem; }
+.automation-card-footer { order: 5; flex-basis: 100%; font-size: 0.72rem; color: var(--text-faint); }
+@media (max-width: 560px) {
+  .automation-card-top { margin-left: 0; order: 3; flex-basis: 100%; justify-content: flex-start; }
+  .automation-card-post { order: 4; }
+  .automation-card-link { order: 5; }
+  .automation-card-footer { order: 6; }
+}
 
-/* ===================== Explicativo "como funciona" ===================== */
-.howto-card { display: flex; flex-direction: column; gap: 0.9rem; }
-.howto-step { display: flex; gap: 0.8rem; align-items: flex-start; }
-.howto-step-icon {
-  width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0;
+/* ===================== Coluna direita: guia + ações rápidas ===================== */
+.feed-card { display: flex; flex-direction: column; }
+.feed-card h2 { margin-bottom: 1rem; }
+.feed-item { display: flex; gap: 0.7rem; align-items: flex-start; margin-bottom: 1rem; }
+.feed-item:last-child { margin-bottom: 0; }
+.feed-item div { display: flex; flex-direction: column; gap: 0.1rem; }
+.feed-item strong { font-size: 0.88rem; }
+.feed-item span { font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; }
+.feed-dot { width: 9px; height: 9px; border-radius: 50%; margin-top: 0.35rem; flex-shrink: 0; }
+.feed-dot-pink { background: var(--pink); box-shadow: 0 0 0 4px var(--pink-light); }
+.feed-dot-gold { background: var(--gold); box-shadow: 0 0 0 4px var(--gold-light); }
+.feed-dot-teal { background: var(--teal); box-shadow: 0 0 0 4px var(--teal-light); }
+
+.quick-actions { gap: 0.7rem; }
+.quick-actions h2 { font-size: 1rem; margin-bottom: 0.2rem; }
+.quick-actions-tip { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; margin-top: 0.2rem; }
+.nav-item-shortcut {
+  justify-content: center;
+  font-weight: 600;
+}
+.nav-item-shortcut.active { background: var(--surface-2); color: var(--text-main); }
+.nav-item-shortcut.active::before { display: none; }
+
+/* ===================== Faixa "do comentário ao Direct" ===================== */
+.flow-panel { }
+.flow-panel h2 { margin-bottom: 1.1rem; }
+.flow-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+@media (max-width: 780px) { .flow-row { grid-template-columns: 1fr; } }
+.flow-card {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  padding: 1.1rem;
+}
+.flow-card-icon {
+  width: 38px; height: 38px; border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
   background: var(--ig-gradient-soft); color: var(--ig-3);
+  margin-bottom: 0.8rem;
 }
-.howto-step-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 0.15rem; }
-.howto-step-text { font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; }
-
-.tip-card { display: flex; flex-direction: column; gap: 0.6rem; }
-.tip-card p { font-size: 0.86rem; color: var(--text-muted); line-height: 1.55; }
+.flow-card-step {
+  display: block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--pink); margin-bottom: 0.4rem;
+}
+.flow-card-title { font-weight: 700; font-size: 0.94rem; margin-bottom: 0.25rem; }
+.flow-card-sub { font-size: 0.8rem; color: var(--text-muted); }
 
 /* ===================== Contas do Instagram ===================== */
 .ig-tester-onboarding form { display: flex; flex-direction: column; gap: 0.9rem; margin-bottom: 1.2rem; }
