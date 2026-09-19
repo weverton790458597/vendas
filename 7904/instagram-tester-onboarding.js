@@ -74,7 +74,12 @@ function statusNote(status) {
       '<li>Em "Seu app e suas mídias", toque em <strong>Permissões do site do app</strong>.</li>' +
       "<li>Toque em <strong>Apps e sites</strong>.</li>" +
       '<li>Vá na aba <strong>"Convites do testador"</strong> e toque em <strong>Aceitar</strong>.</li>' +
+      "<li>Volte aqui nesta página e clique no botão abaixo (ou em " +
+      '<strong>"Conectar Instagram"</strong>, mais acima) para finalizar.</li>' +
       "</ol>" +
+      '<button type="button" class="btn btn-primary btn-sm" data-connect-now>' +
+      "Já aceitei — conectar agora" +
+      "</button>" +
       "</div>"
     );
   }
@@ -212,6 +217,28 @@ async function bootstrap() {
   await loadRequests(currentUserId);
   listenForChanges(currentUserId);
 }
+
+function goConnectNow() {
+  const realBtn = document.getElementById("addIgAccountBtn");
+  if (!realBtn) return; // seção de contas não está nesta página — nada a fazer
+
+  realBtn.scrollIntoView({ behavior: "smooth", block: "center" });
+  if (realBtn.disabled) {
+    // Provavelmente limite de contas do plano atingido — o próprio botão
+    // já tem o motivo no atributo title, então só deixamos a tela rolar
+    // até ele em vez de fingir que o clique funcionou.
+    realBtn.classList.add("ig-tester-pulse");
+    setTimeout(() => realBtn.classList.remove("ig-tester-pulse"), 1600);
+    return;
+  }
+  setTimeout(() => realBtn.click(), 350);
+}
+
+document.addEventListener("click", (event) => {
+  if (event.target.closest("[data-connect-now]")) {
+    goConnectNow();
+  }
+});
 
 document.addEventListener("DOMContentLoaded", bootstrap);
 
