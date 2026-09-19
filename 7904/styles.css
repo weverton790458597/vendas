@@ -1193,6 +1193,42 @@ tr:hover td {
 .ig-tester-pulse {
   animation: igTesterPulse 0.4s ease-in-out 3;
 }
+
+/* === "Contas conectadas": esconder o botão antigo de adicionar manualmente ===
+   Fica só oculto (não removido do DOM) porque o app.js escreve textContent/
+   disabled/title nele a cada renderIgAccounts() — removê-lo do HTML quebraria
+   essa função com um erro de "propriedade de null". */
+#addIgAccountBtn {
+  display: none !important;
+}
+
+/* === "Contas conectadas" como grade de cards pequenos === */
+.ig-accounts-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.85rem;
+}
+.ig-account-row {
+  background-color: var(--surface-2);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.1rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+  border-bottom: 1px solid var(--border-color);
+}
+.ig-account-row .ig-status-text {
+  flex: none;
+  width: 100%;
+}
+.ig-account-row .ig-status-actions {
+  width: 100%;
+  gap: 0.5rem;
+}
+.ig-account-row .ig-status-actions .btn {
+  flex: 1;
+}
 /* =========================================================================
    MOBILE — estilo de app nativo
    No desktop tudo continua exatamente como antes. Abaixo de 768px o layout
