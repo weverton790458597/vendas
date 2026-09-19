@@ -22,6 +22,8 @@
   --shadow-lg: 0 28px 54px -16px rgba(23, 22, 31, 0.22);
   --font-display: 'Space Grotesk', sans-serif;
   --font-body: 'Plus Jakarta Sans', sans-serif;
+  --bottom-nav-h: 64px;
+  --top-bar-h: 56px;
 }
 [data-theme="dark"] {
   --bg: #121121;
@@ -42,6 +44,9 @@
   margin: 0;
   padding: 0;
 }
+html {
+  -webkit-text-size-adjust: 100%;
+}
 body {
   font-family: var(--font-body);
   background-color: var(--bg);
@@ -49,6 +54,8 @@ body {
   min-height: 100vh;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
 }
 input, button, textarea, select {
   font-family: inherit;
@@ -900,6 +907,7 @@ button {
   overflow-x: auto;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-color);
+  -webkit-overflow-scrolling: touch;
 }
 table {
   width: 100%;
@@ -1160,4 +1168,259 @@ tr:hover td {
   color: var(--teal-dark);
   font-weight: 700;
   text-decoration: underline;
+}
+
+/* =========================================================================
+   MOBILE — estilo de app nativo
+   No desktop tudo continua exatamente como antes. Abaixo de 768px o layout
+   vira "app": barra superior compacta, conteúdo rolável e menu inferior
+   fixo (bottom tab bar) no lugar da sidebar lateral.
+   ========================================================================= */
+@media (max-width: 768px) {
+  .app-shell {
+    grid-template-rows: 1fr auto;
+  }
+
+  /* Sidebar vira topo (marca + usuário) + bottom tab bar (navegação) */
+  .sidebar {
+    position: static;
+    height: auto;
+    padding: 0;
+    border-right: none;
+    display: contents;
+  }
+
+  .sidebar-brand {
+    order: 1;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    margin: 0;
+    padding: 0 1rem;
+    height: var(--top-bar-h);
+    background-color: var(--surface);
+    border-bottom: 1px solid var(--border-color);
+    justify-content: space-between;
+  }
+
+  .sidebar-brand::after {
+    content: "";
+  }
+
+  .sidebar-logo-img {
+    max-height: 22px;
+  }
+
+  .sidebar-logo-fallback {
+    font-size: 1rem;
+  }
+
+  /* Usuário + tema + sair: linha compacta logo abaixo da barra superior */
+  .sidebar-footer {
+    order: 2;
+    flex-direction: row;
+    align-items: center;
+    padding: 0.6rem 1rem;
+    border-top: none;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--surface);
+    gap: 0.5rem;
+  }
+
+  .sidebar-user {
+    flex: 1;
+    padding: 0;
+  }
+
+  .theme-toggle-inline {
+    width: auto;
+    padding: 0.55rem;
+    border-radius: 50%;
+    justify-content: center;
+  }
+  .theme-toggle-inline span:last-child {
+    display: none;
+  }
+
+  .sidebar-footer .btn-full {
+    width: auto;
+  }
+  #logoutBtn {
+    padding: 0.55rem 0.85rem;
+  }
+
+  /* Conteúdo principal rola entre a barra superior e o menu inferior */
+  .main {
+    order: 3;
+    padding: 1.25rem 1rem calc(var(--bottom-nav-h) + 1.5rem);
+  }
+
+  /* Menu de navegação vira bottom tab bar fixa, estilo app nativo */
+  .sidebar-nav {
+    order: 4;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    flex-direction: row;
+    gap: 0;
+    height: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background-color: var(--surface);
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -8px 20px -10px rgba(23, 22, 31, 0.12);
+  }
+
+  .nav-item {
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.2rem;
+    padding: 0.4rem 0.25rem;
+    border-radius: 0;
+    font-size: 0.68rem;
+    text-align: center;
+  }
+
+  .nav-item svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .nav-item.active {
+    background: none;
+    color: var(--gold-dark);
+  }
+
+  .nav-item span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  /* Painéis e KPIs mais compactos em telas pequenas */
+  .view-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .kpi-row {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.65rem;
+  }
+
+  .kpi-card {
+    padding: 1rem 1.1rem;
+    border-radius: var(--radius-sm);
+  }
+
+  .kpi-value {
+    font-size: 1.5rem;
+  }
+
+  .panel {
+    padding: 1.25rem 1.15rem;
+    border-radius: var(--radius-md);
+  }
+
+  .panel-heading-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .automation-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ig-status {
+    padding: 1.15rem 1.1rem;
+  }
+
+  .ig-status-row {
+    flex-wrap: wrap;
+  }
+
+  .ig-status-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ig-status-footer .btn {
+    width: 100%;
+  }
+
+  /* Alvos de toque maiores em elementos interativos */
+  .btn,
+  .icon-btn,
+  .nav-item,
+  input,
+  select {
+    min-height: 44px;
+  }
+  .icon-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  /* Tela de login/senha ocupa a tela toda, sem o painel de marca ilustrado */
+  .auth-brand {
+    display: none;
+  }
+  .auth-panel {
+    padding: 1.5rem;
+    min-height: 100vh;
+  }
+  .auth-form-card {
+    padding: 2rem 1.5rem;
+    box-shadow: none;
+    border: none;
+    max-width: 100%;
+  }
+  .theme-toggle-floating {
+    top: calc(1rem + env(safe-area-inset-top, 0px));
+    right: 1rem;
+  }
+
+  /* Modais em tela cheia no formato de "sheet" nativo */
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .modal-box,
+  .modal-box-lg {
+    max-width: 100%;
+    width: 100%;
+    max-height: 92vh;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    animation: modal-in-sheet 0.22s ease-out;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @keyframes modal-in-sheet {
+    from { opacity: 0; transform: translateY(100%); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .banner-floating {
+    top: calc(1rem + env(safe-area-inset-top, 0px));
+    right: 1rem;
+    left: 1rem;
+    max-width: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .field-row {
+    grid-template-columns: 1fr;
+  }
+  .kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .brand-headline {
+    font-size: 2rem;
+  }
 }
