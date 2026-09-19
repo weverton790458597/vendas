@@ -1179,6 +1179,20 @@ tr:hover td {
   gap: 0.3rem;
 }
 
+/* === Botão de atalho "Já aceitei — conectar agora" === */
+.ig-tester-row-note button[data-connect-now] {
+  margin-top: 0.6rem;
+}
+
+/* Destaque temporário no botão real de conectar, quando o atalho não
+   pode clicar sozinho (ex: limite de contas do plano atingido) */
+@keyframes igTesterPulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--gold-light); }
+  50% { box-shadow: 0 0 0 8px var(--gold-light); }
+}
+.ig-tester-pulse {
+  animation: igTesterPulse 0.4s ease-in-out 3;
+}
 /* =========================================================================
    MOBILE — estilo de app nativo
    No desktop tudo continua exatamente como antes. Abaixo de 768px o layout
