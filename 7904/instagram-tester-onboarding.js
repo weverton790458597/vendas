@@ -65,8 +65,13 @@ function statusBadge(status) {
 function statusNote(status) {
   if (status === "aprovado") {
     return (
-      '<p class="ig-tester-row-note">Acesse o Instagram no celular, vá até as configurações ' +
-      "e aceite o convite de parceria/testador para autorizar esta conta.</p>"
+      '<p class="ig-tester-row-note">' +
+      "Falta um passo: abra o <strong>navegador</strong> do seu celular (Chrome ou Safari — " +
+      '<strong>não use o app do Instagram</strong>, ele não mostra essa opção) e acesse ' +
+      '<a href="https://www.instagram.com/accounts/manage_access/" target="_blank" rel="noopener">' +
+      "instagram.com/accounts/manage_access</a>. Vá na aba <strong>\"Convites do testador\"</strong> " +
+      "e toque em <strong>Aceitar</strong>." +
+      "</p>"
     );
   }
   if (status === "rejeitado") {
