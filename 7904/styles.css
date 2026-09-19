@@ -1202,10 +1202,10 @@ tr:hover td {
   display: none !important;
 }
 
-/* === "Contas conectadas" como grade de cards pequenos === */
+/* === "Contas conectadas" como cards pequenos, lado a lado === */
 .ig-accounts-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.85rem;
 }
 .ig-account-row {
@@ -1213,10 +1213,12 @@ tr:hover td {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 1rem 1.1rem;
+  flex: 1 1 240px;
+  max-width: 300px;
+  display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 0.6rem;
-  border-bottom: 1px solid var(--border-color);
 }
 .ig-account-row .ig-status-text {
   flex: none;
