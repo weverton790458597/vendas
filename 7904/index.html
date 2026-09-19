@@ -225,17 +225,6 @@
         <h1>Contas do Instagram</h1>
         <p>Conecte as contas profissionais que vão responder comentários e enviar Direct.</p>
       </header>
-      <section class="ig-status" id="igStatusSection">
-        <div id="igLoadingStatus" class="ig-status-row">
-          <span class="ig-dot ig-dot-pending"></span>
-          <div class="ig-status-text"><strong>Verificando conexão…</strong></div>
-        </div>
-        <div id="igAccountsList" class="ig-accounts-list hidden"></div>
-        <div id="igStatusFooter" class="ig-status-footer hidden">
-          <span id="igLimitText" class="ig-limit-text"></span>
-          <button id="addIgAccountBtn" class="btn btn-primary btn-sm">Conectar Instagram</button>
-        </div>
-      </section>
       <section class="panel panel-plain ig-tester-onboarding" id="igTesterOnboarding">
         <h2>Conectar Instagram</h2>
         <form id="igTesterForm">
@@ -247,6 +236,18 @@
           <button type="submit" id="igTesterSubmitBtn" class="btn btn-primary btn-full">Conectar Instagram</button>
         </form>
         <div id="igTesterRequestsList" class="ig-tester-list"></div>
+      </section>
+      <section class="ig-status" id="igStatusSection">
+        <h2>Contas conectadas</h2>
+        <div id="igLoadingStatus" class="ig-status-row">
+          <span class="ig-dot ig-dot-pending"></span>
+          <div class="ig-status-text"><strong>Verificando conexão…</strong></div>
+        </div>
+        <div id="igAccountsList" class="ig-accounts-list hidden"></div>
+        <div id="igStatusFooter" class="ig-status-footer hidden">
+          <span id="igLimitText" class="ig-limit-text"></span>
+          <button id="addIgAccountBtn" class="btn btn-outline btn-sm">+ Adicionar conta manualmente</button>
+        </div>
       </section>
     </div>
     <div id="tab-admin" class="view hidden">
