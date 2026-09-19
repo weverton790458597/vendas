@@ -21,6 +21,12 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 });
 const TABLE = "instagram_tester_requests";
 
+// Painel de configuração do app no Meta Developers — pra abrir direto na hora
+// de aprovar, sem precisar ter o link salvo em outro lugar/dispositivo.
+const META_APP_URL =
+  "https://developers.facebook.com/apps/1610537103353620/use_cases/customize/" +
+  "?use_case_enum=INSTAGRAM_BUSINESS&selected_tab=API-Setup&product_route=instagram-business&business_id=26726695600333766";
+
 function $(sel) {
   return document.querySelector(sel);
 }
@@ -58,25 +64,53 @@ async function loadPendingRequests() {
 
   list.innerHTML = data.map((row) => {
     const created = new Date(row.created_at).toLocaleString("pt-BR");
+    const username = escapeHtml(row.instagram_username);
     return (
       '<div class="ig-tester-admin-row" data-id="' + row.id + '">' +
       '<div class="ig-tester-admin-info">' +
-      "<strong>@" + escapeHtml(row.instagram_username) + "</strong>" +
+      "<strong>@" + username + "</strong>" +
       '<span class="ig-tester-admin-date">Solicitado em ' + created + "</span>" +
       "</div>" +
       '<div class="ig-tester-admin-actions">' +
-      '<button class="btn btn-primary btn-sm ig-tester-approve-btn" data-id="' + row.id + '">Enviar / Aprovar</button>' +
+      '<button class="btn btn-outline btn-sm ig-tester-copy-btn" data-username="' + username + '">Copiar @</button>' +
+      '<a class="btn btn-outline btn-sm" href="' + META_APP_URL + '" target="_blank" rel="noopener">Abrir Meta</a>' +
+      '<button class="btn btn-primary btn-sm ig-tester-approve-btn" data-id="' + row.id + '" data-username="' + username + '">Enviar / Aprovar</button>' +
       '<button class="btn btn-outline btn-sm ig-tester-reject-btn" data-id="' + row.id + '">Rejeitar</button>' +
       "</div></div>"
     );
   }).join("");
 
+  list.querySelectorAll(".ig-tester-copy-btn").forEach((btn) =>
+    btn.addEventListener("click", () => copyUsername(btn))
+  );
   list.querySelectorAll(".ig-tester-approve-btn").forEach((btn) =>
-    btn.addEventListener("click", () => updateStatus(btn.getAttribute("data-id"), "aprovado", btn))
+    btn.addEventListener("click", (event) => {
+      // Abre a Meta e copia o @ ANTES de qualquer await — navegadores só
+      // deixam window.open/clipboard funcionar sem popup-block dentro do
+      // próprio clique, então isso tem que rodar de forma síncrona aqui.
+      window.open(META_APP_URL, "_blank", "noopener");
+      copyUsername(btn, { silent: true });
+      updateStatus(btn.getAttribute("data-id"), "aprovado", btn);
+    })
   );
   list.querySelectorAll(".ig-tester-reject-btn").forEach((btn) =>
     btn.addEventListener("click", () => updateStatus(btn.getAttribute("data-id"), "rejeitado", btn))
   );
+}
+
+async function copyUsername(btn, opts) {
+  const username = btn.getAttribute("data-username");
+  if (!username) return;
+  try {
+    await navigator.clipboard.writeText(username);
+    if (!opts || !opts.silent) {
+      const original = btn.textContent;
+      btn.textContent = "Copiado!";
+      setTimeout(() => (btn.textContent = original), 1400);
+    }
+  } catch (_err) {
+    // Sem permissão de clipboard (raro) — sem problema, só não copia.
+  }
 }
 
 async function updateStatus(requestId, status, triggerBtn) {
