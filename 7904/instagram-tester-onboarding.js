@@ -24,6 +24,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 });
 
 const TABLE = "instagram_tester_requests";
+const CONNECTED_TABLE = "instagram_config";
 
 let realtimeChannel = null;
 let currentUserId = null;
@@ -113,19 +114,43 @@ function renderList(requests) {
     .join("");
 }
 
-async function loadRequests(userId) {
+async function fetchConnectedUsernames(userId) {
   const { data, error } = await supabase
-    .from(TABLE)
-    .select("id, instagram_username, status, created_at")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
+    .from(CONNECTED_TABLE)
+    .select("instagram_username")
+    .eq("user_id", userId);
+  if (error || !data) return new Set();
+  return new Set(
+    data
+      .map((row) => normalizeUsername(row.instagram_username))
+      .filter(Boolean)
+  );
+}
 
+async function loadRequests(userId) {
+  const [requestsResult, connectedUsernames] = await Promise.all([
+    supabase
+      .from(TABLE)
+      .select("id, instagram_username, status, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false }),
+    fetchConnectedUsernames(userId),
+  ]);
+
+  const { data, error } = requestsResult;
   if (error) {
     const list = $("#igTesterRequestsList");
     if (list) list.innerHTML = '<div class="empty-state">Erro ao carregar suas contas: ' + escapeHtml(error.message) + "</div>";
     return;
   }
-  renderList(data || []);
+
+  // Não muda o status no banco — só esconde da lista o @ que já foi
+  // conectado de verdade (via OAuth), porque pra ele não sobrou mais
+  // nada pendente de fazer.
+  const pending = (data || []).filter(
+    (row) => !connectedUsernames.has(normalizeUsername(row.instagram_username))
+  );
+  renderList(pending);
 }
 
 function listenForChanges(userId) {
@@ -138,6 +163,16 @@ function listenForChanges(userId) {
         event: "*",
         schema: "public",
         table: TABLE,
+        filter: "user_id=eq." + userId,
+      },
+      () => loadRequests(userId)
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: CONNECTED_TABLE,
         filter: "user_id=eq." + userId,
       },
       () => loadRequests(userId)
