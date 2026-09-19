@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<meta name="theme-color" content="#0b0a10" />
+<meta name="theme-color" content="#ffffff" />
 <title>Achei e Postei — Automação de Direct</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -140,9 +140,6 @@
     <div class="sidebar-brand">
       <img src="logo.png" alt="Achei e Postei" class="sidebar-logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';" />
       <span class="sidebar-logo-fallback">Achei &amp; Postei</span>
-      <div class="sidebar-brand-text">
-        <span class="sidebar-brand-sub">CREATOR STUDIO</span>
-      </div>
     </div>
     <nav class="sidebar-nav" id="tabsNav">
       <button class="nav-item active" data-tab="dashboard">
@@ -159,6 +156,10 @@
       </button>
     </nav>
     <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <span class="sidebar-user-avatar" id="userAvatar"></span>
+        <span id="userEmailLabel"></span>
+      </div>
       <button type="button" class="theme-toggle theme-toggle-inline" data-theme-toggle aria-label="Alternar modo escuro">
         <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.5v2.4M12 19.1v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
         <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.7 6.7 0 0 0 10.5 10.5z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
@@ -168,31 +169,11 @@
     </div>
   </aside>
   <main class="main">
-    <div class="mobile-topbar">
-      <div class="mobile-topbar-brand">
-        <img src="logo.png" alt="Achei e Postei" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';" />
-        <span class="sidebar-logo-fallback">Achei &amp; Postei</span>
-      </div>
-      <button type="button" class="theme-toggle theme-toggle-floating" data-theme-toggle aria-label="Alternar modo escuro" style="position:static;">
-        <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.5v2.4M12 19.1v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-        <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.7 6.7 0 0 0 10.5 10.5z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
-      </button>
-    </div>
-    <div class="topbar desktop-only">
-      <span class="topbar-account">
-        <span class="topbar-account-avatar" id="userAvatar"></span>
-        <span id="userEmailLabel"></span>
-      </span>
-    </div>
     <div id="statusBanner" class="banner banner-floating"></div>
     <div id="tab-dashboard" class="view">
       <header class="view-header">
-        <div>
-          <span class="eyebrow">Visão geral</span>
-          <h1>Minhas automações</h1>
-          <p>Palavras-chave nos comentários viram links de produto no Direct, automaticamente.</p>
-        </div>
-        <a href="#novaAutomacaoPanel" class="btn btn-primary view-header-cta">+ Nova automação</a>
+        <h1>Minhas automações</h1>
+        <p>Palavras-chave nos comentários viram links de produto no Direct, automaticamente.</p>
       </header>
       <section class="kpi-row">
         <div class="kpi-card">
@@ -208,115 +189,41 @@
           <span class="kpi-label">Pausadas</span>
         </div>
       </section>
-      <div class="dash-grid">
-        <div class="dash-grid-main">
-          <section class="panel panel-plain">
-            <div class="panel-heading-row">
-              <div>
-                <span class="eyebrow">Em andamento</span>
-                <h2>Campanhas ativas</h2>
-              </div>
-              <input type="search" id="automationSearch" class="search-input" placeholder="Buscar por palavra-chave ou link" />
-            </div>
-            <div id="loadingAutomations" class="loading-row">Carregando automações…</div>
-            <div class="automation-grid" id="automationsTableBody"></div>
-          </section>
-          <section class="panel panel-accent" id="novaAutomacaoPanel">
-            <h2>Nova automação</h2>
-            <div class="field hidden" id="automationIgAccountField">
-              <label for="automationIgAccount">Conta do Instagram</label>
-              <select id="automationIgAccount"></select>
-            </div>
-            <div class="field">
-              <label for="instagramMediaId">Link ou ID do post / reels</label>
-              <input type="text" id="instagramMediaId" placeholder="Cole a URL do post ou o media_id numérico" />
-            </div>
-            <div class="field-row">
-              <div class="field">
-                <label for="palavraChave">Palavra-chave</label>
-                <input type="text" id="palavraChave" placeholder="Ex: QUERO" />
-              </div>
-              <div class="field">
-                <label for="produtoUrl">Link do produto</label>
-                <input type="url" id="produtoUrl" placeholder="https://www.acheiepostei.shop/produto/123" />
-              </div>
-            </div>
-            <button id="saveAutomationBtn" class="btn btn-primary">Salvar automação</button>
-          </section>
+      <section class="panel panel-accent">
+        <h2>Nova automação</h2>
+        <div class="field hidden" id="automationIgAccountField">
+          <label for="automationIgAccount">Conta do Instagram</label>
+          <select id="automationIgAccount"></select>
         </div>
-        <aside class="dash-grid-aside">
-          <section class="panel panel-plain feed-card">
-            <span class="eyebrow">Guia rápido</span>
-            <h2>Como funciona</h2>
-            <div class="feed-item">
-              <span class="feed-dot feed-dot-pink"></span>
-              <div>
-                <strong>Comentário</strong>
-                <span>Alguém comenta no seu post ou reels.</span>
-              </div>
-            </div>
-            <div class="feed-item">
-              <span class="feed-dot feed-dot-gold"></span>
-              <div>
-                <strong>Palavra-chave identificada</strong>
-                <span>A gente reconhece a palavra que você cadastrou.</span>
-              </div>
-            </div>
-            <div class="feed-item">
-              <span class="feed-dot feed-dot-teal"></span>
-              <div>
-                <strong>Direct enviado</strong>
-                <span>O link do produto chega sozinho, na hora.</span>
-              </div>
-            </div>
-          </section>
-          <section class="panel panel-accent quick-actions">
-            <span class="eyebrow">Ações rápidas</span>
-            <h2>Continue crescendo no automático.</h2>
-            <a href="#novaAutomacaoPanel" class="btn btn-primary btn-full">+ Criar automação</a>
-            <button type="button" class="btn btn-outline btn-full nav-item nav-item-shortcut" data-tab="accounts">Ver contas conectadas</button>
-            <p class="quick-actions-tip">Dica: contas conectadas em dia liberam mais automações rodando ao mesmo tempo.</p>
-          </section>
-        </aside>
-      </div>
-      <section class="panel panel-plain flow-panel">
-        <span class="eyebrow">Automação em tempo real</span>
-        <h2>Do comentário ao Direct</h2>
-        <div class="flow-row">
-          <div class="flow-card">
-            <span class="flow-card-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 20l1.1-5.4A8.5 8.5 0 1 1 21 11.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
-            </span>
-            <span class="flow-card-step">1 · Comentário</span>
-            <p class="flow-card-title">"Quero o catálogo de inverno"</p>
-            <span class="flow-card-sub">no post cadastrado</span>
+        <div class="field">
+          <label for="instagramMediaId">Link ou ID do post / reels</label>
+          <input type="text" id="instagramMediaId" placeholder="Cole a URL do post ou o media_id numérico" />
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="palavraChave">Palavra-chave</label>
+            <input type="text" id="palavraChave" placeholder="Ex: QUERO" />
           </div>
-          <div class="flow-card">
-            <span class="flow-card-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 12l16-8-6 16-3-6-7-2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
-            </span>
-            <span class="flow-card-step">2 · Palavra-chave encontrada</span>
-            <p class="flow-card-title">"quero" foi identificada</p>
-            <span class="flow-card-sub">automação correspondente localizada</span>
-          </div>
-          <div class="flow-card">
-            <span class="flow-card-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 20s-7-4.35-9.5-8.8C.8 7.7 2.4 4 6 4c2.1 0 3.6 1.2 4.5 2.6C11.4 5.2 12.9 4 15 4c3.6 0 5.2 3.7 3.5 7.2C19 15.65 12 20 12 20z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
-            </span>
-            <span class="flow-card-step">3 · Direct</span>
-            <p class="flow-card-title">Link do produto enviado</p>
-            <span class="flow-card-sub">automaticamente, sem toque manual</span>
+          <div class="field">
+            <label for="produtoUrl">Link do produto</label>
+            <input type="url" id="produtoUrl" placeholder="https://www.acheiepostei.shop/produto/123" />
           </div>
         </div>
+        <button id="saveAutomationBtn" class="btn btn-primary">Salvar automação</button>
+      </section>
+      <section class="panel panel-plain">
+        <div class="panel-heading-row">
+          <h2>Automações cadastradas</h2>
+          <input type="search" id="automationSearch" class="search-input" placeholder="Buscar por palavra-chave ou link" />
+        </div>
+        <div id="loadingAutomations" class="loading-row">Carregando automações…</div>
+        <div class="automation-grid" id="automationsTableBody"></div>
       </section>
     </div>
     <div id="tab-accounts" class="view hidden">
       <header class="view-header">
-        <div>
-          <span class="eyebrow">Conexões</span>
-          <h1>Contas do Instagram</h1>
-          <p>Conecte as contas profissionais que vão responder comentários e enviar Direct.</p>
-        </div>
+        <h1>Contas do Instagram</h1>
+        <p>Conecte as contas profissionais que vão responder comentários e enviar Direct.</p>
       </header>
       <section class="panel panel-plain ig-tester-onboarding" id="igTesterOnboarding">
         <h2>Conectar Instagram</h2>
@@ -345,11 +252,8 @@
     </div>
     <div id="tab-admin" class="view hidden">
       <header class="view-header">
-        <div>
-          <span class="eyebrow">Equipe</span>
-          <h1>Administração</h1>
-          <p>Convide clientes e gerencie o acesso à plataforma.</p>
-        </div>
+        <h1>Administração</h1>
+        <p>Convide clientes e gerencie o acesso à plataforma.</p>
       </header>
       <section class="kpi-row" id="adminKpiRow">
         <div class="kpi-card">
@@ -415,16 +319,6 @@
       </section>
     </div>
   </main>
-  <nav class="bottom-nav mobile-only">
-    <button class="nav-item active" data-tab="dashboard">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <span>Automações</span>
-    </button>
-    <button class="nav-item" data-tab="accounts">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="4" width="19" height="16" rx="3" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="10.2" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M6.5 17c.9-2.1 2.9-3.4 5.5-3.4s4.6 1.3 5.5 3.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-      <span>Instagram</span>
-    </button>
-  </nav>
 </div>
 <script type="module" src="app.js"></script>
 <script type="module" src="instagram-tester-onboarding.js"></script>
