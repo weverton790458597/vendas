@@ -8,7 +8,17 @@ const SUPABASE_URL = "https://abdliioyzkylccfylils.supabase.co";
 const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFiZGxpaW95emt5bGNjZnlsaWxzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNzkxMzIsImV4cCI6MjA4MzY1NTEzMn0.5s0zEdAgxx92pbC9yx75hHMfysHr2Aad86GhC1-tEmU";
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// IMPORTANTE: só o app.js pode processar o token do link de convite/recuperação
+// (detectSessionInUrl). Aqui a gente só LÊ a sessão que ele já estabeleceu —
+// nunca cria um segundo client competindo por isso, senão corrompe a sessão
+// durante o fluxo de convite.
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: false,
+    detectSessionInUrl: false,
+  },
+});
 const TABLE = "instagram_tester_requests";
 
 function $(sel) {
