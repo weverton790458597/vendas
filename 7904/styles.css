@@ -1,43 +1,56 @@
 :root {
-  --bg: #f6f6f9;
+  --bg: #fafafa;
   --surface: #ffffff;
-  --surface-2: #eeedf5;
-  --border-color: #e3e1ec;
-  --text-main: #17161f;
-  --text-muted: #6b6980;
-  --gold: #f0a93a;
-  --gold-dark: #d6871a;
-  --gold-light: rgba(240, 169, 58, 0.14);
-  --teal: #17b592;
-  --teal-dark: #0f8f72;
-  --teal-light: rgba(23, 181, 146, 0.14);
-  --coral: #ef5b5b;
-  --coral-dark: #d63e3e;
-  --coral-light: rgba(239, 91, 91, 0.12);
+  --surface-2: #f4f3f6;
+  --border-color: #e8e6ee;
+  --text-main: #14131a;
+  --text-muted: #726f82;
+
+  /* Instagram gradient stops — used for brand marks, primary CTAs, active states */
+  --ig-1: #feda75;
+  --ig-2: #fa7e1e;
+  --ig-3: #d62976;
+  --ig-4: #962fbf;
+  --ig-5: #4f5bd5;
+  --ig-gradient: linear-gradient(135deg, var(--ig-1) 0%, var(--ig-2) 28%, var(--ig-3) 58%, var(--ig-4) 80%, var(--ig-5) 100%);
+  --ig-gradient-soft: linear-gradient(135deg, rgba(254, 218, 117, 0.16) 0%, rgba(250, 126, 30, 0.14) 28%, rgba(214, 41, 118, 0.14) 58%, rgba(150, 47, 191, 0.14) 80%, rgba(79, 91, 213, 0.14) 100%);
+
+  /* Semantic tokens (kept for compatibility with existing component classes) */
+  --gold: #d6297a;
+  --gold-dark: #b01e63;
+  --gold-light: rgba(214, 41, 122, 0.12);
+  --teal: #14b8a6;
+  --teal-dark: #0d8f81;
+  --teal-light: rgba(20, 184, 166, 0.14);
+  --coral: #e0293f;
+  --coral-dark: #b81f32;
+  --coral-light: rgba(224, 41, 63, 0.12);
+
   --radius-sm: 10px;
   --radius-md: 16px;
-  --radius-lg: 26px;
-  --shadow-sm: 0 1px 2px rgba(23, 22, 31, 0.06);
-  --shadow-md: 0 14px 28px -10px rgba(23, 22, 31, 0.14);
-  --shadow-lg: 0 28px 54px -16px rgba(23, 22, 31, 0.22);
+  --radius-lg: 22px;
+  --shadow-sm: 0 1px 2px rgba(20, 19, 26, 0.06);
+  --shadow-md: 0 14px 28px -10px rgba(20, 19, 26, 0.13);
+  --shadow-lg: 0 28px 54px -16px rgba(20, 19, 26, 0.20);
   --font-display: 'Space Grotesk', sans-serif;
   --font-body: 'Plus Jakarta Sans', sans-serif;
   --bottom-nav-h: 64px;
   --top-bar-h: 56px;
 }
 [data-theme="dark"] {
-  --bg: #121121;
-  --surface: #1a1929;
-  --surface-2: #232236;
-  --border-color: rgba(255, 255, 255, 0.08);
-  --text-main: #f3f2f8;
-  --text-muted: #9997ac;
-  --gold-light: rgba(240, 169, 58, 0.18);
-  --teal-light: rgba(23, 181, 146, 0.18);
-  --coral-light: rgba(239, 91, 91, 0.18);
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
-  --shadow-md: 0 18px 32px -10px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 32px 60px -14px rgba(0, 0, 0, 0.65);
+  --bg: #050506;
+  --surface: #17161c;
+  --surface-2: #201f27;
+  --border-color: rgba(255, 255, 255, 0.09);
+  --text-main: #f5f4f7;
+  --text-muted: #9c99a8;
+  --gold-light: rgba(232, 68, 141, 0.2);
+  --teal-light: rgba(20, 184, 166, 0.2);
+  --coral-light: rgba(224, 41, 63, 0.22);
+  --ig-gradient-soft: linear-gradient(135deg, rgba(254, 218, 117, 0.14) 0%, rgba(250, 126, 30, 0.13) 28%, rgba(214, 41, 118, 0.18) 58%, rgba(150, 47, 191, 0.18) 80%, rgba(79, 91, 213, 0.16) 100%);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 18px 32px -10px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 32px 60px -14px rgba(0, 0, 0, 0.7);
 }
 *, *::before, *::after {
   box-sizing: border-box;
@@ -127,12 +140,12 @@ button {
 .auth-glow-1 {
   top: -120px;
   left: -120px;
-  background-color: var(--gold);
+  background: radial-gradient(circle, var(--ig-2), var(--ig-3) 70%, transparent 100%);
 }
 .auth-glow-2 {
   bottom: -140px;
   right: -140px;
-  background-color: var(--teal);
+  background: radial-gradient(circle, var(--ig-5), var(--ig-4) 70%, transparent 100%);
 }
 .brand-mark {
   position: relative;
@@ -151,7 +164,16 @@ button {
   color: var(--text-main);
   display: none;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.55rem;
+}
+.brand-mark-fallback::before {
+  content: "";
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--ig-gradient);
+  box-shadow: 0 4px 14px -4px rgba(214, 41, 118, 0.55);
+  flex-shrink: 0;
 }
 .brand-headline {
   position: relative;
@@ -232,7 +254,7 @@ button {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--gold), var(--teal));
+  background: var(--ig-gradient);
   flex-shrink: 0;
 }
 .demo-username {
@@ -290,7 +312,7 @@ button {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--teal), var(--gold));
+  background: linear-gradient(135deg, var(--ig-5), var(--ig-3));
   flex-shrink: 0;
 }
 .demo-dm-pop {
@@ -336,7 +358,7 @@ button {
   width: 38px;
   height: 38px;
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--gold), #ef8a5b);
+  background: var(--ig-gradient);
   flex-shrink: 0;
 }
 .demo-dm-info {
@@ -389,6 +411,16 @@ button {
   box-shadow: var(--shadow-md);
   border: 1px solid var(--border-color);
   position: relative;
+  overflow: hidden;
+}
+.auth-form-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--ig-gradient);
 }
 .auth-form-header {
   margin-bottom: 2rem;
@@ -487,14 +519,17 @@ button {
   transform: none !important;
 }
 .btn-primary {
-  background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-  color: #1a1206;
-  box-shadow: 0 6px 16px rgba(240, 169, 58, 0.35);
+  background: var(--ig-gradient);
+  background-size: 160% 160%;
+  background-position: 0% 50%;
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(214, 41, 118, 0.32);
+  transition: background-position 0.4s ease, transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .btn-primary:hover:not(:disabled) {
+  background-position: 100% 50%;
   transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(240, 169, 58, 0.48);
-  filter: brightness(1.03);
+  box-shadow: 0 10px 22px rgba(214, 41, 118, 0.4);
 }
 .btn-primary:active {
   transform: translateY(0);
@@ -550,6 +585,16 @@ button {
   font-weight: 700;
   font-size: 1.1rem;
   display: none;
+  align-items: center;
+  gap: 0.55rem;
+}
+.sidebar-logo-fallback::before {
+  content: "";
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--ig-gradient);
+  flex-shrink: 0;
 }
 .sidebar-nav {
   display: flex;
@@ -568,14 +613,21 @@ button {
   font-size: 0.9rem;
   transition: all 0.15s ease;
   text-align: left;
+  position: relative;
+  border-left: 3px solid transparent;
 }
 .nav-item:hover {
   background-color: var(--surface-2);
   color: var(--text-main);
 }
 .nav-item.active {
-  background: linear-gradient(135deg, var(--gold-light), var(--teal-light));
+  background: var(--ig-gradient-soft);
   color: var(--text-main);
+  border-left: 3px solid;
+  border-image: var(--ig-gradient) 1;
+}
+.nav-item.active svg {
+  stroke: var(--gold-dark);
 }
 .sidebar-footer {
   display: flex;
@@ -603,8 +655,8 @@ button {
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--gold), var(--teal));
-  color: #17161f;
+  background: var(--ig-gradient);
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -651,7 +703,22 @@ button {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
+  position: relative;
+  overflow: hidden;
 }
+.kpi-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--text-muted);
+  opacity: 0.25;
+}
+.kpi-card-teal::before { background: var(--teal); opacity: 1; }
+.kpi-card-gold::before { background: var(--ig-gradient); opacity: 1; }
+.kpi-card-coral::before { background: var(--coral); opacity: 1; }
 .kpi-value {
   font-family: var(--font-display);
   font-size: 1.9rem;
@@ -958,15 +1025,18 @@ tr:hover td {
   padding: 0.85rem 1.15rem;
   margin-bottom: 1.5rem;
   border: 1px solid transparent;
+  border-left-width: 3px;
 }
 .banner.error {
   background-color: var(--coral-light);
-  border-color: rgba(239, 91, 91, 0.3);
+  border-color: rgba(224, 41, 63, 0.3);
+  border-left-color: var(--coral);
   color: var(--coral-dark);
 }
 .banner.success {
   background-color: var(--teal-light);
-  border-color: rgba(23, 181, 146, 0.3);
+  border-color: rgba(20, 184, 166, 0.3);
+  border-left-color: var(--teal);
   color: var(--teal-dark);
 }
 .banner-floating {
@@ -976,6 +1046,14 @@ tr:hover td {
   z-index: 9999;
   box-shadow: var(--shadow-lg);
   max-width: 380px;
+  background-color: var(--surface);
+}
+.banner-floating:not(:empty) {
+  animation: toastSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes toastSlideIn {
+  from { opacity: 0; transform: translateY(-10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 .theme-toggle {
   display: inline-flex;
@@ -1490,5 +1568,138 @@ tr:hover td {
   }
   .brand-headline {
     font-size: 2rem;
+  }
+}
+
+/* =========================================================================
+   PWA — prompt customizado de instalação, toast de atualização e ajustes
+   para quando o app já está rodando "standalone" (instalado no celular).
+   Estilos consumidos pelo pwa.js. Nada aqui interfere no app.js.
+   ========================================================================= */
+.pwa-install-banner {
+  position: fixed;
+  left: 1rem;
+  right: 1rem;
+  bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  z-index: 10500;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1rem 1.1rem;
+  background-color: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  max-width: 420px;
+  margin: 0 auto;
+  transform: translateY(120%);
+  opacity: 0;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+  pointer-events: none;
+}
+.pwa-install-banner.is-visible {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+.pwa-install-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  background: var(--ig-gradient);
+  flex-shrink: 0;
+}
+.pwa-install-text {
+  flex: 1;
+  min-width: 0;
+}
+.pwa-install-text strong {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 0.15rem;
+}
+.pwa-install-text span {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.pwa-install-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+.pwa-install-actions .btn {
+  padding: 0.55rem 0.9rem;
+  font-size: 0.8rem;
+}
+.pwa-install-dismiss {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+.pwa-install-dismiss:hover {
+  background-color: var(--surface-2);
+  color: var(--text-main);
+}
+
+.pwa-update-toast {
+  position: fixed;
+  top: calc(1rem + env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%) translateY(-140%);
+  z-index: 10600;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.1rem;
+  background-color: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  box-shadow: var(--shadow-lg);
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+.pwa-update-toast.is-visible {
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+.pwa-update-toast .pwa-update-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ig-gradient);
+  flex-shrink: 0;
+}
+.pwa-update-toast button {
+  color: var(--gold-dark);
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+/* Quando instalado (display-mode: standalone), a área de status/notch do
+   celular já está coberta pelo tema do app — reforça o respiro no topo
+   das telas soltas (auth/blocked) que não têm barra fixa própria. */
+@media (display-mode: standalone) {
+  .auth-panel,
+  .auth-brand {
+    padding-top: calc(2rem + env(safe-area-inset-top, 0px));
+  }
+}
+
+@media (max-width: 640px) {
+  .pwa-install-banner {
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: calc(var(--bottom-nav-h) + 0.75rem + env(safe-area-inset-bottom, 0px));
   }
 }
