@@ -69,7 +69,7 @@ function statusNote(status) {
       "<p>Falta um passo: pelo <strong>navegador</strong> do seu celular (Chrome ou Safari — " +
       "<strong>não use o app do Instagram</strong>, ele não mostra essa opção):</p>" +
       "<ol>" +
-      '<li>Acesse <a href="https://www.instagram.com/" target="_blank" rel="noopener">instagram.com</a> e entre na sua conta.</li>' +
+      '<li>Acesse <a href="https://www.instagram.com/accounts/manage_access/" target="_blank" rel="noopener">instagram.com</a> e entre na sua conta.</li>' +
       "<li>Toque na sua foto de perfil e depois no menu <strong>☰</strong> → <strong>Configurações e privacidade</strong>.</li>" +
       '<li>Em "Seu app e suas mídias", toque em <strong>Permissões do site do app</strong>.</li>' +
       "<li>Toque em <strong>Apps e sites</strong>.</li>" +
