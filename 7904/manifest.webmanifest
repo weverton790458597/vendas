@@ -1,0 +1,10 @@
+{
+  "name": "Achei & Postei",
+  "short_name": "Achei & Postei",
+  "description": "Automação de comentários e Direct para vendas no Instagram.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f6f6f9",
+  "theme_color": "#f0a93a",
+  "lang": "pt-BR"
+}
