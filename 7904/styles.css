@@ -1125,3 +1125,34 @@ tr:hover td {
 .table-actions .btn:last-child {
   margin-right: 0;
 }
+
+/* === Onboarding de tester do Instagram (lista de contas) === */
+.ig-tester-onboarding form {
+  margin-bottom: 1.5rem;
+}
+.ig-tester-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.ig-tester-row {
+  background-color: var(--surface-2);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+}
+.ig-tester-row-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.ig-tester-row-main strong {
+  font-size: 0.95rem;
+}
+.ig-tester-row-note {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+}
