@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<meta name="theme-color" content="#ffffff" />
+<meta name="theme-color" content="#0b0a10" />
 <title>Achei e Postei — Automação de Direct</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -140,6 +140,9 @@
     <div class="sidebar-brand">
       <img src="logo.png" alt="Achei e Postei" class="sidebar-logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';" />
       <span class="sidebar-logo-fallback">Achei &amp; Postei</span>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-sub">CREATOR STUDIO</span>
+      </div>
     </div>
     <nav class="sidebar-nav" id="tabsNav">
       <button class="nav-item active" data-tab="dashboard">
@@ -169,11 +172,24 @@
     </div>
   </aside>
   <main class="main">
+    <div class="mobile-topbar">
+      <div class="mobile-topbar-brand">
+        <img src="logo.png" alt="Achei e Postei" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';" />
+        <span class="sidebar-logo-fallback">Achei &amp; Postei</span>
+      </div>
+      <button type="button" class="theme-toggle theme-toggle-floating" data-theme-toggle aria-label="Alternar modo escuro" style="position:static;">
+        <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.5v2.4M12 19.1v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.7 6.7 0 0 0 10.5 10.5z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
     <div id="statusBanner" class="banner banner-floating"></div>
     <div id="tab-dashboard" class="view">
       <header class="view-header">
-        <h1>Minhas automações</h1>
-        <p>Palavras-chave nos comentários viram links de produto no Direct, automaticamente.</p>
+        <div>
+          <h1>Minhas automações</h1>
+          <p>Palavras-chave nos comentários viram links de produto no Direct, automaticamente.</p>
+        </div>
+        <a href="#novaAutomacaoPanel" class="btn btn-primary view-header-cta">+ Nova automação</a>
       </header>
       <section class="kpi-row">
         <div class="kpi-card">
@@ -189,41 +205,83 @@
           <span class="kpi-label">Pausadas</span>
         </div>
       </section>
-      <section class="panel panel-accent">
-        <h2>Nova automação</h2>
-        <div class="field hidden" id="automationIgAccountField">
-          <label for="automationIgAccount">Conta do Instagram</label>
-          <select id="automationIgAccount"></select>
+      <div class="dash-grid">
+        <div class="dash-grid-main">
+          <section class="panel panel-accent" id="novaAutomacaoPanel">
+            <h2>Nova automação</h2>
+            <div class="field hidden" id="automationIgAccountField">
+              <label for="automationIgAccount">Conta do Instagram</label>
+              <select id="automationIgAccount"></select>
+            </div>
+            <div class="field">
+              <label for="instagramMediaId">Link ou ID do post / reels</label>
+              <input type="text" id="instagramMediaId" placeholder="Cole a URL do post ou o media_id numérico" />
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="palavraChave">Palavra-chave</label>
+                <input type="text" id="palavraChave" placeholder="Ex: QUERO" />
+              </div>
+              <div class="field">
+                <label for="produtoUrl">Link do produto</label>
+                <input type="url" id="produtoUrl" placeholder="https://www.acheiepostei.shop/produto/123" />
+              </div>
+            </div>
+            <button id="saveAutomationBtn" class="btn btn-primary">Salvar automação</button>
+          </section>
+          <section class="panel panel-plain">
+            <div class="panel-heading-row">
+              <h2>Automações cadastradas</h2>
+              <input type="search" id="automationSearch" class="search-input" placeholder="Buscar por palavra-chave ou link" />
+            </div>
+            <div id="loadingAutomations" class="loading-row">Carregando automações…</div>
+            <div class="automation-grid" id="automationsTableBody"></div>
+          </section>
         </div>
-        <div class="field">
-          <label for="instagramMediaId">Link ou ID do post / reels</label>
-          <input type="text" id="instagramMediaId" placeholder="Cole a URL do post ou o media_id numérico" />
-        </div>
-        <div class="field-row">
-          <div class="field">
-            <label for="palavraChave">Palavra-chave</label>
-            <input type="text" id="palavraChave" placeholder="Ex: QUERO" />
-          </div>
-          <div class="field">
-            <label for="produtoUrl">Link do produto</label>
-            <input type="url" id="produtoUrl" placeholder="https://www.acheiepostei.shop/produto/123" />
-          </div>
-        </div>
-        <button id="saveAutomationBtn" class="btn btn-primary">Salvar automação</button>
-      </section>
-      <section class="panel panel-plain">
-        <div class="panel-heading-row">
-          <h2>Automações cadastradas</h2>
-          <input type="search" id="automationSearch" class="search-input" placeholder="Buscar por palavra-chave ou link" />
-        </div>
-        <div id="loadingAutomations" class="loading-row">Carregando automações…</div>
-        <div class="automation-grid" id="automationsTableBody"></div>
-      </section>
+        <aside class="dash-grid-aside">
+          <section class="panel panel-plain howto-card">
+            <h2>Do comentário ao Direct</h2>
+            <div class="howto-step">
+              <span class="howto-step-icon">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 20l1.1-5.4A8.5 8.5 0 1 1 21 11.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+              </span>
+              <div>
+                <div class="howto-step-title">1 · Comentário</div>
+                <p class="howto-step-text">Alguém comenta no seu post ou reels.</p>
+              </div>
+            </div>
+            <div class="howto-step">
+              <span class="howto-step-icon">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M4 12l16-8-6 16-3-6-7-2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+              </span>
+              <div>
+                <div class="howto-step-title">2 · Palavra-chave</div>
+                <p class="howto-step-text">A gente identifica a palavra-chave que você cadastrou.</p>
+              </div>
+            </div>
+            <div class="howto-step">
+              <span class="howto-step-icon">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 20s-7-4.35-9.5-8.8C.8 7.7 2.4 4 6 4c2.1 0 3.6 1.2 4.5 2.6C11.4 5.2 12.9 4 15 4c3.6 0 5.2 3.7 3.5 7.2C19 15.65 12 20 12 20z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+              </span>
+              <div>
+                <div class="howto-step-title">3 · Direct</div>
+                <p class="howto-step-text">O link do produto é enviado automaticamente.</p>
+              </div>
+            </div>
+          </section>
+          <section class="panel panel-plain tip-card">
+            <h2>Dica</h2>
+            <p>Use palavras-chave curtas e fáceis de digitar — "quero" e "frete" costumam converter melhor do que frases longas.</p>
+          </section>
+        </aside>
+      </div>
     </div>
     <div id="tab-accounts" class="view hidden">
       <header class="view-header">
-        <h1>Contas do Instagram</h1>
-        <p>Conecte as contas profissionais que vão responder comentários e enviar Direct.</p>
+        <div>
+          <h1>Contas do Instagram</h1>
+          <p>Conecte as contas profissionais que vão responder comentários e enviar Direct.</p>
+        </div>
       </header>
       <section class="panel panel-plain ig-tester-onboarding" id="igTesterOnboarding">
         <h2>Conectar Instagram</h2>
@@ -252,8 +310,10 @@
     </div>
     <div id="tab-admin" class="view hidden">
       <header class="view-header">
-        <h1>Administração</h1>
-        <p>Convide clientes e gerencie o acesso à plataforma.</p>
+        <div>
+          <h1>Administração</h1>
+          <p>Convide clientes e gerencie o acesso à plataforma.</p>
+        </div>
       </header>
       <section class="kpi-row" id="adminKpiRow">
         <div class="kpi-card">
@@ -319,6 +379,16 @@
       </section>
     </div>
   </main>
+  <nav class="bottom-nav mobile-only">
+    <button class="nav-item active" data-tab="dashboard">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Automações</span>
+    </button>
+    <button class="nav-item" data-tab="accounts">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="4" width="19" height="16" rx="3" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="10.2" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M6.5 17c.9-2.1 2.9-3.4 5.5-3.4s4.6 1.3 5.5 3.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      <span>Instagram</span>
+    </button>
+  </nav>
 </div>
 <script type="module" src="app.js"></script>
 <script type="module" src="instagram-tester-onboarding.js"></script>
