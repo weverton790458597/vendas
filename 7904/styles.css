@@ -1231,6 +1231,42 @@ tr:hover td {
 .ig-account-row .ig-status-actions .btn {
   flex: 1;
 }
+
+/* === Painel do admin: cards de solicitação do Instagram === */
+#igTesterAdminList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.ig-tester-admin-row {
+  background-color: var(--surface-2);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.ig-tester-admin-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.ig-tester-admin-info strong {
+  font-size: 0.95rem;
+}
+.ig-tester-admin-date {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.ig-tester-admin-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
 /* =========================================================================
    MOBILE — estilo de app nativo
    No desktop tudo continua exatamente como antes. Abaixo de 768px o layout
