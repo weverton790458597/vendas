@@ -1,7 +1,9 @@
 // instagram-tester-onboarding.js
-// Fluxo isolado de "solicitar acesso como tester do Instagram".
+// Lista as contas do Instagram que o usuário já solicitou, cada uma com
+// seu próprio status (pendente / aprovado / rejeitado), e mantém o
+// formulário de adicionar uma nova conta sempre disponível — uma conta
+// pendente ou aguardando aceite no Instagram nunca bloqueia as outras.
 // Não importa nem depende de app.js — usa o próprio client do Supabase.
-// Requer os elementos de HTML descritos no bloco de comentário no final do arquivo.
 
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
@@ -24,9 +26,20 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 const TABLE = "instagram_tester_requests";
 
 let realtimeChannel = null;
+let currentUserId = null;
 
 function $(sel) {
   return document.querySelector(sel);
+}
+
+function escapeHtml(str) {
+  return String(str || "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  }[c]));
 }
 
 function normalizeUsername(raw) {
@@ -36,24 +49,86 @@ function normalizeUsername(raw) {
     .toLowerCase();
 }
 
-function showStep(step) {
-  // step: "form" | "loading" | "approved"
-  const els = {
-    form: $("#igTesterFormStep"),
-    loading: $("#igTesterLoadingStep"),
-    approved: $("#igTesterApprovedStep"),
-  };
-  Object.entries(els).forEach(([key, el]) => {
-    if (!el) return;
-    el.classList.toggle("hidden", key !== step);
-  });
-}
-
 function setError(message) {
   const el = $("#igTesterFormError");
   if (!el) return;
   el.textContent = message || "";
   el.classList.toggle("hidden", !message);
+}
+
+function statusBadge(status) {
+  if (status === "aprovado") return '<span class="badge badge-ativo">Aprovado</span>';
+  if (status === "rejeitado") return '<span class="badge badge-danger">Rejeitado</span>';
+  return '<span class="badge badge-muted">Aguardando aprovação</span>';
+}
+
+function statusNote(status) {
+  if (status === "aprovado") {
+    return (
+      '<p class="ig-tester-row-note">Acesse o Instagram no celular, vá até as configurações ' +
+      "e aceite o convite de parceria/testador para autorizar esta conta.</p>"
+    );
+  }
+  if (status === "rejeitado") {
+    return '<p class="ig-tester-row-note">Não foi possível aprovar esta conta. Confira o @ ou tente novamente.</p>';
+  }
+  return '<p class="ig-tester-row-note">Aguarde alguns instantes enquanto fazemos as configurações desta conta…</p>';
+}
+
+function renderList(requests) {
+  const list = $("#igTesterRequestsList");
+  if (!list) return;
+
+  if (!requests || requests.length === 0) {
+    list.innerHTML = '<div class="empty-state">Nenhuma conta do Instagram cadastrada ainda.</div>';
+    return;
+  }
+
+  list.innerHTML = requests
+    .map((row) => {
+      return (
+        '<div class="ig-tester-row" data-id="' + row.id + '">' +
+        '<div class="ig-tester-row-main">' +
+        "<strong>@" + escapeHtml(row.instagram_username) + "</strong>" +
+        statusBadge(row.status) +
+        "</div>" +
+        statusNote(row.status) +
+        "</div>"
+      );
+    })
+    .join("");
+}
+
+async function loadRequests(userId) {
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select("id, instagram_username, status, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    const list = $("#igTesterRequestsList");
+    if (list) list.innerHTML = '<div class="empty-state">Erro ao carregar suas contas: ' + escapeHtml(error.message) + "</div>";
+    return;
+  }
+  renderList(data || []);
+}
+
+function listenForChanges(userId) {
+  stopListening();
+  realtimeChannel = supabase
+    .channel("instagram_tester_requests_user_" + userId)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: TABLE,
+        filter: "user_id=eq." + userId,
+      },
+      () => loadRequests(userId)
+    )
+    .subscribe();
 }
 
 function stopListening() {
@@ -63,90 +138,14 @@ function stopListening() {
   }
 }
 
-function listenForApproval(requestId) {
-  stopListening();
-  realtimeChannel = supabase
-    .channel("instagram_tester_requests_" + requestId)
-    .on(
-      "postgres_changes",
-      {
-        event: "UPDATE",
-        schema: "public",
-        table: TABLE,
-        filter: "id=eq." + requestId,
-      },
-      (payload) => {
-        const newStatus = payload.new && payload.new.status;
-        if (newStatus === "aprovado") {
-          stopListening();
-          showStep("approved");
-        } else if (newStatus === "rejeitado") {
-          stopListening();
-          showStep("form");
-          setError(
-            "Sua solicitação não pôde ser aprovada agora. Confira o @ e tente novamente, ou fale com o suporte."
-          );
-        }
-      }
-    )
-    .subscribe();
-
-  // Checagem de segurança (fallback) caso o evento realtime não chegue —
-  // por exemplo, se a aba ficou em segundo plano e o socket caiu.
-  pollAsFallback(requestId);
-}
-
-async function pollAsFallback(requestId, attempt = 0) {
-  // Só entra em ação se ainda estivermos esperando aprovação para essa solicitação.
-  if (!realtimeChannel) return;
-  const maxAttempts = 180; // ~15 minutos com intervalo de 5s
-  if (attempt >= maxAttempts) return;
-
-  await new Promise((resolve) => setTimeout(resolve, 5000));
-  if (!realtimeChannel) return; // já resolvido via realtime nesse meio-tempo
-
-  try {
-    const { data, error } = await supabase
-      .from(TABLE)
-      .select("status")
-      .eq("id", requestId)
-      .maybeSingle();
-    if (!error && data) {
-      if (data.status === "aprovado") {
-        stopListening();
-        showStep("approved");
-        return;
-      }
-      if (data.status === "rejeitado") {
-        stopListening();
-        showStep("form");
-        setError(
-          "Sua solicitação não pôde ser aprovada agora. Confira o @ e tente novamente, ou fale com o suporte."
-        );
-        return;
-      }
-    }
-  } catch (_err) {
-    // silencioso — só tenta de novo no próximo ciclo
-  }
-  pollAsFallback(requestId, attempt + 1);
-}
-
-async function findExistingPendingRequest(userId) {
-  const { data, error } = await supabase
-    .from(TABLE)
-    .select("id, status")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (error) return null;
-  return data;
-}
-
 async function handleSubmit(event) {
   event.preventDefault();
   setError("");
+
+  if (!currentUserId) {
+    setError("Sua sessão expirou. Atualize a página e faça login novamente.");
+    return;
+  }
 
   const input = $("#igTesterUsernameInput");
   const username = normalizeUsername(input ? input.value : "");
@@ -162,29 +161,22 @@ async function handleSubmit(event) {
   }
 
   try {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session || !session.user) {
-      setError("Sua sessão expirou. Atualize a página e faça login novamente.");
-      return;
+    const { error } = await supabase.from(TABLE).insert({
+      user_id: currentUserId,
+      instagram_username: username,
+      status: "pendente",
+    });
+
+    if (error) {
+      // Já existe uma solicitação ativa (pendente/aprovada) pra esse @ — não é um erro grave.
+      if (error.code === "23505") {
+        setError("Esse @ já está cadastrado e em andamento.");
+      } else {
+        throw error;
+      }
+    } else if (input) {
+      input.value = "";
     }
-    const userId = session.user.id;
-
-    const { data, error } = await supabase
-      .from(TABLE)
-      .insert({
-        user_id: userId,
-        instagram_username: username,
-        status: "pendente",
-      })
-      .select("id")
-      .single();
-
-    if (error) throw error;
-
-    showStep("loading");
-    listenForApproval(data.id);
   } catch (error) {
     setError("Não foi possível enviar sua solicitação: " + error.message);
   } finally {
@@ -197,62 +189,42 @@ async function handleSubmit(event) {
 
 async function bootstrap() {
   const form = $("#igTesterForm");
-  if (!form) return; // markup não presente nesta página — não faz nada
+  const list = $("#igTesterRequestsList");
+  if (!form && !list) return; // markup não presente nesta página — não faz nada
 
-  form.addEventListener("submit", handleSubmit);
+  if (form) form.addEventListener("submit", handleSubmit);
 
   const {
     data: { session },
   } = await supabase.auth.getSession();
   if (!session || !session.user) return;
 
-  const existing = await findExistingPendingRequest(session.user.id);
-  if (!existing) {
-    showStep("form");
-    return;
-  }
-  if (existing.status === "pendente") {
-    showStep("loading");
-    listenForApproval(existing.id);
-  } else if (existing.status === "aprovado") {
-    showStep("approved");
-  } else {
-    showStep("form");
-  }
+  currentUserId = session.user.id;
+  await loadRequests(currentUserId);
+  listenForChanges(currentUserId);
 }
 
 document.addEventListener("DOMContentLoaded", bootstrap);
 
 /* ============================================================
-   Markup esperado em index.html (adicione onde fizer sentido,
-   por exemplo dentro de #tab-accounts, sem remover o que já existe):
+   Novo markup esperado em index.html (substitui o bloco anterior
+   de igTesterFormStep/igTesterLoadingStep/igTesterApprovedStep):
 
-<div id="igTesterOnboarding" class="ig-tester-onboarding">
+<section class="panel panel-plain ig-tester-onboarding" id="igTesterOnboarding">
+  <h2>Conectar Instagram</h2>
 
-  <form id="igTesterForm" class="ig-tester-step" id="igTesterFormStep">
+  <form id="igTesterForm">
     <label class="field">
-      <span>Seu @ do Instagram</span>
+      <span>@ do Instagram</span>
       <input type="text" id="igTesterUsernameInput" placeholder="@sua.loja" autocomplete="off" />
     </label>
     <div id="igTesterFormError" class="banner error hidden"></div>
     <button type="submit" id="igTesterSubmitBtn" class="btn btn-primary btn-full">Conectar Instagram</button>
   </form>
 
-  <div id="igTesterLoadingStep" class="ig-tester-step hidden">
-    <span class="ig-tester-spinner" aria-hidden="true"></span>
-    <p>Aguarde alguns instantes enquanto fazemos todas as configurações da sua conta…</p>
-  </div>
+  <div id="igTesterRequestsList" class="ig-tester-list"></div>
+</section>
 
-  <div id="igTesterApprovedStep" class="ig-tester-step hidden">
-    <p>
-      Tudo pronto por aqui! Agora, acesse o seu Instagram no celular, vá até as
-      configurações e aceite o convite de parceria/testador para autorizar
-      nossa plataforma a enviar mensagens no seu perfil.
-    </p>
-  </div>
-
-</div>
-
-   E, antes de </body>, adicione:
+   Script continua o mesmo:
    <script type="module" src="instagram-tester-onboarding.js"></script>
    ============================================================ */
