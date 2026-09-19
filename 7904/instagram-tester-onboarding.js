@@ -95,7 +95,7 @@ function renderList(requests) {
   if (!list) return;
 
   if (!requests || requests.length === 0) {
-    list.innerHTML = '<div class="empty-state">Nenhuma conta do Instagram cadastrada ainda.</div>';
+    list.innerHTML = '<div class="empty-state">Nenhuma solicitação em andamento. Contas já conectadas aparecem em "Contas conectadas", mais abaixo.</div>';
     return;
   }
 
