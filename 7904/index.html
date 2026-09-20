@@ -209,14 +209,17 @@
             <input type="url" id="produtoUrl" placeholder="https://www.acheiepostei.shop/produto/123" />
           </div>
         </div>
-        <button type="button" id="toggleImagemUrlBtn" class="btn btn-outline btn-sm">+ Adicionar imagem (opcional)</button>
+        <button type="button" id="toggleImagemUrlBtn" class="btn btn-outline btn-sm">+ Personalizar card (opcional)</button>
         <div class="field hidden" id="imagemUrlField">
-          <label for="imagemUrl">Link da imagem do produto (opcional)</label>
+          <label for="tituloProduto">Título do produto (opcional)</label>
+          <input type="text" id="tituloProduto" placeholder="Ex: Chaveiro de gato com som" />
+          <label for="imagemUrl" style="margin-top: 0.75rem; display: block;">Link da imagem do produto (opcional)</label>
           <input type="url" id="imagemUrl" placeholder="https://exemplo.com/imagem-do-produto.jpg" />
           <p class="field-hint">
-            Opcional. A gente já tenta buscar a imagem automaticamente — só preencha aqui se ela
-            não aparecer no Direct enviado. Se não souber pegar esse link, pode deixar em branco
-            sem problema nenhum.
+            Os dois campos são opcionais e independentes — preencha só o que quiser. A gente já
+            tenta buscar a imagem automaticamente; use esses campos se quiser deixar o card mais
+            caprichado ou se a busca automática não achar nada. Se não souber pegar esses links,
+            pode deixar em branco sem problema nenhum.
           </p>
         </div>
         <button id="saveAutomationBtn" class="btn btn-primary">Salvar automação</button>
