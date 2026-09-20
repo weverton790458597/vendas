@@ -381,10 +381,12 @@ $("#saveAutomationBtn").addEventListener("click", async () => {
   const palavraChaveInput = $("#palavraChave");
   const produtoUrlInput = $("#produtoUrl");
   const imagemUrlInput = $("#imagemUrl");
+  const tituloProdutoInput = $("#tituloProduto");
   const mediaIdRaw = mediaIdInput.value.trim();
   const palavraChave = palavraChaveInput.value.trim();
   const produtoUrl = produtoUrlInput.value.trim();
   const imagemUrl = imagemUrlInput.value.trim() || null; // opcional — null não dá erro nenhum
+  const tituloProduto = tituloProdutoInput.value.trim() || null; // opcional também
   const igAccountId = $("#automationIgAccount").value || null;
   if (!mediaIdRaw || !palavraChave || !produtoUrl) {
     showBanner("statusBanner", "Todos os campos são obrigatórios.", "error");
@@ -405,6 +407,7 @@ $("#saveAutomationBtn").addEventListener("click", async () => {
       palavra_chave: palavraChave,
       produto_url: produtoUrl,
       imagem_url: imagemUrl,
+      titulo_produto: tituloProduto,
       instagram_config_id: igAccountId,
       ativo: true,
     });
@@ -414,6 +417,7 @@ $("#saveAutomationBtn").addEventListener("click", async () => {
     palavraChaveInput.value = "";
     produtoUrlInput.value = "";
     imagemUrlInput.value = "";
+    tituloProdutoInput.value = "";
     $("#imagemUrlField").classList.add("hidden");
     await loadAutomations();
   } catch (error) {
