@@ -209,6 +209,16 @@
             <input type="url" id="produtoUrl" placeholder="https://www.acheiepostei.shop/produto/123" />
           </div>
         </div>
+        <button type="button" id="toggleImagemUrlBtn" class="btn btn-outline btn-sm">+ Adicionar imagem (opcional)</button>
+        <div class="field hidden" id="imagemUrlField">
+          <label for="imagemUrl">Link da imagem do produto (opcional)</label>
+          <input type="url" id="imagemUrl" placeholder="https://exemplo.com/imagem-do-produto.jpg" />
+          <p class="field-hint">
+            Opcional. A gente já tenta buscar a imagem automaticamente — só preencha aqui se ela
+            não aparecer no Direct enviado. Se não souber pegar esse link, pode deixar em branco
+            sem problema nenhum.
+          </p>
+        </div>
         <button id="saveAutomationBtn" class="btn btn-primary">Salvar automação</button>
       </section>
       <section class="panel panel-plain">
