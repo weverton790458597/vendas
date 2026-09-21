@@ -131,6 +131,7 @@ async function bootstrapSession() {
   handleInstagramOauthReturn();
   await loadIgConfig();
   await loadAutomations();
+  await loadLatestPosts();
 }
 function showScreen(name) {
   $("#authScreen").classList.toggle("hidden", name !== "auth");
@@ -283,6 +284,112 @@ function updateAutomationKpis(rows) {
   $("#kpiAtivas").textContent = ativas;
   $("#kpiPausadas").textContent = total - ativas;
 }
+function renderLatestPosts(posts) {
+  const grid = $("#latestPostsGrid");
+  if (!grid) return;
+  if (!posts || posts.length === 0) {
+    grid.innerHTML = '<div class="empty-state">Nenhuma publicação encontrada nas contas conectadas.</div>';
+    return;
+  }
+  grid.innerHTML = posts.map((post) => {
+    const caption = post.caption ? escapeHtml(truncateUrl(post.caption.replace(/\s+/g, " "), 60)) : "(sem legenda)";
+    const when = post.timestamp ? new Date(post.timestamp).toLocaleDateString("pt-BR") : "";
+    return (
+      '<div class="automation-card">' +
+      (post.thumbnail_url
+        ? '<img src="' + escapeHtml(post.thumbnail_url) + '" alt="" style="width:100%;border-radius:var(--radius-sm);aspect-ratio:1;object-fit:cover;" />'
+        : "") +
+      '<div class="automation-card-top"><span class="badge badge-muted">@' + escapeHtml(post.instagram_username || "") + "</span>" +
+      (when ? '<span class="automation-card-footer" style="padding:0;border:none;">' + when + "</span>" : "") +
+      "</div>" +
+      '<div class="automation-card-post" style="white-space:normal;">' + caption + "</div>" +
+      '<div class="automation-card-actions" style="justify-content:flex-start;gap:0.5rem;">' +
+      '<button class="btn btn-primary btn-sm create-automation-from-post-btn" data-shortcode="' + escapeHtml(post.shortcode || post.media_id) + '">Criar automação</button>' +
+      '<button class="btn btn-outline btn-sm view-all-posts-btn" data-config-id="' + escapeHtml(post.instagram_config_id) + '" data-username="' + escapeHtml(post.instagram_username || "") + '">Ver todas</button>' +
+      "</div></div>"
+    );
+  }).join("");
+  grid.querySelectorAll(".create-automation-from-post-btn").forEach((btn) =>
+    btn.addEventListener("click", () => fillAutomationForm(btn.getAttribute("data-shortcode")))
+  );
+  grid.querySelectorAll(".view-all-posts-btn").forEach((btn) =>
+    btn.addEventListener("click", () => openAllPostsModal(btn.getAttribute("data-config-id"), btn.getAttribute("data-username")))
+  );
+}
+async function loadLatestPosts() {
+  const grid = $("#latestPostsGrid");
+  if (!grid) return;
+  grid.innerHTML = '<div class="loading-row">Carregando publicações…</div>';
+  try {
+    const { data, error } = await supabase.functions.invoke("list-instagram-posts", {
+      body: { mode: "latest" },
+    });
+    if (error) throw error;
+    renderLatestPosts(data && data.posts);
+  } catch (error) {
+    grid.innerHTML = '<div class="empty-state">Erro ao carregar publicações: ' + escapeHtml(error.message) + "</div>";
+  }
+}
+function fillAutomationForm(shortcode) {
+  $("#instagramMediaId").value = shortcode || "";
+  $("#palavraChave").focus();
+  const panel = $("#instagramMediaId").closest("section");
+  if (panel) panel.scrollIntoView({ behavior: "smooth", block: "start" });
+  closeAllPostsModal();
+}
+function closeAllPostsModal() {
+  const existing = document.getElementById("allPostsModalOverlay");
+  if (existing) existing.remove();
+}
+async function openAllPostsModal(instagramConfigId, username) {
+  closeAllPostsModal();
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay";
+  overlay.id = "allPostsModalOverlay";
+  overlay.innerHTML =
+    '<div class="modal-box modal-box-lg">' +
+    '<div class="modal-header"><h2>Publicações de @' + escapeHtml(username || "") + '</h2>' +
+    '<button type="button" class="modal-close" id="allPostsModalCloseBtn">&times;</button></div>' +
+    '<div class="modal-body"><div id="allPostsModalGrid" class="automation-grid"><div class="loading-row">Carregando…</div></div></div>' +
+    "</div>";
+  document.body.appendChild(overlay);
+  $("#allPostsModalCloseBtn").addEventListener("click", closeAllPostsModal);
+  overlay.addEventListener("click", (event) => {
+    if (event.target === overlay) closeAllPostsModal();
+  });
+
+  try {
+    const { data, error } = await supabase.functions.invoke("list-instagram-posts", {
+      body: { mode: "all", instagram_config_id: instagramConfigId },
+    });
+    if (error) throw error;
+    const posts = (data && data.posts) || [];
+    const modalGrid = $("#allPostsModalGrid");
+    if (!modalGrid) return;
+    if (posts.length === 0) {
+      modalGrid.innerHTML = '<div class="empty-state">Nenhuma publicação encontrada.</div>';
+      return;
+    }
+    modalGrid.innerHTML = posts.map((post) => {
+      const caption = post.caption ? escapeHtml(truncateUrl(post.caption.replace(/\s+/g, " "), 50)) : "(sem legenda)";
+      return (
+        '<div class="automation-card">' +
+        (post.thumbnail_url
+          ? '<img src="' + escapeHtml(post.thumbnail_url) + '" alt="" style="width:100%;border-radius:var(--radius-sm);aspect-ratio:1;object-fit:cover;" />'
+          : "") +
+        '<div class="automation-card-post" style="white-space:normal;">' + caption + "</div>" +
+        '<button class="btn btn-primary btn-sm create-automation-from-post-btn" data-shortcode="' + escapeHtml(post.shortcode || post.media_id) + '">Criar automação</button>' +
+        "</div>"
+      );
+    }).join("");
+    modalGrid.querySelectorAll(".create-automation-from-post-btn").forEach((btn) =>
+      btn.addEventListener("click", () => fillAutomationForm(btn.getAttribute("data-shortcode")))
+    );
+  } catch (error) {
+    const modalGrid = $("#allPostsModalGrid");
+    if (modalGrid) modalGrid.innerHTML = '<div class="empty-state">Erro ao carregar: ' + escapeHtml(error.message) + "</div>";
+  }
+}
 function renderAutomations(rows) {
   const grid = $("#automationsTableBody");
   if (!rows || rows.length === 0) {
@@ -382,11 +489,13 @@ $("#saveAutomationBtn").addEventListener("click", async () => {
   const produtoUrlInput = $("#produtoUrl");
   const imagemUrlInput = $("#imagemUrl");
   const tituloProdutoInput = $("#tituloProduto");
+  const precoProdutoInput = $("#precoProduto");
   const mediaIdRaw = mediaIdInput.value.trim();
   const palavraChave = palavraChaveInput.value.trim();
   const produtoUrl = produtoUrlInput.value.trim();
   const imagemUrl = imagemUrlInput.value.trim() || null; // opcional — null não dá erro nenhum
   const tituloProduto = tituloProdutoInput.value.trim() || null; // opcional também
+  const precoProduto = precoProdutoInput.value.trim() || null; // opcional também
   const igAccountId = $("#automationIgAccount").value || null;
   if (!mediaIdRaw || !palavraChave || !produtoUrl) {
     showBanner("statusBanner", "Todos os campos são obrigatórios.", "error");
@@ -408,6 +517,7 @@ $("#saveAutomationBtn").addEventListener("click", async () => {
       produto_url: produtoUrl,
       imagem_url: imagemUrl,
       titulo_produto: tituloProduto,
+      preco_produto: precoProduto,
       instagram_config_id: igAccountId,
       ativo: true,
     });
@@ -418,6 +528,7 @@ $("#saveAutomationBtn").addEventListener("click", async () => {
     produtoUrlInput.value = "";
     imagemUrlInput.value = "";
     tituloProdutoInput.value = "";
+    precoProdutoInput.value = "";
     $("#imagemUrlField").classList.add("hidden");
     await loadAutomations();
   } catch (error) {
