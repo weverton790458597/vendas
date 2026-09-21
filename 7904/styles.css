@@ -1238,6 +1238,51 @@ tr:hover td {
   gap: 0.5rem;
   flex-wrap: wrap;
 }
+
+/* === "Últimas publicações" (post mais recente de cada conta) === */
+.latest-posts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+.latest-post-card {
+  background-color: var(--surface-2);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.latest-post-thumb {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  display: block;
+  background-color: var(--surface);
+}
+.latest-post-thumb-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+.latest-post-info {
+  padding: 0.75rem 0.85rem 0;
+}
+.latest-post-info strong {
+  font-size: 0.85rem;
+}
+.latest-post-info p {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 0.3rem;
+  line-height: 1.4;
+}
+.latest-post-btn {
+  margin: 0.75rem 0.85rem 0.85rem;
+}
+
 /* =========================================================================
    MOBILE — estilo de app nativo
    No desktop tudo continua exatamente como antes. Abaixo de 768px o layout
