@@ -189,6 +189,13 @@
           <span class="kpi-label">Pausadas</span>
         </div>
       </section>
+      <section class="panel panel-plain">
+        <div class="panel-heading-row">
+          <h2>Últimas publicações</h2>
+          <button id="latestPostsRefreshBtn" class="btn btn-outline btn-sm">Atualizar</button>
+        </div>
+        <div id="latestPostsGrid" class="latest-posts-grid"></div>
+      </section>
       <section class="panel panel-accent">
         <h2>Nova automação</h2>
         <div class="field hidden" id="automationIgAccountField">
@@ -336,6 +343,7 @@
 <script type="module" src="app.js"></script>
 <script type="module" src="instagram-tester-onboarding.js"></script>
 <script type="module" src="instagram-tester-admin.js"></script>
+<script type="module" src="instagram-latest-posts.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script src="motion-fx.js"></script>
 </body>
