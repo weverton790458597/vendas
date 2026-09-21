@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0a18" />
+  <title>Achei &amp; Postei — Automação de Direct</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <script>
+    (function () {
+      var saved = localStorage.getItem("ap-theme");
+      var theme = saved || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+</head>
+<body>
+
+  <!-- ==================== AUTH SHELL ==================== -->
+  <div id="authScreen" class="auth-shell">
+    <div class="auth-brand">
+      <canvas id="motionCanvas" class="motion-canvas"></canvas>
+      <div class="auth-glow-orb auth-glow-1"></div>
+      <div class="auth-glow-orb auth-glow-2"></div>
+      <div class="brand-mark gsap-reveal">
+        <img src="logo.png" alt="Achei e Postei" class="brand-mark-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';" />
+        <span class="brand-mark-fallback">Achei &amp; Postei</span>
+      </div>
+      <h1 class="brand-headline gsap-reveal">Alguém comenta a palavra certa. O link do produto chega no Direct sozinho.</h1>
+      <p class="brand-copy gsap-reveal">Conecte sua conta profissional do Instagram uma vez. A partir daí, cada comentário com a palavra-chave certa vira uma venda em potencial — sem você tocar no celular.</p>
+      <div class="brand-stats gsap-reveal">
+        <div class="brand-stat"><strong>24/7</strong><span>respondendo sozinho</span></div>
+        <div class="brand-stat"><strong>&lt;1 min</strong><span>do comentário ao Direct</span></div>
+        <div class="brand-stat"><strong>0</strong><span>linhas de código pra você</span></div>
+      </div>
+      <div class="demo-phone gsap-reveal" id="demoPhone" aria-hidden="true">
+        <div class="demo-phone-glow"></div>
+        <div class="demo-device-frame">
+          <div class="demo-notch"></div>
+          <div class="demo-post">
+            <div class="demo-post-head">
+              <span class="demo-avatar"></span>
+              <span class="demo-username">sua.loja</span>
+            </div>
+            <div class="demo-post-media">
+              <div class="demo-media-gradient"></div>
+            </div>
+            <div class="demo-post-actions">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M12 20s-7-4.35-9.5-8.8C.8 7.7 2.4 4 6 4c2.1 0 3.6 1.2 4.5 2.6C11.4 5.2 12.9 4 15 4c3.6 0 5.2 3.7 3.5 7.2C19 15.65 12 20 12 20z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 20l1.1-5.4A8.5 8.5 0 1 1 21 11.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M4 12l16-8-6 16-3-6-7-2z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            </div>
+            <p class="demo-caption"><strong>sua.loja</strong> Comente <span class="demo-keyword">QUERO</span> pra receber o link do produto 👇</p>
+          </div>
+          <div class="demo-comment-pop">
+            <span class="demo-comment-avatar"></span>
+            <span class="demo-comment-bubble"><strong>cliente_ana</strong> QUERO 🙌</span>
+          </div>
+          <div class="demo-dm-pop">
+            <div class="demo-dm-head">
+              <span class="demo-dm-dot"></span>
+              Direct enviado automaticamente
+            </div>
+            <div class="demo-dm-card">
+              <div class="demo-dm-thumb"></div>
+              <div class="demo-dm-info">
+                <strong>Vestido Linho Bege</strong>
+                <span>acheiepostei.shop/produto/128</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="auth-panel">
+      <button type="button" class="theme-toggle theme-toggle-floating" data-theme-toggle aria-label="Alternar modo escuro">
+        <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.5v2.4M12 19.1v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.7 6.7 0 0 0 10.5 10.5z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="auth-form-card gsap-form-reveal">
+        <div class="auth-form-header">
+          <h2>Bem-vindo de volta</h2>
+          <p class="auth-sub">Digite seus dados para gerenciar suas automações.</p>
+        </div>
+        <div id="authBanner" class="banner"></div>
+        <label class="field">
+          <span>E-mail profissional</span>
+          <input type="email" id="authEmail" placeholder="seu@email.com" autocomplete="email" />
+        </label>
+        <label class="field">
+          <span>Senha de acesso</span>
+          <input type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password" />
+        </label>
+        <button id="authSubmitBtn" class="btn btn-primary btn-full">Entrar na plataforma</button>
+        <p class="auth-footnote">Acesso restrito a clientes parceiros.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SET PASSWORD ==================== -->
+  <div id="setPasswordScreen" class="auth-shell hidden">
+    <div class="auth-brand auth-brand-simple">
+      <div class="brand-mark">
+        <span class="brand-mark-fallback" style="display:inline-flex;">Achei &amp; Postei</span>
+      </div>
+      <h1 class="brand-headline">Falta pouco para suas automações ficarem no ar.</h1>
+      <p class="brand-copy">Escolha uma senha para acessar sua conta e conectar o Instagram.</p>
+    </div>
+    <div class="auth-panel">
+      <button type="button" class="theme-toggle theme-toggle-floating" data-theme-toggle aria-label="Alternar modo escuro">
+        <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.5v2.4M12 19.1v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.7 6.7 0 0 0 10.5 10.5z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="auth-form-card">
+        <div class="auth-form-header">
+          <h2>Definir sua senha</h2>
+          <p class="auth-sub">Use pelo menos 6 caracteres.</p>
+        </div>
+        <div id="setPasswordBanner" class="banner"></div>
+        <label class="field">
+          <span>Nova senha</span>
+          <input type="password" id="newPassword" placeholder="Mínimo 6 caracteres" autocomplete="new-password" />
+        </label>
+        <button id="setPasswordBtn" class="btn btn-primary btn-full">Salvar e entrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== BLOCKED ==================== -->
+  <div id="blockedScreen" class="auth-shell hidden">
+    <div class="auth-brand auth-brand-simple">
+      <div class="brand-mark">
+        <span class="brand-mark-fallback" style="display:inline-flex;">Achei &amp; Postei</span>
+      </div>
+      <h1 class="brand-headline">Acesso suspenso</h1>
+      <p class="brand-copy">Sua conta está inativa no momento. Fale com o administrador para reativar o acesso.</p>
+    </div>
+    <div class="auth-panel">
+      <div class="auth-form-card">
+        <div class="auth-form-header">
+          <h2>Conta inativa</h2>
+          <p class="auth-sub">As automações ficam pausadas até a reativação.</p>
+        </div>
+        <button id="blockedLogoutBtn" class="btn btn-outline btn-full">Sair</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== APP SHELL ==================== -->
+  <div id="appScreen" class="app-shell hidden">
+    <aside class="sidebar" id="mainSidebar">
+      <div class="sidebar-brand">
+        <img src="logo.png" alt="Achei e Postei" class="sidebar-logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';" />
+        <span class="sidebar-logo-fallback">Achei &amp; Postei</span>
+      </div>
+
+      <!-- === Grupo 1: OPERAÇÃO === -->
+      <div class="sidebar-nav-group">
+        <div class="sidebar-group-label">OPERAÇÃO</div>
+        <nav class="sidebar-nav" id="tabsNav">
+          <button class="nav-item active" data-tab="dashboard">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 12.5L12 5l9 7.5v11a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V12H7v10.5a2 2 0 0 1-2 2H1a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>Automações</span>
+          </button>
+          <button class="nav-item" data-tab="accounts">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="4" width="19" height="16" rx="3" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="10.2" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M6.5 17c.9-2.1 2.9-3.4 5.5-3.4s4.6 1.3 5.5 3.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            <span>Contas do Instagram</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- === Grupo 2: GESTÃO === -->
+      <div class="sidebar-nav-group">
+        <div class="sidebar-group-label">GESTÃO</div>
+        <nav class="sidebar-nav">
+          <button class="nav-item hidden" id="adminTabBtn" data-tab="admin">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="7" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M16.5 4.2c1.6.4 2.8 1.9 2.8 3.6 0 1.7-1.2 3.2-2.8 3.6M20 20c0-2.9-1.9-5-4.4-5.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            <span>Administração</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- === Estado do Plano Pro === -->
+      <div class="sidebar-plan-badge">
+        <div class="sidebar-plan-info">
+          <span class="sidebar-plan-label">Plano Pro</span>
+          <span class="sidebar-plan-status">Ativo</span>
+        </div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <span class="sidebar-user-avatar" id="userAvatar"></span>
+          <span id="userEmailLabel"></span>
+        </div>
+        <button type="button" class="theme-toggle theme-toggle-inline" data-theme-toggle aria-label="Alternar modo escuro">
+          <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.5v2.4M12 19.1v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.7 6.7 0 0 0 10.5 10.5z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+          <span>Tema</span>
+        </button>
+        <button id="logoutBtn" class="btn btn-outline btn-full btn-sm">Sair</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <!-- ===== Top Bar ===== -->
+      <div id="topBar" class="top-bar">
+        <div class="top-bar-left">
+          <div class="top-bar-title-wrapper">
+            <h1 class="top-bar-title" id="topBarTitle">Automações</h1>
+            <p class="top-bar-subtitle" id="topBarSubtitle">Palavras-chave em comentários viram links de produto no Direct automaticamente.</p>
+          </div>
+        </div>
+        <div class="top-bar-center">
+          <div class="search-container">
+            <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="1.6"/><path d="M15.5 15.5L18 18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            <input type="search" id="globalSearch" class="search-input" placeholder="Buscar automações, contas, clientes…" />
+          </div>
+        </div>
+        <div class="top-bar-right">
+          <button class="btn btn-ghost btn-sm btn-icon" id="notifyBtn" aria-label="Notificações">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 21h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M12 2v6m0 0l-2-2m2 2l2-2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 16v-2a4 4 0 0 0-8 0v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="4" y="16" width="16" height="4" rx="2" stroke="currentColor" stroke-width="1.6"/></svg>
+            <span class="notify-badge hidden">3</span>
+          </button>
+          <button class="btn btn-primary btn-sm btn-icon" id="fabTrigger" aria-label="Nova ação">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+          <button class="btn btn-ghost btn-sm btn-user" id="userMenuBtn" aria-label="Menu do usuário">
+            <span class="sidebar-user-avatar" id="topUserAvatar"></span>
+          </button>
+        </div>
+      </div>
+
+      <div id="statusBanner" class="banner banner-floating"></div>
+
+      <!-- ===== Dashboard ===== -->
+      <div id="tab-dashboard" class="view">
+        <div class="view-grid">
+          <!-- Left column -->
+          <div class="view-main">
+
+            <!-- KPI Row -->
+            <section class="kpi-row" id="dashboardKpis">
+              <div class="kpi-card kpi-card-pro">
+                <span class="kpi-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                </span>
+                <span class="kpi-value" id="kpiTotal">0</span>
+                <span class="kpi-label">Total automações</span>
+              </div>
+              <div class="kpi-card kpi-card-pro kpi-card-emerald">
+                <span class="kpi-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+                <span class="kpi-value" id="kpiAtivas">0</span>
+                <span class="kpi-label">Ativas</span>
+              </div>
+              <div class="kpi-card kpi-card-pro kpi-card-amber">
+                <span class="kpi-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M10 15l-3-3 3-3m6 6l3-3-3-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+                <span class="kpi-value" id="kpiPausadas">0</span>
+                <span class="kpi-label">Pausadas</span>
+              </div>
+              <div class="kpi-card kpi-card-pro kpi-card-pink">
+                <span class="kpi-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M20 16v-4a4 4 0 0 0-4-4h-1V7a3 3 0 0 0-6 0v1H8a4 4 0 0 0-4 4v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 20h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </span>
+                <span class="kpi-value" id="kpiLinksEnviados">0</span>
+                <span class="kpi-label">Links enviados</span>
+              </div>
+            </section>
+
+            <!-- New Automation Panel -->
+            <section class="panel panel-accent" id="newAutomationPanel">
+              <div class="panel-header">
+                <h2>+ Nova automação</h2>
+                <button type="button" class="btn btn-ghost btn-sm btn-icon" id="toggleImagemUrlBtn" aria-label="Campos avançados">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                </button>
+              </div>
+              <div class="field hidden" id="automationIgAccountField">
+                <label for="automationIgAccount">Conta do Instagram</label>
+                <select id="automationIgAccount"></select>
+              </div>
+              <div class="field">
+                <label for="instagramMediaId">Link ou ID do post / reels</label>
+                <input type="text" id="instagramMediaId" placeholder="Cole a URL do post ou o media_id numérico" />
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="palavraChave">Palavra-chave</label>
+                  <input type="text" id="palavraChave" placeholder="Ex: QUERO" />
+                </div>
+                <div class="field">
+                  <label for="produtoUrl">Link do produto</label>
+                  <input type="url" id="produtoUrl" placeholder="https://www.acheiepostei.shop/produto/123" />
+                </div>
+              </div>
+              <div class="field hidden" id="imagemUrlField">
+                <label for="tituloProduto">Título do produto (opcional)</label>
+                <input type="text" id="tituloProduto" placeholder="Ex: Chaveiro de gato com som" />
+                <label for="imagemUrl" style="margin-top: 0.75rem; display: block;">Link da imagem do produto (opcional)</label>
+                <input type="url" id="imagemUrl" placeholder="https://exemplo.com/imagem-do-produto.jpg" />
+                <p class="field-hint">Os dois campos são opcionais e independentes — preencha só o que quiser. A gente já tenta buscar a imagem automaticamente; use esses campos se quiser deixar o card mais caprichado ou se a busca automática não achar nada. Se não souber pegar esses links, pode deixar em branco sem problema nenhum.</p>
+              </div>
+              <button id="saveAutomationBtn" class="btn btn-primary">Salvar automação</button>
+            </section>
+
+            <!-- Automations List -->
+            <section class="panel panel-plain">
+              <div class="panel-header">
+                <h2>Automações cadastradas</h2>
+                <input type="search" id="automationSearch" class="search-input" placeholder="Buscar por palavra-chave ou link" />
+              </div>
+              <div id="loadingAutomations" class="loading-row">Carregando automações…</div>
+              <div class="automation-grid" id="automationsTableBody"></div>
+            </section>
+          </div>
+
+          <!-- Right column (Desktop only) -->
+          <div class="view-sidebar" id="dashboardRightSidebar">
+            <div class="widget health-widget">
+              <div class="widget-header">
+                <h3>Saúde das conexões</h3>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.4"/><path d="M12 7v5l2 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+              </div>
+              <ul class="health-list" id="healthList">
+                <li class="health-item">
+                  <span class="health-dot health-dot-ok"></span>
+                  <span class="health-label">@loja.aurora</span>
+                  <span class="health-status">Conectada</span>
+                </li>
+                <li class="health-item">
+                  <span class="health-dot health-dot-warn"></span>
+                  <span class="health-label">@estudio.nova</span>
+                  <span class="health-status">Revisar</span>
+                </li>
+              </ul>
+            </div>
+            <div class="widget activity-widget">
+              <div class="widget-header">
+                <h3>Atividade recente</h3>
+                <button class="btn btn-ghost btn-sm btn-icon" id="refreshActivity" aria-label="Atualizar atividade">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M1 4v6h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.41 15A7.5 7.5 0 0 0 19.5 12 7.5 7.5 0 0 0 13.5 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                </button>
+              </div>
+              <ul class="activity-list" id="activityList">
+                <li class="activity-item">
+                  <span class="activity-ico">📩</span>
+                  <span class="activity-text">Link enviado para @cliente_ana — Vestido Linho Bege</span>
+                  <span class="activity-time">há 2 min</span>
+                </li>
+                <li class="activity-item">
+                  <span class="activity-ico">⚡</span>
+                  <span class="activity-text">Automação “QUERO” ativada</span>
+                  <span class="activity-time">há 15 min</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Accounts ===== -->
+      <div id="tab-accounts" class="view hidden">
+        <div class="view-grid">
+          <div class="view-main">
+            <header class="view-header">
+              <h1>Contas do Instagram</h1>
+              <p>Conecte as contas profissionais que vão responder comentários e enviar Direct.</p>
+            </header>
+
+            <section class="panel panel-plain ig-tester-onboarding" id="igTesterOnboarding">
+              <h2>Conectar Instagram</h2>
+              <form id="igTesterForm">
+                <label class="field">
+                  <span>@ do Instagram</span>
+                  <input type="text" id="igTesterUsernameInput" placeholder="@sua.loja" autocomplete="off" />
+                </label>
+                <div id="igTesterFormError" class="banner error hidden"></div>
+                <button type="submit" id="igTesterSubmitBtn" class="btn btn-primary btn-full">Conectar Instagram</button>
+              </form>
+              <div id="igTesterRequestsList" class="ig-tester-list"></div>
+            </section>
+
+            <section class="ig-status" id="igStatusSection">
+              <div class="ig-status-header">
+                <h2>Contas conectadas</h2>
+                <button id="refreshIgBtn" class="btn btn-ghost btn-sm btn-icon" aria-label="Atualizar">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M1 4v6h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.41 15A7.5 7.5 0 0 0 19.5 12 7.5 7.5 0 0 0 13.5 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                </button>
+              </div>
+              <div id="igLoadingStatus" class="ig-status-row">
+                <span class="ig-dot ig-dot-pending"></span>
+                <div class="ig-status-text"><strong>Verificando conexão…</strong></div>
+              </div>
+              <div id="igAccountsList" class="ig-accounts-list hidden"></div>
+              <div id="igStatusFooter" class="ig-status-footer hidden">
+                <span id="igLimitText" class="ig-limit-text"></span>
+                <button id="addIgAccountBtn" class="btn btn-outline btn-sm">+ Adicionar conta</button>
+              </div>
+            </section>
+          </div>
+
+          <!-- Right column: saúde + atividade -->
+          <div class="view-sidebar">
+            <div class="widget health-widget">
+              <div class="widget-header">
+                <h3>Saúde das conexões</h3>
+              </div>
+              <ul class="health-list" id="igHealthList">
+                <li class="health-item">
+                  <span class="health-dot health-dot-ok"></span>
+                  <span class="health-label">@loja.aurora</span>
+                  <span class="health-status">Conectada</span>
+                </li>
+              </ul>
+            </div>
+            <div class="widget activity-widget">
+              <div class="widget-header">
+                <h3>Atividade recente</h3>
+              </div>
+              <ul class="activity-list" id="igActivityList">
+                <li class="activity-item">
+                  <span class="activity-ico">📩</span>
+                  <span class="activity-text">Link enviado para @cliente_ana — Vestido Linho Bege</span>
+                  <span class="activity-time">há 2 min</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Admin ===== -->
+      <div id="tab-admin" class="view hidden">
+        <div class="view-grid">
+          <div class="view-main">
+            <header class="view-header">
+              <h1>Administração</h1>
+              <p>Convide clientes e gerencie o acesso à plataforma.</p>
+            </header>
+
+            <!-- Admin KPI Row -->
+            <section class="kpi-row" id="adminKpis">
+              <div class="kpi-card kpi-card-pro">
+                <span class="kpi-icon">👥</span>
+                <span class="kpi-value" id="kpiUsers">0</span>
+                <span class="kpi-label">Clientes cadastrados</span>
+              </div>
+              <div class="kpi-card kpi-card-pro kpi-card-emerald">
+                <span class="kpi-icon">✓</span>
+                <span class="kpi-value" id="kpiActiveUsers">0</span>
+                <span class="kpi-label">Contas ativas</span>
+              </div>
+              <div class="kpi-card kpi-card-pro kpi-card-gold">
+                <span class="kpi-icon">💰</span>
+                <span class="kpi-value" id="kpiMrr">R$ 0</span>
+                <span class="kpi-label">Recorrência em dia</span>
+              </div>
+              <div class="kpi-card kpi-card-pro kpi-card-pink">
+                <span class="kpi-icon">⚠</span>
+                <span class="kpi-value" id="kpiLate">0</span>
+                <span class="kpi-label">Pagamentos atrasados</span>
+              </div>
+            </section>
+
+            <!-- Invite -->
+            <section class="panel panel-accent">
+              <h2>+ Convidar novo usuário</h2>
+              <p class="panel-sub">O acesso é só por convite. A pessoa recebe um e-mail com um link para definir a própria senha.</p>
+              <div class="field-row field-row-invite">
+                <div class="field">
+                  <label for="inviteEmail">E-mail do novo cliente</label>
+                  <input type="email" id="inviteEmail" placeholder="cliente@exemplo.com" />
+                </div>
+                <button id="inviteUserBtn" class="btn btn-primary">Enviar convite</button>
+              </div>
+            </section>
+
+            <!-- Users Table -->
+            <section class="panel panel-plain">
+              <div class="panel-header">
+                <h2>Clientes cadastrados</h2>
+                <input type="search" id="userSearch" class="search-input" placeholder="Buscar por e-mail" />
+              </div>
+              <div id="loadingUsers" class="loading-row">Carregando usuários…</div>
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>E-mail</th>
+                      <th>Cadastrado em</th>
+                      <th>Status</th>
+                      <th>Pagamento</th>
+                      <th>Vencimento</th>
+                      <th>Plano (R$)</th>
+                      <th>Contas IG</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody id="usersTableBody">
+                    <tr><td colspan="8" class="empty-state">Nenhum usuário encontrado.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <!-- IG Tester Admin -->
+            <section class="panel panel-plain">
+              <div class="panel-header">
+                <h2>Solicitações de conexão do Instagram</h2>
+                <button id="igTesterAdminRefreshBtn" class="btn btn-ghost btn-sm btn-icon" aria-label="Atualizar">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M1 4v6h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.41 15A7.5 7.5 0 0 0 19.5 12 7.5 7.5 0 0 0 13.5 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                </button>
+              </div>
+              <div id="igTesterAdminList"></div>
+            </section>
+          </div>
+
+          <!-- Admin right column -->
+          <div class="view-sidebar">
+            <div class="widget health-widget">
+              <div class="widget-header"><h3>Resumo financeiro</h3></div>
+              <ul class="health-list" id="financeSummary">
+                <li class="health-item">
+                  <span class="health-label">MRR atual</span>
+                  <span class="health-status success">R$ 18,4k</span>
+                </li>
+                <li class="health-item">
+                  <span class="health-label">Clientes em atraso</span>
+                  <span class="health-status danger">3</span>
+                </li>
+              </ul>
+            </div>
+            <div class="widget activity-widget">
+              <div class="widget-header"><h3>Últimas atividades</h3></div>
+              <ul class="activity-list" id="adminActivityList">
+                <li class="activity-item">
+                  <span class="activity-ico">💸</span>
+                  <span class="activity-text">Pagamento recebido de @cliente_ana</span>
+                  <span class="activity-time">há 1h</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== FAB Menu (Mobile & Desktop) ===== -->
+  <div class="fab-container" id="fabContainer">
+    <div class="fab-backdrop" id="fabBackdrop"></div>
+    <div class="fab-menu">
+      <button class="fab-option" id="fabNewAutomation" data-action="new-automation">
+        <span class="fab-option-icon">✏️</span>
+        <span class="fab-option-label">Nova automação</span>
+      </button>
+      <button class="fab-option" id="fabConnectIg" data-action="connect-ig">
+        <span class="fab-option-icon">📷</span>
+        <span class="fab-option-label">Conectar Instagram</span>
+      </button>
+      <button class="fab-option" id="fabInviteClient" data-action="invite-client" style="display: none;">
+        <span class="fab-option-icon">📧</span>
+        <span class="fab-option-label">Convidar cliente</span>
+      </button>
+      <button class="fab-toggle" id="fabToggle" aria-label="Ações rápidas">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5.5" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== Bottom Nav (Mobile) ===== -->
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="bottom-nav-item active" data-tab="dashboard" aria-label="Automações">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 12.5L12 5l9 7.5v11a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V12H7v10.5a2 2 0 0 1-2 2H1a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="bottom-nav-label">Automações</span>
+    </button>
+    <button class="bottom-nav-item" data-tab="accounts" aria-label="Contas">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="4" width="19" height="16" rx="3" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="10.2" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M6.5 17c.9-2.1 2.9-3.4 5.5-3.4s4.6 1.3 5.5 3.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span class="bottom-nav-label">Contas</span>
+    </button>
+    <button class="bottom-nav-item" data-tab="admin" id="bottomNavAdmin" aria-label="Administração" style="display: none;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="7" r="3.2" stroke="currentColor" stroke-width="1.8"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16.5 4.2c1.6.4 2.8 1.9 2.8 3.6 0 1.7-1.2 3.2-2.8 3.6M20 20c0-2.9-1.9-5-4.4-5.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span class="bottom-nav-label">Admin</span>
+    </button>
+  </nav>
+
+  <script type="module" src="app.js"></script>
+  <script type="module" src="instagram-tester-onboarding.js"></script>
+  <script type="module" src="instagram-tester-admin.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="motion-fx.js"></script>
+</body>
+</html>
