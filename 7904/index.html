@@ -222,11 +222,13 @@
           <input type="text" id="tituloProduto" placeholder="Ex: Chaveiro de gato com som" />
           <label for="imagemUrl" style="margin-top: 0.75rem; display: block;">Link da imagem do produto (opcional)</label>
           <input type="url" id="imagemUrl" placeholder="https://exemplo.com/imagem-do-produto.jpg" />
+          <label for="precoProduto" style="margin-top: 0.75rem; display: block;">Preço (opcional)</label>
+          <input type="text" id="precoProduto" placeholder="Ex: R$ 49,90" maxlength="20" />
           <p class="field-hint">
-            Os dois campos são opcionais e independentes — preencha só o que quiser. A gente já
+            Os três campos são opcionais e independentes — preencha só o que quiser. A gente já
             tenta buscar a imagem automaticamente; use esses campos se quiser deixar o card mais
-            caprichado ou se a busca automática não achar nada. Se não souber pegar esses links,
-            pode deixar em branco sem problema nenhum.
+            caprichado, mostrar o preço direto na mensagem, ou se a busca automática não achar
+            nada. Se não souber pegar esses links, pode deixar em branco sem problema nenhum.
           </p>
         </div>
         <button id="saveAutomationBtn" class="btn btn-primary">Salvar automação</button>
