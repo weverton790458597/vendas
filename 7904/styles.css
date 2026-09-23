@@ -1283,6 +1283,119 @@ tr:hover td {
   margin: 0.75rem 0.85rem 0.85rem;
 }
 
+/* === Sub-abas horizontais dentro de Automações === */
+.subtab-nav {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.75rem;
+}
+.subtab-btn {
+  padding: 0.55rem 1.1rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  background-color: var(--surface-2);
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+.subtab-btn:hover {
+  color: var(--text-main);
+}
+.subtab-btn.active {
+  background: linear-gradient(135deg, var(--gold-light), var(--teal-light));
+  color: var(--text-main);
+  border-color: var(--gold);
+}
+
+/* === Cards de "Últimas publicações": dois botões lado a lado === */
+.latest-post-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0.75rem 0.85rem 0.85rem;
+}
+
+/* === Grid de produtos (painel de gestão + seletor) === */
+.produtos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+.produto-card {
+  background-color: var(--surface-2);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+.produto-thumb {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  display: block;
+  background-color: var(--surface);
+}
+.produto-thumb-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+.produto-info {
+  padding: 0.7rem 0.8rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.produto-info strong {
+  font-size: 0.82rem;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.produto-preco {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--gold-dark);
+  font-size: 0.85rem;
+}
+.produto-actions {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.7rem 0.8rem 0.8rem;
+}
+.produto-actions .btn {
+  flex: 1;
+}
+
+/* Card do seletor: o card inteiro é um botão clicável */
+.produto-card-pick {
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.produto-card-pick:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--gold);
+}
+.produto-card-pick .produto-info {
+  padding-bottom: 0.8rem;
+}
+.produtos-grid-picker {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  max-height: 55vh;
+  overflow-y: auto;
+}
 /* =========================================================================
    MOBILE — estilo de app nativo
    No desktop tudo continua exatamente como antes. Abaixo de 768px o layout
