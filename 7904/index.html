@@ -189,58 +189,141 @@
           <span class="kpi-label">Pausadas</span>
         </div>
       </section>
-      <section class="panel panel-plain">
-        <div class="panel-heading-row">
-          <h2>Últimas publicações</h2>
-          <button id="latestPostsRefreshBtn" class="btn btn-outline btn-sm">Atualizar</button>
-        </div>
-        <div id="latestPostsGrid" class="latest-posts-grid"></div>
-      </section>
-      <section class="panel panel-accent">
-        <h2>Nova automação</h2>
-        <div class="field hidden" id="automationIgAccountField">
-          <label for="automationIgAccount">Conta do Instagram</label>
-          <select id="automationIgAccount"></select>
-        </div>
-        <div class="field">
-          <label for="instagramMediaId">Link ou ID do post / reels</label>
-          <input type="text" id="instagramMediaId" placeholder="Cole a URL do post ou o media_id numérico" />
-        </div>
-        <div class="field-row">
-          <div class="field">
-            <label for="palavraChave">Palavra-chave</label>
-            <input type="text" id="palavraChave" placeholder="Ex: QUERO" />
+
+      <nav class="subtab-nav" id="automationsSubtabNav">
+        <button type="button" class="subtab-btn active" data-subtab="new">Nova automação</button>
+        <button type="button" class="subtab-btn" data-subtab="posts">Últimas publicações</button>
+        <button type="button" class="subtab-btn" data-subtab="list">Automações cadastradas</button>
+        <button type="button" class="subtab-btn" data-subtab="products">Produtos</button>
+      </nav>
+
+      <div class="subtab-panel" id="subtab-new">
+        <section class="panel panel-accent">
+          <h2>Nova automação</h2>
+          <div class="field hidden" id="automationIgAccountField">
+            <label for="automationIgAccount">Conta do Instagram</label>
+            <select id="automationIgAccount"></select>
           </div>
           <div class="field">
-            <label for="produtoUrl">Link do produto</label>
-            <input type="url" id="produtoUrl" placeholder="https://www.acheiepostei.shop/produto/123" />
+            <label for="instagramMediaId">Link ou ID do post / reels</label>
+            <input type="text" id="instagramMediaId" placeholder="Cole a URL do post ou o media_id numérico" />
           </div>
-        </div>
-        <button type="button" id="toggleImagemUrlBtn" class="btn btn-outline btn-sm">+ Personalizar card (opcional)</button>
-        <div class="field hidden" id="imagemUrlField">
-          <label for="tituloProduto">Título do produto (opcional)</label>
-          <input type="text" id="tituloProduto" placeholder="Ex: Chaveiro de gato com som" />
-          <label for="imagemUrl" style="margin-top: 0.75rem; display: block;">Link da imagem do produto (opcional)</label>
-          <input type="url" id="imagemUrl" placeholder="https://exemplo.com/imagem-do-produto.jpg" />
-          <label for="precoProduto" style="margin-top: 0.75rem; display: block;">Preço (opcional)</label>
-          <input type="text" id="precoProduto" placeholder="Ex: R$ 49,90" maxlength="20" />
-          <p class="field-hint">
-            Os três campos são opcionais e independentes — preencha só o que quiser. A gente já
-            tenta buscar a imagem automaticamente; use esses campos se quiser deixar o card mais
-            caprichado, mostrar o preço direto na mensagem, ou se a busca automática não achar
-            nada. Se não souber pegar esses links, pode deixar em branco sem problema nenhum.
+          <div class="field-row">
+            <div class="field">
+              <label for="palavraChave">Palavra-chave</label>
+              <input type="text" id="palavraChave" placeholder="Ex: QUERO" />
+            </div>
+            <div class="field">
+              <label for="produtoUrl">Link do produto</label>
+              <input type="url" id="produtoUrl" placeholder="https://www.acheiepostei.shop/produto/123" />
+            </div>
+          </div>
+          <button type="button" id="pickProdutoBtn" class="btn btn-outline btn-sm">📦 Escolher produto cadastrado</button>
+          <button type="button" id="toggleImagemUrlBtn" class="btn btn-outline btn-sm">+ Personalizar card (opcional)</button>
+          <div class="field hidden" id="imagemUrlField">
+            <label for="tituloProduto">Título do produto (opcional)</label>
+            <input type="text" id="tituloProduto" placeholder="Ex: Chaveiro de gato com som" />
+            <label for="imagemUrl" style="margin-top: 0.75rem; display: block;">Link da imagem do produto (opcional)</label>
+            <input type="url" id="imagemUrl" placeholder="https://exemplo.com/imagem-do-produto.jpg" />
+            <label for="precoProduto" style="margin-top: 0.75rem; display: block;">Preço (opcional)</label>
+            <input type="text" id="precoProduto" placeholder="Ex: R$ 49,90" maxlength="20" />
+            <p class="field-hint">
+              Os três campos são opcionais e independentes — preencha só o que quiser, ou clique em
+              "Escolher produto cadastrado" acima pra preencher tudo de uma vez. A gente também já
+              tenta buscar a imagem automaticamente se você não preencher nada. Se não souber pegar
+              esses links, pode deixar em branco sem problema nenhum.
+            </p>
+          </div>
+          <button id="saveAutomationBtn" class="btn btn-primary">Salvar automação</button>
+        </section>
+      </div>
+
+      <div class="subtab-panel hidden" id="subtab-posts">
+        <section class="panel panel-plain">
+          <div class="panel-heading-row">
+            <h2>Últimas publicações</h2>
+            <button id="latestPostsRefreshBtn" class="btn btn-outline btn-sm">Atualizar</button>
+          </div>
+          <div id="latestPostsGrid" class="latest-posts-grid"></div>
+        </section>
+      </div>
+
+      <div class="subtab-panel hidden" id="subtab-list">
+        <section class="panel panel-plain">
+          <div class="panel-heading-row">
+            <h2>Automações cadastradas</h2>
+            <input type="search" id="automationSearch" class="search-input" placeholder="Buscar por palavra-chave ou link" />
+          </div>
+          <div id="loadingAutomations" class="loading-row">Carregando automações…</div>
+          <div class="automation-grid" id="automationsTableBody"></div>
+        </section>
+      </div>
+
+      <div class="subtab-panel hidden" id="subtab-products">
+        <section class="panel panel-plain">
+          <div class="panel-heading-row">
+            <h2>Meus produtos</h2>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <input type="search" id="produtoSearch" class="search-input" placeholder="Buscar produto…" />
+              <button type="button" id="newProdutoBtn" class="btn btn-primary btn-sm">+ Novo produto</button>
+            </div>
+          </div>
+          <p class="panel-sub">
+            Cadastre aqui os produtos que você mais usa nas automações — depois é só clicar em
+            "Escolher produto cadastrado" na hora de criar uma automação, sem precisar copiar e
+            colar link, imagem e preço toda vez.
           </p>
+          <div id="produtosGrid" class="produtos-grid"></div>
+        </section>
+      </div>
+    </div>
+
+    <!-- Modal de cadastro/edição de produto -->
+    <div class="modal-overlay hidden" id="produtoModal">
+      <div class="modal-box">
+        <div class="modal-header">
+          <h2 id="produtoModalTitle">Cadastrar produto</h2>
+          <button type="button" class="modal-close" id="closeProdutoModalBtn">&times;</button>
         </div>
-        <button id="saveAutomationBtn" class="btn btn-primary">Salvar automação</button>
-      </section>
-      <section class="panel panel-plain">
-        <div class="panel-heading-row">
-          <h2>Automações cadastradas</h2>
-          <input type="search" id="automationSearch" class="search-input" placeholder="Buscar por palavra-chave ou link" />
+        <div class="modal-body">
+          <input type="hidden" id="produtoEditId" />
+          <div class="field">
+            <label for="produtoNomeInput">Nome do produto</label>
+            <input type="text" id="produtoNomeInput" placeholder="Ex: Mini Ventilador De Mesa" />
+          </div>
+          <div class="field">
+            <label for="produtoLinkInput">Link de afiliado</label>
+            <input type="url" id="produtoLinkInput" placeholder="https://s.shopee.com.br/..." />
+          </div>
+          <div class="field">
+            <label for="produtoImgInput">Link da imagem (opcional)</label>
+            <input type="url" id="produtoImgInput" placeholder="https://.../imagem.webp" />
+          </div>
+          <div class="field">
+            <label for="produtoPrecoInput">Preço (opcional)</label>
+            <input type="text" id="produtoPrecoInput" placeholder="R$ 26,99" />
+          </div>
+          <div id="produtoModalError" class="banner error hidden"></div>
         </div>
-        <div id="loadingAutomations" class="loading-row">Carregando automações…</div>
-        <div class="automation-grid" id="automationsTableBody"></div>
-      </section>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="cancelProdutoModalBtn">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="saveProdutoBtn">Salvar produto</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal seletor de produto (reaproveitado pelo formulário de automação e pelos cards de posts) -->
+    <div class="modal-overlay hidden" id="produtoPickerModal">
+      <div class="modal-box">
+        <div class="modal-header">
+          <h2>Escolher produto</h2>
+          <button type="button" class="modal-close" id="closeProdutoPickerBtn">&times;</button>
+        </div>
+        <div class="modal-body">
+          <input type="search" id="produtoPickerSearch" class="search-input" placeholder="Buscar produto…" style="width: 100%; margin-bottom: 1rem;" />
+          <div id="produtoPickerList" class="produtos-grid produtos-grid-picker"></div>
+        </div>
+      </div>
     </div>
     <div id="tab-accounts" class="view hidden">
       <header class="view-header">
@@ -345,7 +428,9 @@
 <script type="module" src="app.js"></script>
 <script type="module" src="instagram-tester-onboarding.js"></script>
 <script type="module" src="instagram-tester-admin.js"></script>
+<script type="module" src="produtos.js"></script>
 <script type="module" src="instagram-latest-posts.js"></script>
+<script src="automations-subtabs.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script src="motion-fx.js"></script>
 </body>
