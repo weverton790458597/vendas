@@ -56,11 +56,18 @@ function renderPosts(posts) {
         "<strong>@" + escapeHtml(post.username || "") + "</strong>" +
         "<p>" + captionShort + (post.caption && post.caption.length > 90 ? "…" : "") + "</p>" +
         "</div>" +
-        '<button type="button" class="btn btn-primary btn-sm latest-post-btn" ' +
+        '<div class="latest-post-actions">' +
+        '<button type="button" class="btn btn-outline btn-sm latest-post-btn" ' +
         'data-media-id="' + escapeHtml(post.media_id || "") + '" ' +
         'data-config-id="' + escapeHtml(post.instagram_config_id || "") + '">' +
         "Criar automação" +
         "</button>" +
+        '<button type="button" class="btn btn-primary btn-sm latest-post-produto-btn" ' +
+        'data-media-id="' + escapeHtml(post.media_id || "") + '" ' +
+        'data-config-id="' + escapeHtml(post.instagram_config_id || "") + '">' +
+        "📦 Escolher produto" +
+        "</button>" +
+        "</div>" +
         "</div>"
       );
     })
@@ -68,6 +75,9 @@ function renderPosts(posts) {
 
   container.querySelectorAll(".latest-post-btn").forEach((btn) =>
     btn.addEventListener("click", () => useForAutomation(btn))
+  );
+  container.querySelectorAll(".latest-post-produto-btn").forEach((btn) =>
+    btn.addEventListener("click", () => useForAutomationWithProduto(btn))
   );
 }
 
@@ -88,6 +98,28 @@ function useForAutomation(btn) {
 
   const palavraChaveInput = document.getElementById("palavraChave");
   if (palavraChaveInput) palavraChaveInput.focus();
+}
+
+// Pré-preenche o post (media/conta) igual "Criar automação" — e já abre o
+// seletor de produto, pra preencher link/título/imagem/preço de uma vez.
+function useForAutomationWithProduto(btn) {
+  // Precisa trocar pra sub-aba "Nova automação" primeiro, já que os cards
+  // de posts ficam numa sub-aba diferente.
+  document.querySelector('.subtab-btn[data-subtab="new"]')?.click();
+  useForAutomation(btn);
+
+  if (typeof window.openProdutoPicker !== "function") return;
+  window.openProdutoPicker((produto) => {
+    const produtoUrlInput = document.getElementById("produtoUrl");
+    const tituloInput = document.getElementById("tituloProduto");
+    const imagemInput = document.getElementById("imagemUrl");
+    const precoInput = document.getElementById("precoProduto");
+    if (produtoUrlInput) produtoUrlInput.value = produto.link_afiliado || "";
+    if (tituloInput) tituloInput.value = produto.nome || "";
+    if (imagemInput) imagemInput.value = produto.link_imagem || "";
+    if (precoInput) precoInput.value = produto.preco || "";
+    document.getElementById("imagemUrlField")?.classList.remove("hidden");
+  });
 }
 
 async function loadLatestPosts() {
