@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#ffffff" />
+<title>Achei e Postei — Automação de Direct</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<script>
+(function () {
+  var saved = localStorage.getItem("ap-theme");
+  var theme = saved || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  document.documentElement.setAttribute("data-theme", theme);
+})();
+</script>
+</head>
+<body>
+
+<div id="authScreen" class="auth-shell">
+  <div class="auth-brand">
+    <div class="brand-mark">Achei &amp; Postei</div>
+    <h1 class="brand-headline">Alguém comenta a palavra certa. O link do produto chega no Direct sozinho.</h1>
+    <p class="brand-copy">Conecte sua conta do Instagram uma vez. Cada comentário vira uma venda em potencial.</p>
+    <div class="brand-stats">
+      <div class="brand-stat"><strong>24/7</strong><span>respondendo sozinho</span></div>
+      <div class="brand-stat"><strong>&lt;1 min</strong><span>resposta automática</span></div>
+    </div>
+  </div>
+  <div class="auth-panel">
+    <button type="button" class="theme-toggle theme-toggle-floating" data-theme-toggle aria-label="Alternar modo escuro">
+      <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.5v2.4M12 19.1v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.7 6.7 0 0 0 10.5 10.5z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="auth-form-card">
+      <div class="auth-form-header">
+        <h2>Bem-vindo de volta</h2>
+        <p class="auth-sub">Entre na sua conta para gerenciar as automações.</p>
+      </div>
+      <div id="authBanner" class="banner"></div>
+      <div class="field">
+        <label for="authEmail">E-mail profissional</label>
+        <input type="email" id="authEmail" placeholder="seu@email.com" autocomplete="email" />
+      </div>
+      <div class="field">
+        <label for="authPassword">Senha de acesso</label>
+        <input type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+      <button id="authSubmitBtn" class="btn btn-primary btn-full">Entrar na plataforma</button>
+    </div>
+  </div>
+</div>
+
+<div id="setPasswordScreen" class="auth-shell hidden">
+  <div class="auth-brand">
+    <div class="brand-mark">Achei &amp; Postei</div>
+    <h1 class="brand-headline">Defina sua senha</h1>
+  </div>
+  <div class="auth-panel">
+    <div class="auth-form-card">
+      <div id="setPasswordBanner" class="banner"></div>
+      <div class="field">
+        <label for="newPassword">Nova senha</label>
+        <input type="password" id="newPassword" placeholder="Mínimo 6 caracteres" autocomplete="new-password" />
+      </div>
+      <button id="setPasswordBtn" class="btn btn-primary btn-full">Salvar e entrar</button>
+    </div>
+  </div>
+</div>
+
+<div id="blockedScreen" class="auth-shell hidden">
+  <div class="auth-panel">
+    <div class="auth-form-card">
+      <h2>Acesso Suspenso</h2>
+      <p class="auth-sub">Fale com o suporte para reativar.</p>
+      <button id="blockedLogoutBtn" class="btn btn-outline btn-full">Sair</button>
+    </div>
+  </div>
+</div>
+
+<div id="appScreen" class="app-shell hidden">
+  <aside class="sidebar">
+    <div>
+      <div class="sidebar-brand">Achei &amp; Postei</div>
+      <nav class="sidebar-nav" id="tabsNav">
+        <button class="nav-item active" data-tab="dashboard">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>Automações</span>
+        </button>
+        <button class="nav-item" data-tab="accounts">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2.5" y="4" width="19" height="16" rx="3"/><circle cx="12" cy="10" r="3"/></svg>
+          <span>Contas do Instagram</span>
+        </button>
+        <button class="nav-item hidden" id="adminTabBtn" data-tab="admin">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/></svg>
+          <span>Administração</span>
+        </button>
+      </nav>
+    </div>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <span class="sidebar-user-avatar" id="userAvatar">U</span>
+        <span id="userEmailLabel">usuario@email.com</span>
+      </div>
+      <button type="button" class="theme-toggle" data-theme-toggle>
+        <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/></svg>
+        <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.7 6.7 0 0 0 10.5 10.5z"/></svg>
+        <span>Tema</span>
+      </button>
+      <button id="logoutBtn" class="btn btn-outline btn-full btn-sm">Sair</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div id="statusBanner" class="banner banner-floating"></div>
+
+    <div id="tab-dashboard" class="view">
+      <header class="view-header">
+        <h1>Minhas automações</h1>
+        <p>Palavras-chave em comentários viram links no Direct.</p>
+      </header>
+
+      <section class="kpi-row">
+        <div class="kpi-card">
+          <span class="kpi-value" id="kpiTotal">0</span>
+          <span class="kpi-label">Cadastradas</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-value" id="kpiAtivas">0</span>
+          <span class="kpi-label">Ativas</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-value" id="kpiPausadas">0</span>
+          <span class="kpi-label">Pausadas</span>
+        </div>
+      </section>
+
+      <nav class="subtab-nav" id="automationsSubtabNav">
+        <button type="button" class="subtab-btn active" data-subtab="new">Nova automação</button>
+        <button type="button" class="subtab-btn" data-subtab="posts">Últimas publicações</button>
+        <button type="button" class="subtab-btn" data-subtab="list">Automações cadastradas</button>
+        <button type="button" class="subtab-btn" data-subtab="products">Produtos</button>
+      </nav>
+
+      <div class="subtab-panel" id="subtab-new">
+        <section class="panel">
+          <h2>Nova automação</h2>
+          <div class="field hidden" id="automationIgAccountField">
+            <label for="automationIgAccount">Conta do Instagram</label>
+            <select id="automationIgAccount"></select>
+          </div>
+          <div class="field">
+            <label for="instagramMediaId">Link ou ID do post / reels</label>
+            <input type="text" id="instagramMediaId" placeholder="Cole a URL do post" />
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="palavraChave">Palavra-chave</label>
+              <input type="text" id="palavraChave" placeholder="Ex: QUERO" />
+            </div>
+            <div class="field">
+              <label for="produtoUrl">Link do produto</label>
+              <input type="url" id="produtoUrl" placeholder="https://..." />
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+            <button type="button" id="pickProdutoBtn" class="btn btn-outline btn-sm">📦 Escolher produto cadastrado</button>
+            <button type="button" id="toggleImagemUrlBtn" class="btn btn-outline btn-sm">+ Personalizar card</button>
+          </div>
+
+          <div class="field hidden" id="imagemUrlField">
+            <label for="tituloProduto">Título do produto (opcional)</label>
+            <input type="text" id="tituloProduto" />
+            <label for="imagemUrl">Link da imagem (opcional)</label>
+            <input type="url" id="imagemUrl" />
+            <label for="precoProduto">Preço (opcional)</label>
+            <input type="text" id="precoProduto" maxlength="20" />
+          </div>
+
+          <button id="saveAutomationBtn" class="btn btn-primary">Salvar automação</button>
+        </section>
+      </div>
+
+      <div class="subtab-panel hidden" id="subtab-posts">
+        <section class="panel">
+          <div class="panel-heading-row">
+            <h2>Últimas publicações</h2>
+            <button id="latestPostsRefreshBtn" class="btn btn-outline btn-sm">Atualizar</button>
+          </div>
+          <div id="latestPostsGrid" class="latest-posts-grid"></div>
+        </section>
+      </div>
+
+      <div class="subtab-panel hidden" id="subtab-list">
+        <section class="panel">
+          <div class="panel-heading-row">
+            <h2>Automações cadastradas</h2>
+            <input type="search" id="automationSearch" placeholder="Buscar..." style="max-width: 200px;" />
+          </div>
+          <div id="loadingAutomations" class="loading-row">Carregando automações…</div>
+          <div class="automation-grid" id="automationsTableBody"></div>
+        </section>
+      </div>
+
+      <div class="subtab-panel hidden" id="subtab-products">
+        <section class="panel">
+          <div class="panel-heading-row">
+            <h2>Meus produtos</h2>
+            <div style="display: flex; gap: 0.5rem;">
+              <input type="search" id="produtoSearch" placeholder="Buscar..." style="max-width: 200px;" />
+              <button type="button" id="newProdutoBtn" class="btn btn-primary btn-sm">+ Novo produto</button>
+            </div>
+          </div>
+          <div id="produtosGrid" class="produtos-grid"></div>
+        </section>
+      </div>
+    </div>
+
+    <div id="tab-accounts" class="view hidden">
+      <header class="view-header">
+        <h1>Contas do Instagram</h1>
+      </header>
+      <section class="panel" id="igTesterOnboarding">
+        <h2>Conectar Instagram</h2>
+        <form id="igTesterForm">
+          <div class="field">
+            <label for="igTesterUsernameInput">@ do Instagram</label>
+            <input type="text" id="igTesterUsernameInput" placeholder="@sua.loja" />
+          </div>
+          <div id="igTesterFormError" class="banner error hidden"></div>
+          <button type="submit" id="igTesterSubmitBtn" class="btn btn-primary btn-full">Conectar Instagram</button>
+        </form>
+        <div id="igTesterRequestsList"></div>
+      </section>
+
+      <section class="panel" id="igStatusSection">
+        <h2>Contas conectadas</h2>
+        <div id="igLoadingStatus">Verificando…</div>
+        <div id="igAccountsList" class="hidden"></div>
+        <div id="igStatusFooter" class="hidden" style="margin-top: 1rem;">
+          <span id="igLimitText"></span>
+          <button id="addIgAccountBtn" class="btn btn-outline btn-sm">+ Adicionar conta</button>
+        </div>
+      </section>
+    </div>
+
+    <div id="tab-admin" class="view hidden">
+      <header class="view-header">
+        <h1>Administração</h1>
+      </header>
+      <section class="kpi-row">
+        <div class="kpi-card"><span class="kpi-value" id="kpiUsers">0</span><span class="kpi-label">Usuários</span></div>
+        <div class="kpi-card"><span class="kpi-value" id="kpiActiveUsers">0</span><span class="kpi-label">Ativos</span></div>
+        <div class="kpi-card"><span class="kpi-value" id="kpiMrr">R$ 0</span><span class="kpi-label">Recorrência</span></div>
+        <div class="kpi-card"><span class="kpi-value" id="kpiLate">0</span><span class="kpi-label">Atrasados</span></div>
+      </section>
+
+      <section class="panel">
+        <h2>Convidar novo usuário</h2>
+        <div class="field-row">
+          <div class="field">
+            <input type="email" id="inviteEmail" placeholder="cliente@exemplo.com" />
+          </div>
+          <button id="inviteUserBtn" class="btn btn-primary">Enviar convite</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading-row">
+          <h2>Usuários cadastrados</h2>
+          <input type="search" id="userSearch" placeholder="Buscar e-mail..." style="max-width: 200px;" />
+        </div>
+        <div id="loadingUsers" class="loading-row">Carregando usuários…</div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>E-mail</th>
+                <th>Criado em</th>
+                <th>Status</th>
+                <th>Pagamento</th>
+                <th>Vencimento</th>
+                <th>Plano</th>
+                <th>Contas</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading-row">
+          <h2>Solicitações de conexão</h2>
+          <button id="igTesterAdminRefreshBtn" class="btn btn-outline btn-sm">Atualizar</button>
+        </div>
+        <div id="igTesterAdminList"></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- Modais -->
+<div class="modal-overlay hidden" id="produtoModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 id="produtoModalTitle">Cadastrar produto</h2>
+      <button type="button" class="modal-close" id="closeProdutoModalBtn">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="produtoEditId" />
+      <div class="field">
+        <label for="produtoNomeInput">Nome do produto</label>
+        <input type="text" id="produtoNomeInput" />
+      </div>
+      <div class="field">
+        <label for="produtoLinkInput">Link de afiliado</label>
+        <input type="url" id="produtoLinkInput" />
+      </div>
+      <div class="field">
+        <label for="produtoImgInput">Link da imagem</label>
+        <input type="url" id="produtoImgInput" />
+      </div>
+      <div class="field">
+        <label for="produtoPrecoInput">Preço</label>
+        <input type="text" id="produtoPrecoInput" />
+      </div>
+      <div id="produtoModalError" class="banner error hidden"></div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline" id="cancelProdutoModalBtn">Cancelar</button>
+      <button type="button" class="btn btn-primary" id="saveProdutoBtn">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="produtoPickerModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>Escolher produto</h2>
+      <button type="button" class="modal-close" id="closeProdutoPickerBtn">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="search" id="produtoPickerSearch" placeholder="Buscar produto…" style="margin-bottom: 1rem;" />
+      <div id="produtoPickerList" class="produtos-grid"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="app.js"></script>
+<script type="module" src="instagram-tester-onboarding.js"></script>
+<script type="module" src="instagram-tester-admin.js"></script>
+<script type="module" src="produtos.js"></script>
+<script type="module" src="instagram-latest-posts.js"></script>
+<script src="automations-subtabs.js"></script>
+</body>
+</html>
