@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<title>Respondi — automação de comentários e DM do Instagram</title>
+<meta name="description" content="Responda comentários do Instagram no automático e envie o link do produto certo por DM, sem perder venda." />
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#120e1b" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#faf7fb" media="(prefers-color-scheme: light)" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Respondi" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png" />
+
+<link rel="stylesheet" href="styles.css" />
+<script>
+  // Evita "flash" de tema errado: aplica o tema salvo antes da 1ª pintura.
+  // (app.js só grava/alterna o tema; quem restaura no carregamento é este bloco.)
+  (function () {
+    try {
+      var saved = localStorage.getItem('ap-theme');
+      if (saved) document.documentElement.setAttribute('data-theme', saved);
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+
+<!-- =========================================================
+     TELA: LOGIN
+     ========================================================= -->
+<section id="authScreen" class="auth-screen">
+  <div class="auth-brand">
+    <canvas id="motionCanvas"></canvas>
+    <div class="auth-brand-content">
+      <div class="brand-mark">
+        <span class="brand-glyph">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M4 6.5C4 5.12 5.12 4 6.5 4h9C16.9 4 18 5.12 18 6.5v6c0 1.38-1.1 2.5-2.48 2.5H9l-3.6 3.2c-.5.45-1.28.1-1.28-.58V15C4 15 4 12 4 12v-5.5Z" fill="#fff"/><path d="M11 8.2l1 2 2 .3-1.5 1.4.35 2-1.85-1-1.85 1 .35-2L8 10.5l2-.3 1-2Z" fill="#ff4d6d"/></svg>
+        </span>
+        <span>Respondi</span>
+      </div>
+      <h1 class="brand-headline">Cada comentário do Instagram vira uma <em>venda no automático</em>.</h1>
+      <p class="brand-copy">Alguém comenta a palavra-chave no seu post, o Respondi manda o produto certo por DM na hora — sem você tocar no celular.</p>
+      <div class="brand-stats">
+        <div class="stat"><b>24/7</b><span>respondendo por você</span></div>
+        <div class="stat"><b>1 palavra</b><span>ativa a automação</span></div>
+        <div class="stat"><b>0 código</b><span>é só conectar e usar</span></div>
+      </div>
+      <div id="demoPhone">
+        <div class="phone-frame">
+          <div class="phone-screen">
+            <div class="phone-chat-bubble">"quero" 💬</div>
+            <div class="phone-chat-bubble reply">Chegou no seu Direct! 🎁</div>
+            <div class="phone-product-card">
+              <div class="pp-img"></div>
+              <div class="pp-info"><b>Tênis Runner Pro</b><span>R$ 189,90</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="auth-form-side">
+    <div class="auth-form-card">
+      <div class="auth-form-mobile-brand">
+        <span class="brand-glyph">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M4 6.5C4 5.12 5.12 4 6.5 4h9C16.9 4 18 5.12 18 6.5v6c0 1.38-1.1 2.5-2.48 2.5H9l-3.6 3.2c-.5.45-1.28.1-1.28-.58V15C4 15 4 12 4 12v-5.5Z" fill="#fff"/><path d="M11 8.2l1 2 2 .3-1.5 1.4.35 2-1.85-1-1.85 1 .35-2L8 10.5l2-.3 1-2Z" fill="#ff4d6d"/></svg>
+        </span>
+        <span>Respondi</span>
+      </div>
+      <h1>Entrar</h1>
+      <p class="auth-sub">Acesse o painel das suas automações.</p>
+      <div id="authBanner" class="banner"></div>
+      <div class="field">
+        <label for="authEmail">E-mail</label>
+        <input type="email" id="authEmail" autocomplete="username" placeholder="voce@empresa.com" />
+      </div>
+      <div class="field">
+        <label for="authPassword">Senha</label>
+        <input type="password" id="authPassword" autocomplete="current-password" placeholder="••••••••" />
+      </div>
+      <button type="button" id="authSubmitBtn" class="btn btn-primary btn-full">Entrar</button>
+      <button type="button" class="btn btn-outline btn-full" data-theme-toggle style="margin-top:0.7rem;">
+        <span class="icon-sun">☀️ Tema claro</span><span class="icon-moon">🌙 Tema escuro</span>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================
+     TELA: DEFINIR NOVA SENHA (convite / recuperação)
+     ========================================================= -->
+<section id="setPasswordScreen" class="center-screen hidden">
+  <div class="center-card is-setpass">
+    <div class="center-ico">🔑</div>
+    <h1>Crie sua senha</h1>
+    <p>Defina uma senha de acesso para começar a usar o Respondi.</p>
+    <div id="setPasswordBanner" class="banner"></div>
+    <div class="field">
+      <label for="newPassword">Nova senha</label>
+      <input type="password" id="newPassword" autocomplete="new-password" placeholder="Mínimo 6 caracteres" />
+    </div>
+    <button type="button" id="setPasswordBtn" class="btn btn-primary btn-full">Salvar senha e entrar</button>
+  </div>
+</section>
+
+<!-- =========================================================
+     TELA: CONTA BLOQUEADA
+     ========================================================= -->
+<section id="blockedScreen" class="center-screen hidden">
+  <div class="center-card is-blocked">
+    <div class="center-ico">⏸️</div>
+    <h1>Sua conta está pausada</h1>
+    <p>Fale com o suporte para reativar o acesso ao seu painel de automações.</p>
+    <button type="button" id="blockedLogoutBtn" class="btn btn-outline btn-full">Sair</button>
+  </div>
+</section>
+
+<!-- =========================================================
+     APP
+     ========================================================= -->
+<section id="appScreen" class="app-screen hidden">
+
+  <header class="app-topbar">
+    <div class="topbar-brand">
+      <span class="brand-glyph">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 6.5C4 5.12 5.12 4 6.5 4h9C16.9 4 18 5.12 18 6.5v6c0 1.38-1.1 2.5-2.48 2.5H9l-3.6 3.2c-.5.45-1.28.1-1.28-.58V15C4 15 4 12 4 12v-5.5Z" fill="#fff"/><path d="M11 8.2l1 2 2 .3-1.5 1.4.35 2-1.85-1-1.85 1 .35-2L8 10.5l2-.3 1-2Z" fill="#ff4d6d"/></svg>
+      </span>
+      <span>Respondi</span>
+    </div>
+    <div class="topbar-actions">
+      <button type="button" class="install-btn" data-pwa-install title="Instalar app" aria-label="Instalar app">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+      </button>
+      <button type="button" class="theme-toggle" data-theme-toggle title="Alternar tema" aria-label="Alternar tema">
+        <span class="icon-sun">☀️</span><span class="icon-moon">🌙</span>
+      </button>
+      <div class="user-chip">
+        <span id="userAvatar" class="user-avatar"></span>
+        <span id="userEmailLabel" class="user-email"></span>
+        <button type="button" id="logoutBtn" class="icon-btn" title="Sair" aria-label="Sair">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="app-body">
+    <nav class="app-nav">
+      <button type="button" class="nav-item active" data-tab="dashboard">
+        <span class="nav-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg></span>
+        <span>Painel</span>
+      </button>
+      <button type="button" class="nav-item" data-tab="accounts">
+        <span class="nav-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M8 6l1.6-2.4A2 2 0 0 1 11.2 3h1.6a2 2 0 0 1 1.6.8L16 6"/><circle cx="12" cy="13" r="3.4"/></svg></span>
+        <span>Contas</span>
+      </button>
+      <button type="button" id="adminTabBtn" class="nav-item hidden" data-tab="admin">
+        <span class="nav-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6l7-3Z"/><path d="M9.5 12l1.8 1.8L14.8 10"/></svg></span>
+        <span>Admin</span>
+      </button>
+    </nav>
+
+    <main class="app-main">
+      <div id="statusBanner" class="banner"></div>
+
+      <!-- ---------------- PAINEL (Automações) ---------------- -->
+      <div id="tab-dashboard" class="tab-panel">
+        <div class="panel-heading-row">
+          <h1 style="margin:0;">Painel de automações</h1>
+        </div>
+
+        <div class="kpi-strip">
+          <div class="kpi-item accent"><span id="kpiTotal" class="kpi-value">0</span><span class="kpi-label">Automações no total</span></div>
+          <div class="kpi-item"><span id="kpiAtivas" class="kpi-value">0</span><span class="kpi-label">Ativas agora</span></div>
+          <div class="kpi-item is-danger"><span id="kpiPausadas" class="kpi-value">0</span><span class="kpi-label">Pausadas</span></div>
+        </div>
+
+        <nav id="automationsSubtabNav" class="subtab-nav">
+          <button type="button" class="subtab-btn active" data-subtab="new">+ Nova automação</button>
+          <button type="button" class="subtab-btn" data-subtab="posts">Últimas publicações</button>
+          <button type="button" class="subtab-btn" data-subtab="list">Automações cadastradas</button>
+          <button type="button" class="subtab-btn" data-subtab="produtos">Produtos</button>
+        </nav>
+
+        <!-- Nova automação -->
+        <div id="subtab-new" class="subtab-panel">
+          <section class="panel">
+            <div class="panel-heading-row"><h2>Nova automação</h2></div>
+            <p class="panel-lead">Escolha o post, defina a palavra-chave do comentário e o produto que deve ser enviado por DM.</p>
+
+            <div class="produto-picker-row">
+              <div class="field" style="margin-bottom:0;">
+                <span>Post ou reel</span>
+                <input type="text" id="instagramMediaId" placeholder="Cole o link do post ou o media ID" />
+              </div>
+              <button type="button" id="pickProdutoBtn" class="btn btn-outline">📦 Escolher produto cadastrado</button>
+            </div>
+
+            <div class="automation-form-grid">
+              <div class="field">
+                <span>Palavra-chave do comentário</span>
+                <input type="text" id="palavraChave" placeholder="ex: quero" />
+              </div>
+              <div class="field" id="automationIgAccountField">
+                <span>Conta do Instagram</span>
+                <select id="automationIgAccount"></select>
+              </div>
+              <div class="field field-full">
+                <span>Link do produto</span>
+                <input type="text" id="produtoUrl" placeholder="https://" />
+              </div>
+            </div>
+
+            <button type="button" id="toggleImagemUrlBtn" class="btn btn-outline btn-sm" style="margin-bottom:1rem;">✏️ Personalizar imagem, título e preço</button>
+
+            <div id="imagemUrlField" class="automation-form-grid hidden">
+              <div class="field field-full">
+                <span>Imagem do produto (URL)</span>
+                <input type="text" id="imagemUrl" placeholder="https://" />
+              </div>
+              <div class="field">
+                <span>Título do produto</span>
+                <input type="text" id="tituloProduto" placeholder="Nome que aparece no Direct" />
+              </div>
+              <div class="field">
+                <span>Preço</span>
+                <input type="text" id="precoProduto" placeholder="R$ 0,00" />
+              </div>
+            </div>
+
+            <button type="button" id="saveAutomationBtn" class="btn btn-primary">Salvar automação</button>
+          </section>
+        </div>
+
+        <!-- Últimas publicações -->
+        <div id="subtab-posts" class="subtab-panel hidden">
+          <section class="panel panel-plain">
+            <div class="panel-heading-row">
+              <h2>Últimas publicações</h2>
+              <button type="button" id="latestPostsRefreshBtn" class="btn btn-outline btn-sm">Atualizar</button>
+            </div>
+            <div id="latestPostsGrid" class="latest-posts-grid"></div>
+          </section>
+        </div>
+
+        <!-- Automações cadastradas -->
+        <div id="subtab-list" class="subtab-panel hidden">
+          <section class="panel panel-plain">
+            <div class="panel-heading-row">
+              <h2>Automações cadastradas</h2>
+              <div class="search-input-wrap">
+                <input type="search" id="automationSearch" placeholder="Buscar por palavra, link ou post" />
+              </div>
+            </div>
+            <div id="loadingAutomations" class="loading-row hidden">Carregando automações…</div>
+            <div id="automationsTableBody" class="automation-grid"></div>
+          </section>
+        </div>
+
+        <!-- Produtos -->
+        <div id="subtab-produtos" class="subtab-panel hidden">
+          <section class="panel panel-plain">
+            <div class="panel-heading-row">
+              <h2>Produtos</h2>
+              <button type="button" id="newProdutoBtn" class="btn btn-primary btn-sm">+ Novo produto</button>
+            </div>
+            <div class="search-input-wrap" style="margin-bottom:1rem;">
+              <input type="search" id="produtoSearch" placeholder="Buscar produto" />
+            </div>
+            <div id="produtosGrid" class="produtos-grid"></div>
+          </section>
+        </div>
+      </div>
+
+      <!-- ---------------- CONTAS (Instagram) ---------------- -->
+      <div id="tab-accounts" class="tab-panel hidden">
+        <div class="panel-heading-row"><h1 style="margin:0;">Contas do Instagram</h1></div>
+
+        <section class="panel panel-plain ig-tester-onboarding" id="igTesterOnboarding">
+          <h2>Conectar Instagram</h2>
+          <p class="panel-lead">Primeiro, peça acesso de testador com o seu @. Depois de aprovado, você conecta a conta abaixo.</p>
+
+          <form id="igTesterForm">
+            <div class="field">
+              <label for="igTesterUsernameInput">@ do Instagram</label>
+              <input type="text" id="igTesterUsernameInput" placeholder="@sua.loja" autocomplete="off" />
+            </div>
+            <div id="igTesterFormError" class="banner error hidden"></div>
+            <button type="submit" id="igTesterSubmitBtn" class="btn btn-primary btn-full">Conectar Instagram</button>
+          </form>
+
+          <div id="igTesterRequestsList" class="ig-tester-list"></div>
+        </section>
+
+        <section class="panel panel-plain" style="margin-top:1.5rem;">
+          <div class="panel-heading-row"><h2>Contas conectadas</h2></div>
+          <div id="igLoadingStatus" class="loading-row">Verificando status da conexão…</div>
+          <div id="igAccountsList" class="hidden"></div>
+          <div id="igStatusFooter" class="hidden">
+            <span id="igLimitText"></span>
+            <button type="button" id="addIgAccountBtn" class="btn btn-primary btn-sm">Conectar Instagram</button>
+          </div>
+        </section>
+      </div>
+
+      <!-- ---------------- ADMIN ---------------- -->
+      <div id="tab-admin" class="tab-panel hidden">
+        <div class="panel-heading-row"><h1 style="margin:0;">Administração</h1></div>
+
+        <div class="kpi-strip">
+          <div class="kpi-item accent"><span id="kpiUsers" class="kpi-value">0</span><span class="kpi-label">Clientes</span></div>
+          <div class="kpi-item"><span id="kpiActiveUsers" class="kpi-value">0</span><span class="kpi-label">Ativos</span></div>
+          <div class="kpi-item"><span id="kpiMrr" class="kpi-value">R$ 0,00</span><span class="kpi-label">Receita mensal</span></div>
+          <div class="kpi-item is-danger"><span id="kpiLate" class="kpi-value">0</span><span class="kpi-label">Pagamentos atrasados</span></div>
+        </div>
+
+        <section class="panel">
+          <div class="panel-heading-row"><h2>Convidar cliente</h2></div>
+          <div class="produto-picker-row" style="margin-bottom:0;">
+            <div class="field" style="margin-bottom:0;">
+              <span>E-mail do novo cliente</span>
+              <input type="email" id="inviteEmail" placeholder="cliente@email.com" />
+            </div>
+            <button type="button" id="inviteUserBtn" class="btn btn-primary">Enviar convite</button>
+          </div>
+        </section>
+
+        <section class="panel panel-plain" style="margin-bottom:1.5rem;">
+          <div class="panel-heading-row">
+            <h2>Solicitações de conexão do Instagram</h2>
+            <button type="button" id="igTesterAdminRefreshBtn" class="btn btn-outline btn-sm">Atualizar</button>
+          </div>
+          <div id="igTesterAdminList"></div>
+        </section>
+
+        <section class="panel panel-plain">
+          <div class="panel-heading-row">
+            <h2>Clientes</h2>
+            <div class="search-input-wrap">
+              <input type="search" id="userSearch" placeholder="Buscar por e-mail" />
+            </div>
+          </div>
+          <div id="loadingUsers" class="loading-row hidden">Carregando clientes…</div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>E-mail</th>
+                  <th>Criado em</th>
+                  <th>Status</th>
+                  <th>Pagamento</th>
+                  <th>Vencimento</th>
+                  <th>Valor do plano</th>
+                  <th>Limite IG</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="usersTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</section>
+
+<!-- =========================================================
+     MODAIS ESTÁTICOS (produtos.js espera que já existam no DOM)
+     ========================================================= -->
+<div id="produtoModal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 id="produtoModalTitle">Cadastrar produto</h2>
+      <button type="button" class="modal-close" id="closeProdutoModalBtn" aria-label="Fechar">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="produtoEditId" value="" />
+      <div id="produtoModalError" class="banner error hidden"></div>
+      <div class="field">
+        <label for="produtoNomeInput">Nome do produto</label>
+        <input type="text" id="produtoNomeInput" placeholder="ex: Tênis Runner Pro" />
+      </div>
+      <div class="field">
+        <label for="produtoLinkInput">Link de afiliado</label>
+        <input type="text" id="produtoLinkInput" placeholder="https://" />
+      </div>
+      <div class="field">
+        <label for="produtoImgInput">Imagem (URL)</label>
+        <input type="text" id="produtoImgInput" placeholder="https://" />
+      </div>
+      <div class="field">
+        <label for="produtoPrecoInput">Preço</label>
+        <input type="text" id="produtoPrecoInput" placeholder="R$ 0,00" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline" id="cancelProdutoModalBtn">Cancelar</button>
+      <button type="button" class="btn btn-primary" id="saveProdutoBtn">Salvar produto</button>
+    </div>
+  </div>
+</div>
+
+<div id="produtoPickerModal" class="modal-overlay hidden">
+  <div class="modal-box modal-box-lg">
+    <div class="modal-header">
+      <h2>Escolher produto</h2>
+      <button type="button" class="modal-close" id="closeProdutoPickerBtn" aria-label="Fechar">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="search" id="produtoPickerSearch" class="picker-search" placeholder="Buscar produto" />
+      <div id="produtoPickerList" class="produtos-grid"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+<script src="motion-fx.js" defer></script>
+<script src="automations-subtabs.js" defer></script>
+<script type="module" src="produtos.js"></script>
+<script type="module" src="instagram-latest-posts.js"></script>
+<script type="module" src="instagram-tester-admin.js"></script>
+<script type="module" src="instagram-tester-onboarding.js"></script>
+<script type="module" src="app.js"></script>
+<script src="pwa-install.js" defer></script>
+</body>
+</html>
