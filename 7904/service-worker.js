@@ -4,10 +4,11 @@
 // Dados do Supabase (automações, contas, produtos) nunca são cacheados aqui —
 // isso é sempre buscado ao vivo pelos módulos que já existem no projeto.
 
-const CACHE_NAME = "respondi-shell-v1";
+const CACHE_NAME = "respondi-shell-v2";
 const SHELL_FILES = [
   "./",
   "./index.html",
+  "./ideias-termos.html",
   "./styles.css",
   "./app.js",
   "./automations-subtabs.js",
