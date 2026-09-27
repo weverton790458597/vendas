@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=coverage">
+  <meta name="theme-color" content="#6fe3a4">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Hermes Pro">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Hermes Pro — Automação Instagram</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./icon-72.png" sizes="72x72">
+  <link rel="apple-touch-icon" href="./icon-192.png">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+  <!-- ===== SPLASH (mostrado antes do app carregar, especialmente no mobile) ===== -->
+  <div id="splashScreen" class="splash-screen">
+    <div class="splash-content">
+      <div class="splash-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8">
+          <path d="M3 12h4l2-7 4 14 2-7h6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h1 class="splash-title">HERMES PRO</h1>
+      <p class="splash-sub">Automação de cortes para Instagram</p>
+      <div class="splash-loading">
+        <div class="splash-dots">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN: AUTH (login) ===== -->
+  <div id="authScreen" class="screen">
+    <div class="auth-brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8">
+          <path d="M3 12h4l2-7 4 14 2-7h6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1>HERMES PRO</h1>
+        <p>Automação de cortes · Instagram Business</p>
+      </div>
+    </div>
+
+    <div class="auth-form-card">
+      <h2>Bem-vindo de volta</h2>
+      <p class="auth-sub">Entre para gerenciar suas automações de resposta.</p>
+
+      <div id="authBanner" class="banner"></div>
+
+      <div class="field">
+        <label for="authEmail">E-mail</label>
+        <input type="email" id="authEmail" placeholder="seu@email.com" autocomplete="username" />
+      </div>
+      <div class="field">
+        <label for="authPassword">Senha</label>
+        <input type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+
+      <button id="authSubmitBtn" class="btn btn-primary btn-full">
+        <span class="dot"></span>
+        ENTRAR
+      </button>
+
+      <div class="auth-footer">
+        <a href="#" id="forgotPasswordLink">Esqueceu a senha?</a>
+      </div>
+    </div>
+
+    <button id="downloadAppBtn" class="btn btn-ghost btn-sm download-trigger" data-download-action="info">
+      <span class="btn-icon">📱</span>
+      <span>Ter o app nativo?</span>
+    </button>
+  </div>
+
+  <!-- ===== SCREEN: SET PASSWORD (convite/recuperação) ===== -->
+  <div id="setPasswordScreen" class="screen hidden">
+    <div class="auth-brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8">
+          <path d="M3 12h4l2-7 4 14 2-7h6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1>HERMES PRO</h1>
+        <p>Defina sua senha para ativar a conta</p>
+      </div>
+    </div>
+
+    <div class="auth-form-card">
+      <h2>Nova senha</h2>
+      <p class="auth-sub">Crie uma senha segura para sua conta.</p>
+
+      <div id="setPasswordBanner" class="banner"></div>
+
+      <div class="field">
+        <label for="newPassword">Nova senha</label>
+        <input type="password" id="newPassword" placeholder="Mínimo 6 caracteres" autocomplete="new-password" />
+      </div>
+
+      <button id="setPasswordBtn" class="btn btn-primary btn-full">
+        <span class="dot"></span>
+        SALVAR E ENTRAR
+      </button>
+    </div>
+
+    <button id="downloadAppBtn" class="btn btn-ghost btn-sm download-trigger" data-download-action="info">
+      <span class="btn-icon">📱</span>
+      <span>Ter o app nativo?</span>
+    </button>
+  </div>
+
+  <!-- ===== SCREEN: BLOCKED (assinatura inativa) ===== -->
+  <div id="blockedScreen" class="screen hidden">
+    <div class="auth-brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8">
+          <path d="M3 12h4l2-7 4 14 2-7h6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1>HERMES PRO</h1>
+      </div>
+    </div>
+
+    <div class="auth-form-card">
+      <div class="blocked-content">
+        <div class="blocked-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2">
+            <circle cx="12" cy="12" r="9"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+        </div>
+        <h2>Acesso suspenso</h2>
+        <p class="blocked-text">Sua assinatura está inativa ou em atraso. Renove sua assinatura para retomar o acesso às automações.</p>
+        <button id="blockedLogoutBtn" class="btn btn-ghost btn-full">Sair da conta</button>
+      </div>
+    </div>
+
+    <button id="downloadAppBtn" class="btn btn-ghost btn-sm download-trigger" data-download-action="info">
+      <span class="btn-icon">📱</span>
+      <span>Ter o app nativo?</span>
+    </button>
+  </div>
+
+  <!-- ===== SCREEN: APP (logado) ===== -->
+  <div id="appScreen" class="screen hidden">
+    <!-- Header / bezel -->
+    <div class="bezel">
+      <div class="brand">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8">
+            <path d="M3 12h4l2-7 4 14 2-7h6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>HERMES PRO</h1>
+          <p>Automação de cortes · Instagram Business</p>
+        </div>
+      </div>
+
+      <div class="status-cluster">
+        <div class="tally-group">
+          <div class="tally"><span class="tally-dot on" id="dotSync"></span>SYNC</div>
+          <div class="tally"><span class="tally-dot" id="dotRec"></span>REC</div>
+          <div class="tally"><span class="tally-dot on" id="dotPipe"></span>PIPE</div>
+        </div>
+        <div class="user-menu">
+          <div class="user-avatar" id="userAvatar"></div>
+          <span class="user-email" id="userEmailLabel"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status banner -->
+    <div id="statusBanner" class="banner"></div>
+
+    <!-- Nav -->
+    <nav class="nav-bar">
+      <button class="nav-item active" data-tab="dashboard">
+        <span class="nav-icon">📊</span>
+        <span>Dashboard</span>
+      </button>
+      <button class="nav-item" data-tab="accounts">
+        <span class="nav-icon">📷</span>
+        <span>Contas</span>
+      </button>
+      <button class="nav-item" id="adminTabBtn" data-tab="admin">
+        <span class="nav-icon">⚙️</span>
+        <span>Admin</span>
+      </button>
+      <button class="nav-item" id="logoutBtn">
+        <span class="nav-icon">→</span>
+        <span>Sair</span>
+      </button>
+    </nav>
+
+    <!-- ===== TAB: DASHBOARD ===== -->
+    <div id="tab-dashboard" class="tab-panel active">
+
+      <!-- Sub-tabs -->
+      <div class="subtab-nav" id="automationsSubtabNav">
+        <button class="subtab-btn active" data-subtab="new">Nova automação</button>
+        <button class="subtab-btn" data-subtab="latest">Últimas publicações</button>
+        <button class="subtab-btn" data-subtab="list">Automações cadastradas</button>
+        <button class="subtab-btn" data-subtab="products">Produtos</button>
+      </div>
+
+      <!-- SUB-TAB: Nova automação -->
+      <div id="subtab-new" class="subtab-panel active">
+        <div class="form-grid">
+          <div class="field-group">
+            <label class="label-field">POST / MEDIA ID</label>
+            <input type="text" id="instagramMediaId" placeholder="ex: ABC123xyz ou link do post" />
+          </div>
+
+          <div class="field-group">
+            <label class="label-field">PALAVRA-CHAVE DE DISPARO</label>
+            <input type="text" id="palavraChave" placeholder="ex: preço, frete, promoção" />
+          </div>
+
+          <div class="field-group">
+            <label class="label-field">LINK DO PRODUTO</label>
+            <input type="url" id="produtoUrl" placeholder="https://..." />
+          </div>
+
+          <div class="field-row inline">
+            <button id="toggleImagemUrlBtn" class="btn btn-ghost btn-sm">🖼️ Imagem do produto</button>
+            <button id="pickProdutoBtn" class="btn btn-ghost btn-sm">📦 Escolher produto cadastrado</button>
+          </div>
+
+          <div id="imagemUrlField" class="field-group hidden">
+            <div class="form-row">
+              <div class="field-flex">
+                <label class="label-field">IMAGEM (URL)</label>
+                <input type="url" id="imagemUrl" placeholder="https://..." />
+              </div>
+              <div class="field-flex">
+                <label class="label-field">TÍTULO DO PRODUTO</label>
+                <input type="text" id="tituloProduto" placeholder="Nome do produto" />
+              </div>
+              <div class="field-flex">
+                <label class="label-field">PREÇO</label>
+                <input type="text" id="precoProduto" placeholder="R$ 0,00" />
+              </div>
+            </div>
+          </div>
+
+          <div id="automationIgAccountField" class="field-group hidden">
+            <label class="label-field">CONTA DO INSTAGRAM</label>
+            <select id="automationIgAccount">
+              <option value="">Selecione uma conta</option>
+            </select>
+          </div>
+
+          <button id="saveAutomationBtn" class="btn btn-primary btn-full">
+            <span class="dot"></span>
+            SALVAR AUTOMAÇÃO
+          </button>
+        </div>
+      </div>
+
+      <!-- SUB-TAB: Últimas publicações -->
+      <div id="subtab-latest" class="subtab-panel hidden">
+        <section class="panel panel-plain">
+          <div class="panel-heading-row">
+            <h2>Últimas publicações</h2>
+            <button id="latestPostsRefreshBtn" class="btn btn-outline btn-sm">Atualizar</button>
+          </div>
+          <div id="latestPostsGrid" class="latest-posts-grid"></div>
+        </section>
+      </div>
+
+      <!-- SUB-TAB: Automações cadastradas -->
+      <div id="subtab-list" class="subtab-panel hidden">
+        <div class="subtab-list-header">
+          <div class="kpi-row">
+            <div class="kpi-card">
+              <div class="kpi-label">Total</div>
+              <div class="kpi-value" id="kpiTotal">0</div>
+            </div>
+            <div class="kpi-card kpi-ativo">
+              <div class="kpi-label">Ativas</div>
+              <div class="kpi-value" id="kpiAtivas">0</div>
+            </div>
+            <div class="kpi-card kpi-pausa">
+              <div class="kpi-label">Pausadas</div>
+              <div class="kpi-value" id="kpiPausadas">0</div>
+            </div>
+          </div>
+
+          <div class="search-bar">
+            <input type="text" id="automationSearch" placeholder="Filtrar por produto, palavra-chave ou post..." />
+          </div>
+        </div>
+
+        <div id="loadingAutomations" class="loading-row">Carregando automações…</div>
+        <div id="automationsTableBody" class="automation-grid"></div>
+      </div>
+
+      <!-- SUB-TAB: Produtos -->
+      <div id="subtab-products" class="subtab-panel hidden">
+        <section class="panel panel-plain">
+          <div class="panel-heading-row">
+            <h2>Produtos cadastrados</h2>
+            <button id="newProdutoBtn" class="btn btn-primary btn-sm">+ Novo produto</button>
+          </div>
+
+          <div class="search-bar">
+            <input type="text" id="produtoSearch" placeholder="Filtrar produtos..." />
+          </div>
+
+          <div id="produtosGrid" class="product-grid"></div>
+        </section>
+      </div>
+    </div>
+
+    <!-- ===== TAB: ACCOUNTS ===== -->
+    <div id="tab-accounts" class="tab-panel hidden">
+      <section class="panel panel-plain">
+        <h2>Contas do Instagram</h2>
+
+        <div id="igLoadingStatus" class="loading-row hidden">Carregando contas…</div>
+
+        <div id="igAccountsList" class="ig-accounts-list hidden"></div>
+
+        <div id="igStatusFooter" class="ig-status-footer hidden">
+          <span id="igLimitText"></span>
+          <button id="addIgAccountBtn" class="btn btn-primary btn-sm">+ Adicionar conta do Instagram</button>
+        </div>
+      </section>
+
+      <!-- Instagram Tester Onboarding -->
+      <section class="panel panel-plain ig-tester-onboarding" id="igTesterOnboarding">
+        <h2>Conectar Instagram (Tester)</h2>
+
+        <form id="igTesterForm">
+          <div class="field">
+            <label class="label-field">@ do Instagram</label>
+            <input type="text" id="igTesterUsernameInput" placeholder="@sua.loja" autocomplete="off" />
+          </div>
+          <div id="igTesterFormError" class="banner error hidden"></div>
+          <button type="submit" id="igTesterSubmitBtn" class="btn btn-primary btn-full">Conectar Instagram</button>
+        </form>
+
+        <div id="igTesterRequestsList" class="ig-tester-list"></div>
+      </section>
+    </div>
+
+    <!-- ===== TAB: ADMIN ===== -->
+    <div id="tab-admin" class="tab-panel hidden">
+
+      <div class="subtab-list-header">
+        <div class="kpi-row">
+          <div class="kpi-card">
+            <div class="kpi-label">Usuários</div>
+            <div class="kpi-value" id="kpiUsers">0</div>
+          </div>
+          <div class="kpi-card kpi-ativo">
+            <div class="kpi-label">Ativos</div>
+            <div class="kpi-value" id="kpiActiveUsers">0</div>
+          </div>
+          <div class="kpi-card kpi-amber">
+            <div class="kpi-label">MRR</div>
+            <div class="kpi-value" id="kpiMrr">R$ 0,00</div>
+          </div>
+          <div class="kpi-card kpi-danger">
+            <div class="kpi-label">Atrasados</div>
+            <div class="kpi-value" id="kpiLate">0</div>
+          </div>
+        </div>
+
+        <div class="search-bar">
+          <input type="text" id="userSearch" placeholder="Filtrar por e-mail..." />
+        </div>
+      </div>
+
+      <div class="panel-heading-row">
+        <h2>Usuários</h2>
+        <div class="invite-row">
+          <input type="email" id="inviteEmail" placeholder="e-mail do novo usuário" class="invite-input" />
+          <button id="inviteUserBtn" class="btn btn-outline btn-sm">Convidar</button>
+        </div>
+      </div>
+
+      <div id="loadingUsers" class="loading-row hidden">Carregando usuários…</div>
+
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Criado em</th>
+              <th>Status</th>
+              <th>Pagamento</th>
+              <th>Vencimento</th>
+              <th>Plano (R$)</th>
+              <th>Contas IG</th>
+              <th class="table-actions">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Instagram Tester Admin -->
+      <section class="panel panel-plain">
+        <div class="panel-heading-row">
+          <h2>Solicitações de conexão do Instagram</h2>
+          <button id="igTesterAdminRefreshBtn" class="btn btn-outline btn-sm">Atualizar</button>
+        </div>
+        <div id="igTesterAdminList"></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ===== Modais: Produtos ===== -->
+  <div id="produtoModal" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width:480px;">
+      <div class="modal-header">
+        <h2 id="produtoModalTitle">Cadastrar produto</h2>
+        <button type="button" class="modal-close" id="closeProdutoModalBtn" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="produtoModalError" class="banner error hidden"></div>
+        <input type="hidden" id="produtoEditId" />
+
+        <div class="field">
+          <label class="label-field">NOME DO PRODUTO</label>
+          <input type="text" id="produtoNomeInput" placeholder="ex: Curso de Copy" />
+        </div>
+
+        <div class="field">
+          <label class="label-field">LINK DE AFILIADO</label>
+          <input type="url" id="produtoLinkInput" placeholder="https://..." />
+        </div>
+
+        <div class="field">
+          <label class="label-field">IMAGEM (URL)</label>
+          <input type="url" id="produtoImgInput" placeholder="https://..." />
+        </div>
+
+        <div class="field">
+          <label class="label-field">PREÇO</label>
+          <input type="text" id="produtoPrecoInput" placeholder="R$ 0,00" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost btn-sm" id="cancelProdutoModalBtn">Cancelar</button>
+        <button type="button" class="btn btn-primary btn-sm" id="saveProdutoBtn">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Seletor de produto (picker) -->
+  <div id="produtoPickerModal" class="modal-overlay hidden">
+    <div class="modal-box modal-box-lg">
+      <div class="modal-header">
+        <h2>Selecionar produto</h2>
+        <button type="button" class="modal-close" id="closeProdutoPickerBtn" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="search-bar">
+          <input type="text" id="produtoPickerSearch" placeholder="Buscar produto..." />
+        </div>
+        <div id="produtoPickerList" class="product-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Toasts ===== -->
+  <div class="toast-stack" id="toastStack"></div>
+
+  <!-- ===== Install Banner (mobile) ===== -->
+  <div id="installBanner" class="install-banner hidden">
+    <div class="install-banner-content">
+      <span class="install-icon">📱</span>
+      <span>Instale o app Hermes Pro para melhor experiência</span>
+      <button id="installPromptBtn" class="btn btn-primary btn-sm">Instalar</button>
+      <button id="installDismissBtn" class="btn btn-ghost btn-sm">Agora não</button>
+    </div>
+  </div>
+
+  <!-- ===== Scripts ===== -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+  <script type="module" src="./app.js"></script>
+  <script type="module" src="./produtos.js"></script>
+  <script type="module" src="./instagram-latest-posts.js"></script>
+  <script type="module" src="./instagram-tester-onboarding.js"></script>
+  <script type="module" src="./instagram-tester-admin.js"></script>
+  <script src="./automations-subtabs.js"></script>
+  <script src="./mobile-app.js"></script>
+  <script src="./motion-fx.js"></script>
+</body>
+</html>
