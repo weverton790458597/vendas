@@ -2,6 +2,13 @@
 // Cuida só da parte de "instalar o app": registra o service worker e
 // controla os botões/banners de instalação (data-pwa-install). Isolado dos
 // outros scripts do projeto — não importa nem é importado por eles.
+//
+// IMPORTANTE: o navegador só instala de verdade (ícone próprio, sem barra
+// de navegador) quando a página está servida por HTTPS (ou localhost), com
+// o manifest.json e o service worker respondendo. Aberto direto do arquivo
+// (file://) ou por um link http sem certificado, o Chrome nunca oferece a
+// instalação real — no máximo cria um atalho que abre no navegador. Este
+// script detecta essa diferença e avisa em vez de fingir que funcionou.
 
 (function () {
   "use strict";
@@ -11,12 +18,15 @@
     window.matchMedia("(display-mode: standalone)").matches ||
     window.navigator.standalone === true;
   var isIos = /iphone|ipad|ipod/i.test(window.navigator.userAgent) && !window.MSStream;
+  var isSecureHost =
+    window.location.protocol === "https:" ||
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1";
+  var swSupported = "serviceWorker" in navigator && isSecureHost;
 
-  if ("serviceWorker" in navigator) {
+  if (swSupported) {
     window.addEventListener("load", function () {
-      navigator.serviceWorker.register("service-worker.js").catch(function () {
-        // Sem suporte (ex.: aberto via file://) — segue funcionando normal, só sem o cache do app shell.
-      });
+      navigator.serviceWorker.register("service-worker.js").catch(function () {});
     });
   }
 
@@ -25,29 +35,15 @@
     if (overlay) overlay.remove();
   }
 
-  function openManualSheet() {
+  function sheet(title, bodyHtml) {
     closeSheet();
     var overlay = document.createElement("div");
     overlay.className = "install-sheet-overlay";
     overlay.id = "installSheetOverlay";
-    var steps = isIos
-      ? [
-          "Toque no ícone de compartilhar " +
-            '<svg class="share-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="M8 8l4-4 4 4"/><path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg>' +
-            " na barra do Safari.",
-          'Escolha <strong>"Adicionar à Tela de Início"</strong>.',
-          'Toque em <strong>"Adicionar"</strong> — pronto, o Respondi vira um app.',
-        ]
-      : [
-          "Toque no menu (⋮) do seu navegador.",
-          'Escolha <strong>"Instalar app"</strong> ou <strong>"Adicionar à tela inicial"</strong>.',
-          "Confirme — o Respondi abre como um app, sem barra de navegador.",
-        ];
     overlay.innerHTML =
       '<div class="install-sheet">' +
-      "<h3>Instalar o Respondi</h3>" +
-      "<p>Tenha o painel como um app, com ícone na tela inicial.</p>" +
-      "<ol>" + steps.map(function (s) { return "<li>" + s + "</li>"; }).join("") + "</ol>" +
+      "<h3>" + title + "</h3>" +
+      bodyHtml +
       '<button type="button" class="btn btn-primary btn-full" id="installSheetCloseBtn">Entendi</button>' +
       "</div>";
     document.body.appendChild(overlay);
@@ -55,6 +51,33 @@
       if (e.target === overlay) closeSheet();
     });
     document.getElementById("installSheetCloseBtn").addEventListener("click", closeSheet);
+  }
+
+  function openIosInstructions() {
+    sheet(
+      "Instalar o Respondi",
+      "<p>Isso instala de verdade — vira um app com ícone próprio, sem a barra do Safari.</p>" +
+      "<ol>" +
+      "<li>Toque no ícone de compartilhar " +
+      '<svg class="share-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="M8 8l4-4 4 4"/><path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg>' +
+      " na barra do Safari.</li>" +
+      '<li>Escolha <strong>"Adicionar à Tela de Início"</strong>.</li>' +
+      '<li>Toque em <strong>"Adicionar"</strong>.</li>' +
+      "</ol>"
+    );
+  }
+
+  function openNotReadyExplanation() {
+    var reason = !isSecureHost
+      ? "Esta página está aberta " +
+        (window.location.protocol === "file:" ? "direto do arquivo" : "por um endereço sem HTTPS") +
+        ", e por isso o navegador não libera a instalação de verdade — no máximo salva um atalho que abre no navegador, não um app."
+      : "Este navegador ainda não sinalizou suporte à instalação automática nesta página.";
+    sheet(
+      "Instalação ainda não disponível aqui",
+      "<p>" + reason + "</p>" +
+      "<p>Hospede esta pasta em um endereço com HTTPS (ex: Vercel, Netlify, Cloudflare Pages ou seu próprio domínio) e abra por lá — no Chrome/Edge o botão \"Instalar\" passa a funcionar sozinho, com o app de verdade indo pra tela inicial.</p>"
+    );
   }
 
   async function triggerInstall() {
@@ -67,7 +90,11 @@
       hideBanner();
       return;
     }
-    openManualSheet();
+    if (isIos) {
+      openIosInstructions();
+      return;
+    }
+    openNotReadyExplanation();
   }
 
   function bindInstallButtons() {
@@ -76,10 +103,12 @@
     });
   }
 
-  // Banner leve, só no celular, lembrando a pessoa de que dá pra instalar.
+  // Banner leve no mobile — só aparece quando a instalação é de fato
+  // possível (prompt real do Chrome/Edge, ou iOS onde o atalho vira app de verdade).
   function maybeShowBanner() {
     if (isStandalone) return;
     if (window.innerWidth > 900) return;
+    if (!deferredPrompt && !isIos) return;
     if (localStorage.getItem("respondi-install-banner-dismissed") === "1") return;
     var host = document.querySelector("#tab-dashboard .panel-heading-row");
     if (!host || document.getElementById("installBanner")) return;
@@ -117,7 +146,6 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     bindInstallButtons();
-    // iOS nunca dispara beforeinstallprompt — oferece o banner manual mesmo assim.
     if (isIos) maybeShowBanner();
   });
 })();
