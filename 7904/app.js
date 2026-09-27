@@ -4,6 +4,8 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const INSTAGRAM_APP_ID = "1432929018522131";
 const INSTAGRAM_REDIRECT_URI = SUPABASE_URL + "/functions/v1/instagram-oauth-callback";
 const INSTAGRAM_SCOPES = "instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments";
+// TODO(Weverton): troque pelo seu número real de WhatsApp (só dígitos, com DDI 55 + DDD).
+const SUPPORT_WHATSAPP_NUMBER = "5598900000000";
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: { persistSession: true, autoRefreshToken: true },
   db: { schema: "public" },
@@ -127,11 +129,106 @@ async function bootstrapSession() {
   $("#userEmailLabel").textContent = currentUser.email;
   $("#userAvatar").textContent = currentUser.email.charAt(0).toUpperCase();
   $("#adminTabBtn").classList.toggle("hidden", !profile.is_admin);
+  const founderBadge = $("#founderBadgeIco");
+  const founderPanel = $("#founderPanel");
+  if (founderBadge) founderBadge.classList.toggle("hidden", !profile.is_founder);
+  if (founderPanel) founderPanel.classList.toggle("hidden", !profile.is_founder);
+  updatePlanLinks();
   showScreen("app");
   handleInstagramOauthReturn();
   await loadIgConfig();
   await loadAutomations();
   await loadLatestPosts();
+  if (profile.is_founder) await loadFounderIdeaTermsState();
+}
+// ---------- Planos / mais contas ----------
+function updatePlanLinks() {
+  const email = currentUser ? currentUser.email : "";
+  const oneBtn = $("#planOneAccountBtn");
+  if (oneBtn) {
+    oneBtn.href = whatsappLink(
+      "Olá! Quero contratar o plano de 1 conta do Instagram (R$ 49,90/mês) no Respondi. Meu e-mail: " + email
+    );
+  }
+  const threeBtn = $("#planThreeAccountsBtn");
+  if (threeBtn) {
+    threeBtn.href = whatsappLink(
+      "Olá! Quero contratar o plano de até 3 contas do Instagram (R$ 89,90/mês) no Respondi. Meu e-mail: " + email
+    );
+  }
+  const slider = $("#planAccountsSlider");
+  const sliderBtn = $("#planSliderBtn");
+  if (slider && sliderBtn) {
+    const n = parseInt(slider.value, 10) || 3;
+    const price = suggestPlanValue(n);
+    $("#planAccountsCount").textContent = n;
+    $("#planSliderPrice").textContent = formatBRL(price);
+    sliderBtn.href = whatsappLink(
+      "Olá! Quero atualizar meu plano no Respondi para " + n + " contas do Instagram (" +
+      formatBRL(price) + "/mês). Meu e-mail: " + email
+    );
+  }
+}
+function initPlansUI() {
+  const slider = $("#planAccountsSlider");
+  if (slider) slider.addEventListener("input", updatePlanLinks);
+  updatePlanLinks();
+}
+initPlansUI();
+// ---------- Selo de Membro Fundador: termo de uso de ideias ----------
+function renderFounderIdeaState(accepted) {
+  const acceptedBox = $("#founderIdeaAccepted");
+  const pendingBox = $("#founderIdeaPending");
+  const suggestBtn = $("#founderSuggestBtn");
+  if (!acceptedBox || !pendingBox) return;
+  acceptedBox.classList.toggle("hidden", !accepted);
+  pendingBox.classList.toggle("hidden", accepted);
+  if (accepted && suggestBtn && currentUser) {
+    suggestBtn.href = whatsappLink(
+      "Olá! Sou membro fundador do Respondi e já aceitei os Termos de Uso de Ideias. " +
+      "Quero sugerir uma nova função pra plataforma: [descreva sua ideia aqui]. Meu e-mail: " + currentUser.email
+    );
+  }
+}
+async function loadFounderIdeaTermsState() {
+  try {
+    const { data, error } = await supabase
+      .from("idea_terms_acceptances")
+      .select("id")
+      .eq("user_id", currentUser.id)
+      .maybeSingle();
+    if (error) throw error;
+    renderFounderIdeaState(!!data);
+  } catch (error) {
+    // Tabela pode não existir ainda em ambientes antigos — não trava o painel por isso.
+    console.error("Erro ao verificar aceite dos termos de ideias:", error.message);
+    renderFounderIdeaState(false);
+  }
+}
+const founderIdeaCheckbox = $("#founderIdeaTermsCheckbox");
+const founderIdeaAcceptBtn = $("#founderIdeaAcceptBtn");
+if (founderIdeaCheckbox && founderIdeaAcceptBtn) {
+  founderIdeaCheckbox.addEventListener("change", () => {
+    founderIdeaAcceptBtn.disabled = !founderIdeaCheckbox.checked;
+  });
+  founderIdeaAcceptBtn.addEventListener("click", async () => {
+    if (!currentUser || !founderIdeaCheckbox.checked) return;
+    founderIdeaAcceptBtn.disabled = true;
+    founderIdeaAcceptBtn.textContent = "Salvando…";
+    try {
+      const { error } = await supabase.from("idea_terms_acceptances").upsert({
+        user_id: currentUser.id,
+        accepted_at: new Date().toISOString(),
+      });
+      if (error) throw error;
+      renderFounderIdeaState(true);
+    } catch (error) {
+      showBanner("statusBanner", "Erro ao registrar aceite dos termos: " + error.message, "error");
+      founderIdeaAcceptBtn.disabled = false;
+    } finally {
+      founderIdeaAcceptBtn.textContent = "Aceitar e sugerir função no WhatsApp";
+    }
+  });
 }
 function showScreen(name) {
   $("#authScreen").classList.toggle("hidden", name !== "auth");
@@ -152,12 +249,18 @@ document.querySelectorAll(".nav-item").forEach((btn) => {
   });
 });
 let currentIgAccounts = [];
-// Preço sugerido pelo modelo: 1 conta R$49,90 | até 3 contas R$79,90 | cada conta extra além de 3, +R$19,90
+// Tabela de preços oficial: 1 conta R$49,90 | até 3 contas R$89,90 | cada conta extra além de 3, +R$29,90
 function suggestPlanValue(limit) {
   const n = Number(limit) || 1;
   if (n <= 1) return 49.9;
-  if (n <= 3) return 79.9;
-  return Math.round((79.9 + (n - 3) * 19.9) * 100) / 100;
+  if (n <= 3) return 89.9;
+  return Math.round((89.9 + (n - 3) * 29.9) * 100) / 100;
+}
+function formatBRL(value) {
+  return "R$ " + Number(value).toFixed(2).replace(".", ",");
+}
+function whatsappLink(message) {
+  return "https://wa.me/" + SUPPORT_WHATSAPP_NUMBER + "?text=" + encodeURIComponent(message);
 }
 async function startInstagramConnect(configId) {
   try {
@@ -537,7 +640,9 @@ $("#saveAutomationBtn").addEventListener("click", async () => {
 });
 $("#inviteUserBtn").addEventListener("click", async () => {
   const emailInput = $("#inviteEmail");
+  const founderCheckbox = $("#inviteFounderCheckbox");
   const email = emailInput.value.trim();
+  const isFounder = !!(founderCheckbox && founderCheckbox.checked);
   if (!email) {
     showBanner("statusBanner", "Informe o e-mail do novo cliente.", "error");
     return;
@@ -545,12 +650,17 @@ $("#inviteUserBtn").addEventListener("click", async () => {
   $("#inviteUserBtn").disabled = true;
   try {
     const { data, error } = await supabase.functions.invoke("admin-invite-user", {
-      body: { email },
+      body: { email, is_founder: isFounder },
     });
     if (error) throw error;
     if (data?.error) throw new Error(data.error);
-    showBanner("statusBanner", "Convite enviado para " + email + ".", "success");
+    showBanner(
+      "statusBanner",
+      "Convite enviado para " + email + (isFounder ? " (membro fundador 🏅)." : "."),
+      "success"
+    );
     emailInput.value = "";
+    if (founderCheckbox) founderCheckbox.checked = false;
     await loadUsers();
   } catch (error) {
     showBanner("statusBanner", "Erro ao convidar: " + error.message, "error");
@@ -603,7 +713,8 @@ function renderUsers(rows) {
     return (
       '<tr data-id="' + u.id + '">' +
       "<td>" + escapeHtml(u.email) +
-      (u.is_admin ? ' <span class="badge badge-ativo">admin</span>' : "") + "</td>" +
+      (u.is_admin ? ' <span class="badge badge-ativo">admin</span>' : "") +
+      (u.is_founder ? ' <span class="badge badge-founder">🏅 fundador</span>' : "") + "</td>" +
       "<td>" + created + "</td>" +
       '<td><span class="badge ' + statusClass + '">' + statusText + "</span></td>" +
       "<td>" + paymentBadge + "</td>" +
@@ -704,7 +815,7 @@ async function openEditPaymentModal(event) {
         <div class="field">
           <label for="editIgLimit">Limite de contas do Instagram</label>
           <input type="number" id="editIgLimit" step="1" min="1" placeholder="1" />
-          <p class="field-hint">1 conta = R$49,90 · até 3 contas = R$79,90 · cada conta extra = +R$19,90</p>
+          <p class="field-hint">1 conta = R$49,90 · até 3 contas = R$89,90 · cada conta extra = +R$29,90</p>
         </div>
         <button type="button" class="btn btn-outline btn-sm" id="suggestPlanValueBtn">Sugerir valor do plano com base no limite</button>
       </div>
