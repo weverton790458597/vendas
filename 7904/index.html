@@ -178,20 +178,21 @@
         </div>
 
         <div class="kpi-strip">
-          <div class="kpi-item accent"><span id="kpiTotal" class="kpi-value">0</span><span class="kpi-label">Automações no total</span></div>
-          <div class="kpi-item"><span id="kpiAtivas" class="kpi-value">0</span><span class="kpi-label">Ativas agora</span></div>
-          <div class="kpi-item is-danger"><span id="kpiPausadas" class="kpi-value">0</span><span class="kpi-label">Pausadas</span></div>
+          <div class="kpi-item accent"><svg class="kpi-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span id="kpiTotal" class="kpi-value">0</span><span class="kpi-label">Automações no total</span></div>
+          <div class="kpi-item"><svg class="kpi-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.3 2.3L16 10"/></svg><span id="kpiAtivas" class="kpi-value">0</span><span class="kpi-label">Ativas agora</span></div>
+          <div class="kpi-item is-danger"><svg class="kpi-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 9v6M14 9v6"/></svg><span id="kpiPausadas" class="kpi-value">0</span><span class="kpi-label">Pausadas</span></div>
         </div>
 
         <nav id="automationsSubtabNav" class="subtab-nav">
-          <button type="button" class="subtab-btn active" data-subtab="new">+ Nova automação</button>
+          <button type="button" class="subtab-btn" data-subtab="new">+ Nova automação</button>
           <button type="button" class="subtab-btn" data-subtab="posts">Últimas publicações</button>
-          <button type="button" class="subtab-btn" data-subtab="list">Automações cadastradas</button>
+          <button type="button" class="subtab-btn active" data-subtab="list">Automações cadastradas</button>
           <button type="button" class="subtab-btn" data-subtab="produtos">Produtos</button>
         </nav>
 
         <!-- Nova automação -->
-        <div id="subtab-new" class="subtab-panel">
+        <div id="subtab-new" class="subtab-panel hidden">
+          <button type="button" class="sheet-close-btn" data-close-sheet aria-label="Fechar">✕</button>
           <section class="panel">
             <div class="panel-heading-row"><h2>Nova automação</h2></div>
             <p class="panel-lead">Escolha o post, defina a palavra-chave do comentário e o produto que deve ser enviado por DM.</p>
@@ -252,7 +253,7 @@
         </div>
 
         <!-- Automações cadastradas -->
-        <div id="subtab-list" class="subtab-panel hidden">
+        <div id="subtab-list" class="subtab-panel">
           <section class="panel panel-plain">
             <div class="panel-heading-row">
               <h2>Automações cadastradas</h2>
@@ -278,6 +279,10 @@
             <div id="produtosGrid" class="produtos-grid"></div>
           </section>
         </div>
+
+        <button type="button" class="fab-new-automation" data-open-new-automation aria-label="Nova automação">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+        </button>
       </div>
 
       <!-- ---------------- CONTAS (Instagram) ---------------- -->
@@ -316,10 +321,10 @@
         <div class="panel-heading-row"><h1 style="margin:0;">Administração</h1></div>
 
         <div class="kpi-strip">
-          <div class="kpi-item accent"><span id="kpiUsers" class="kpi-value">0</span><span class="kpi-label">Clientes</span></div>
-          <div class="kpi-item"><span id="kpiActiveUsers" class="kpi-value">0</span><span class="kpi-label">Ativos</span></div>
-          <div class="kpi-item"><span id="kpiMrr" class="kpi-value">R$ 0,00</span><span class="kpi-label">Receita mensal</span></div>
-          <div class="kpi-item is-danger"><span id="kpiLate" class="kpi-value">0</span><span class="kpi-label">Pagamentos atrasados</span></div>
+          <div class="kpi-item accent"><svg class="kpi-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c0-3.3 2.5-5.5 5.5-5.5s5.5 2.2 5.5 5.5"/><path d="M16 8.2c1.3.3 2.2 1.4 2.2 2.8 0 1.2-.7 2.2-1.7 2.7"/><path d="M17 14.7c2 .4 3.5 2 3.5 4.3"/></svg><span id="kpiUsers" class="kpi-value">0</span><span class="kpi-label">Clientes</span></div>
+          <div class="kpi-item"><svg class="kpi-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.3 2.3L16 10"/></svg><span id="kpiActiveUsers" class="kpi-value">0</span><span class="kpi-label">Ativos</span></div>
+          <div class="kpi-item"><svg class="kpi-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 6.5c0-1.9-2.2-3.5-5-3.5s-5 1.4-5 3.4c0 4.2 10 2 10 6.2 0 2-2.2 3.4-5 3.4s-5-1.6-5-3.5"/></svg><span id="kpiMrr" class="kpi-value">R$ 0,00</span><span class="kpi-label">Receita mensal</span></div>
+          <div class="kpi-item is-danger"><svg class="kpi-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l9 16H3L12 4Z"/><path d="M12 10v4"/><path d="M12 17.2v.1"/></svg><span id="kpiLate" class="kpi-value">0</span><span class="kpi-label">Pagamentos atrasados</span></div>
         </div>
 
         <section class="panel">
@@ -429,6 +434,7 @@
 <script type="module" src="instagram-tester-admin.js"></script>
 <script type="module" src="instagram-tester-onboarding.js"></script>
 <script type="module" src="app.js"></script>
+<script src="mobile-ui.js" defer></script>
 <script src="pwa-install.js" defer></script>
 </body>
 </html>
