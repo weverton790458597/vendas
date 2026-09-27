@@ -359,6 +359,70 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 #igStatusFooter { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 0.9rem; flex-wrap: wrap; }
 #igLimitText { font-size: 0.82rem; color: var(--text-faint); }
 .ig-tester-onboarding { max-width: 640px; }
+/* ---------------- Planos / mais contas ---------------- */
+.plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+.plan-card {
+  background: var(--bg-soft);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  padding: 1.3rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  position: relative;
+}
+.plan-card-highlight {
+  border-color: var(--accent-1);
+  background: var(--surface);
+  box-shadow: 0 10px 26px -14px rgba(255, 77, 109, 0.45);
+}
+.plan-card-tag {
+  display: inline-block;
+  align-self: flex-start;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-faint);
+  background: var(--muted-accent-bg);
+  padding: 0.25em 0.65em;
+  border-radius: var(--radius-pill);
+  margin-bottom: 0.2rem;
+}
+.plan-card-highlight .plan-card-tag { color: var(--accent-1); background: rgba(255, 77, 109, 0.14); }
+.plan-card h3 { margin: 0; font-size: 1.02rem; }
+.plan-card-price { display: flex; align-items: baseline; gap: 0.3em; }
+.plan-card-price b { font-family: var(--font-display); font-size: 1.55rem; }
+.plan-card-price span { font-size: 0.8rem; color: var(--text-faint); }
+.plan-card-desc { font-size: 0.82rem; margin: 0 0 0.4rem; flex: 1; }
+.plan-slider-row { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.2rem; }
+.plan-slider-row input[type='range'] {
+  width: 100%; accent-color: var(--accent-1); cursor: pointer;
+}
+.plan-slider-value { font-size: 0.82rem; color: var(--text-muted); font-weight: 600; }
+/* ---------------- Painel de Membro Fundador ---------------- */
+.panel-founder {
+  border-color: rgba(255, 178, 56, 0.4);
+  background: linear-gradient(160deg, var(--warning-bg), var(--surface) 55%);
+}
+.founder-benefits-list { margin: 0 0 1.1rem; padding-left: 1.2rem; font-size: 0.88rem; color: var(--text-muted); }
+.founder-benefits-list li { margin-bottom: 0.5rem; }
+.founder-benefits-list strong { color: var(--text); }
+.founder-idea-box {
+  background: var(--bg-soft); border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md); padding: 1rem 1.1rem;
+}
+.founder-idea-note { font-size: 0.85rem; margin-bottom: 0.7rem; }
+.founder-idea-check {
+  display: flex; align-items: flex-start; gap: 0.55rem;
+  font-size: 0.83rem; color: var(--text-muted); cursor: pointer; margin-bottom: 0.8rem;
+}
+.founder-idea-check input[type='checkbox'] { margin-top: 0.2em; accent-color: var(--accent-1); cursor: pointer; flex-shrink: 0; }
+.founder-idea-check a { color: var(--accent-1); font-weight: 600; text-decoration: underline; }
 .ig-tester-row { flex-direction: column; align-items: stretch; }
 .ig-tester-row-main { display: flex; align-items: center; justify-content: space-between; gap: 0.7rem; }
 .ig-tester-row-main strong { font-size: 0.95rem; }
@@ -509,11 +573,20 @@ tbody tr:hover { background: var(--surface-hover); }
 .brand-glyph svg { width: 16px; height: 16px; }
 .topbar-actions { display: flex; align-items: center; gap: 0.5rem; }
 .user-chip { display: flex; align-items: center; gap: 0.55rem; padding-left: 0.4rem; border-left: 1px solid var(--border-soft); margin-left: 0.2rem; }
+.user-avatar-wrap { position: relative; flex-shrink: 0; display: inline-flex; }
 .user-avatar {
   width: 32px; height: 32px; border-radius: 50%;
   background: var(--accent-grad); color: #fff; font-weight: 700; font-size: 0.85rem;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
+.founder-badge-ico {
+  position: absolute; bottom: -3px; right: -4px;
+  width: 17px; height: 17px; border-radius: 50%;
+  background: var(--warning); border: 2px solid var(--bg);
+  font-size: 0.6rem; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+}
+.badge-founder { background: var(--warning-bg); color: var(--warning); }
 .user-email { font-size: 0.82rem; color: var(--text-muted); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .theme-toggle, .install-btn {
   width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--border);
