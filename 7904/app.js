@@ -5,7 +5,7 @@ const INSTAGRAM_APP_ID = "1432929018522131";
 const INSTAGRAM_REDIRECT_URI = SUPABASE_URL + "/functions/v1/instagram-oauth-callback";
 const INSTAGRAM_SCOPES = "instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments";
 // TODO(Weverton): troque pelo seu número real de WhatsApp (só dígitos, com DDI 55 + DDD).
-const SUPPORT_WHATSAPP_NUMBER = "5598900000000";
+const SUPPORT_WHATSAPP_NUMBER = "5598982672165";
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: { persistSession: true, autoRefreshToken: true },
   db: { schema: "public" },
