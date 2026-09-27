@@ -1,9 +1,0 @@
-{
-  "name": "Hermes Pro",
-  "short_name": "Hermes Pro",
-  "description": "Automação de respostas e publicações no Instagram",
-  "start_url": "/?source=pwa",
-  "display": "standalone",
-  "background_color": "#0a0a0f",
-  "theme_color": "#e1306c"
-}
