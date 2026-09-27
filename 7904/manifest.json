@@ -2,7 +2,7 @@
   "name": "Respondi — Automação de Instagram",
   "short_name": "Respondi",
   "description": "Responda comentários do Instagram no automático e envie o produto certo por DM.",
-  "id": "/",
+  "id": "./",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
