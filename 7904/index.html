@@ -143,7 +143,10 @@
         <span class="icon-sun">☀️</span><span class="icon-moon">🌙</span>
       </button>
       <div class="user-chip">
-        <span id="userAvatar" class="user-avatar"></span>
+        <span class="user-avatar-wrap">
+          <span id="userAvatar" class="user-avatar"></span>
+          <span id="founderBadgeIco" class="founder-badge-ico hidden" title="Membro fundador">🏅</span>
+        </span>
         <span id="userEmailLabel" class="user-email"></span>
         <button type="button" id="logoutBtn" class="icon-btn" title="Sair" aria-label="Sair">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
@@ -314,6 +317,69 @@
             <button type="button" id="addIgAccountBtn" class="btn btn-primary btn-sm">Conectar Instagram</button>
           </div>
         </section>
+
+        <!-- ---------------- Selo de Membro Fundador ---------------- -->
+        <section class="panel panel-founder hidden" id="founderPanel">
+          <div class="panel-heading-row">
+            <h2>🏅 Benefícios de Membro Fundador</h2>
+          </div>
+          <p class="panel-lead">Você é um dos nossos primeiros clientes — muito obrigado por confiar na plataforma desde o início. Isso te dá alguns benefícios exclusivos:</p>
+          <ul class="founder-benefits-list">
+            <li><strong>Preço travado para sempre.</strong> O valor do seu plano nunca aumenta — só muda se você mesmo decidir adicionar mais contas do Instagram.</li>
+            <li><strong>Contato direto comigo pelo WhatsApp.</strong> Sem fila de suporte, é direto comigo.</li>
+            <li><strong>Você pode sugerir novas funções para a plataforma.</strong> Ideias de membros fundadores têm prioridade.</li>
+          </ul>
+          <div class="founder-idea-box">
+            <div id="founderIdeaAccepted" class="hidden">
+              <p class="founder-idea-note">✅ Termo de uso de ideias aceito. Pode chamar no WhatsApp com sua sugestão quando quiser.</p>
+              <a href="#" id="founderSuggestBtn" class="btn btn-primary btn-sm" target="_blank" rel="noopener">💬 Sugerir função no WhatsApp</a>
+            </div>
+            <div id="founderIdeaPending">
+              <label class="founder-idea-check">
+                <input type="checkbox" id="founderIdeaTermsCheckbox" />
+                <span>Li e aceito os <a href="ideias-termos.html" target="_blank" rel="noopener">Termos de Uso de Ideias e Sugestões</a> antes de sugerir uma função.</span>
+              </label>
+              <button type="button" id="founderIdeaAcceptBtn" class="btn btn-outline btn-sm" disabled>Aceitar e sugerir função no WhatsApp</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ---------------- Planos / adicionar mais contas ---------------- -->
+        <section class="panel panel-plain" style="margin-top:1.5rem;">
+          <div class="panel-heading-row"><h2>Planos e mais contas</h2></div>
+          <p class="panel-lead">Precisa conectar mais contas do Instagram? Veja os valores abaixo e chame no WhatsApp pra gente atualizar seu plano.</p>
+
+          <div class="plans-grid">
+            <div class="plan-card">
+              <span class="plan-card-tag">Plano atual mais simples</span>
+              <h3>1 conta</h3>
+              <div class="plan-card-price"><b>R$ 49,90</b><span>/mês</span></div>
+              <p class="plan-card-desc">Ideal pra quem tem uma única conta comercial do Instagram.</p>
+              <a href="#" id="planOneAccountBtn" class="btn btn-outline btn-full" target="_blank" rel="noopener">Quero esse plano</a>
+            </div>
+
+            <div class="plan-card plan-card-highlight">
+              <span class="plan-card-tag">Mais popular</span>
+              <h3>Até 3 contas</h3>
+              <div class="plan-card-price"><b>R$ 89,90</b><span>/mês</span></div>
+              <p class="plan-card-desc">Conecte até 3 contas do Instagram pelo mesmo valor fixo.</p>
+              <a href="#" id="planThreeAccountsBtn" class="btn btn-primary btn-full" target="_blank" rel="noopener">Quero esse plano</a>
+            </div>
+
+            <div class="plan-card plan-card-slider">
+              <span class="plan-card-tag">Mais de 3 contas</span>
+              <h3>Personalize a quantidade</h3>
+              <div class="plan-slider-row">
+                <input type="range" id="planAccountsSlider" min="3" max="20" step="1" value="4" />
+                <div class="plan-slider-value"><span id="planAccountsCount">4</span> contas</div>
+              </div>
+              <div class="plan-card-price"><b id="planSliderPrice">R$ 119,80</b><span>/mês</span></div>
+              <p class="plan-card-desc">R$ 89,90 (até 3 contas) + R$ 29,90 por cada conta extra.</p>
+              <a href="#" id="planSliderBtn" class="btn btn-outline btn-full" target="_blank" rel="noopener">Quero esse plano</a>
+            </div>
+          </div>
+          <p class="field-hint">O aumento de plano é feito manualmente: você me chama no WhatsApp informando quantas contas quer, eu atualizo seu painel e você paga só a diferença da mensalidade pra já poder conectar as novas contas.</p>
+        </section>
       </div>
 
       <!-- ---------------- ADMIN ---------------- -->
@@ -329,13 +395,17 @@
 
         <section class="panel">
           <div class="panel-heading-row"><h2>Convidar cliente</h2></div>
-          <div class="produto-picker-row" style="margin-bottom:0;">
+          <div class="produto-picker-row" style="margin-bottom:0.7rem;">
             <div class="field" style="margin-bottom:0;">
               <span>E-mail do novo cliente</span>
               <input type="email" id="inviteEmail" placeholder="cliente@email.com" />
             </div>
             <button type="button" id="inviteUserBtn" class="btn btn-primary">Enviar convite</button>
           </div>
+          <label class="founder-idea-check" style="margin-bottom:0;">
+            <input type="checkbox" id="inviteFounderCheckbox" />
+            <span>🏅 Convidar como <strong>Membro Fundador</strong> (selo, preço travado pra sempre)</span>
+          </label>
         </section>
 
         <section class="panel panel-plain" style="margin-bottom:1.5rem;">
