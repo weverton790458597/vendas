@@ -16,6 +16,7 @@ const SHELL_FILES = [
   "./instagram-tester-onboarding.js",
   "./produtos.js",
   "./motion-fx.js",
+  "./mobile-ui.js",
   "./pwa-install.js",
   "./manifest.json",
   "./icons/icon-192.png",
