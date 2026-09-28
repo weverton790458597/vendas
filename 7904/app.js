@@ -4,7 +4,7 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const INSTAGRAM_APP_ID = "1432929018522131";
 const INSTAGRAM_REDIRECT_URI = SUPABASE_URL + "/functions/v1/instagram-oauth-callback";
 const INSTAGRAM_SCOPES = "instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments";
-// TODO(Weverton): troque pelo seu número real de WhatsApp (só dígitos, com DDI 55 + DDD).
+// WhatsApp de suporte (só dígitos, com DDI 55 + DDD).
 const SUPPORT_WHATSAPP_NUMBER = "5598982672165";
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: { persistSession: true, autoRefreshToken: true },
@@ -16,11 +16,14 @@ let currentUserTable = null;
 let allAutomations = [];
 let allUsers = [];
 const $ = (selector) => document.querySelector(selector);
+const bannerTimers = {};
 function showBanner(elId, message, type) {
   const el = $("#" + elId);
+  if (!el) return;
   el.textContent = message;
   el.className = "banner " + type;
-  setTimeout(() => { el.className = "banner"; }, 5000);
+  clearTimeout(bannerTimers[elId]);
+  bannerTimers[elId] = setTimeout(() => { el.className = "banner"; }, 5000);
 }
 function escapeHtml(text) {
   if (text === null || text === undefined) return "";
@@ -29,18 +32,43 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 function truncateUrl(url, maxLen) {
-  return url.length <= maxLen ? url : url.substring(0, maxLen) + "...";
+  const s = url === null || url === undefined ? "" : String(url);
+  return s.length <= maxLen ? s : s.substring(0, maxLen) + "...";
+}
+// Só permite http(s) em links — bloqueia javascript: e afins.
+function safeUrl(url) {
+  try {
+    const u = new URL(String(url || "").trim());
+    return u.protocol === "http:" || u.protocol === "https:" ? u.href : "#";
+  } catch {
+    return "#";
+  }
+}
+function isValidHttpUrl(url) {
+  try {
+    const u = new URL(String(url || "").trim());
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 function extractShortcode(input) {
-  if (!input.includes("instagram.com")) return input.trim();
-  const cleanUrl = input.split("?")[0];
-  const match = cleanUrl.match(/\/(?:p|reel|tv)\/([A-Za-z0-9_-]+)/);
-  return match ? match[1] : input.trim();
+  const value = String(input || "").trim();
+  if (!value.includes("instagram.com")) return value;
+  const cleanUrl = value.split("?")[0];
+  const match = cleanUrl.match(/\/(?:p|reel|reels|tv)\/([A-Za-z0-9_-]+)/);
+  return match ? match[1] : value;
 }
 function applyTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
-  localStorage.setItem("ap-theme", theme);
+  try { localStorage.setItem("ap-theme", theme); } catch (_) { /* storage indisponível */ }
 }
+(function restoreTheme() {
+  try {
+    const saved = localStorage.getItem("ap-theme");
+    if (saved === "dark" || saved === "light") document.documentElement.setAttribute("data-theme", saved);
+  } catch (_) { /* ignora */ }
+})();
 document.querySelectorAll("[data-theme-toggle]").forEach((btn) => {
   btn.addEventListener("click", () => {
     const current = document.documentElement.getAttribute("data-theme");
@@ -314,15 +342,15 @@ function renderIgAccounts() {
     list.innerHTML = currentIgAccounts.map((acc) => {
       const username = acc.instagram_username ? "@" + escapeHtml(acc.instagram_username) : "Conta conectada";
       return (
-        '<div class="ig-status-row ig-account-row" data-id="' + acc.id + '">' +
+        '<div class="ig-status-row ig-account-row" data-id="' + escapeHtml(acc.id) + '">' +
         '<span class="ig-dot ig-dot-on"></span>' +
         '<div class="ig-status-text">' +
         "<strong>" + username + "</strong>" +
         "<p>As automações já podem responder comentários e enviar Direct.</p>" +
         "</div>" +
         '<div class="ig-status-actions">' +
-        '<button class="btn btn-outline btn-sm ig-reconnect-btn" data-id="' + acc.id + '">Reconectar</button>' +
-        '<button class="btn btn-danger-ghost btn-sm ig-disconnect-btn" data-id="' + acc.id + '">Desconectar</button>' +
+        '<button class="btn btn-outline btn-sm ig-reconnect-btn" data-id="' + escapeHtml(acc.id) + '">Reconectar</button>' +
+        '<button class="btn btn-danger-ghost btn-sm ig-disconnect-btn" data-id="' + escapeHtml(acc.id) + '">Desconectar</button>' +
         "</div></div>"
       );
     }).join("");
@@ -349,13 +377,13 @@ function updateAutomationIgSelector() {
   if (currentIgAccounts.length <= 1) {
     field.classList.add("hidden");
     select.innerHTML = currentIgAccounts[0]
-      ? '<option value="' + currentIgAccounts[0].id + '">' + currentIgAccounts[0].id + "</option>"
+      ? '<option value="' + escapeHtml(currentIgAccounts[0].id) + '">' + escapeHtml(currentIgAccounts[0].id) + "</option>"
       : "";
     return;
   }
   field.classList.remove("hidden");
   select.innerHTML = currentIgAccounts.map((acc) =>
-    '<option value="' + acc.id + '">' + (acc.instagram_username ? "@" + escapeHtml(acc.instagram_username) : "Conta " + acc.id.slice(0, 8)) + "</option>"
+    '<option value="' + escapeHtml(acc.id) + '">' + (acc.instagram_username ? "@" + escapeHtml(acc.instagram_username) : "Conta " + escapeHtml(String(acc.id).slice(0, 8))) + "</option>"
   ).join("");
 }
 async function loadIgConfig() {
@@ -400,7 +428,7 @@ function renderLatestPosts(posts) {
     return (
       '<div class="automation-card">' +
       (post.thumbnail_url
-        ? '<img src="' + escapeHtml(post.thumbnail_url) + '" alt="" style="width:100%;border-radius:var(--radius-sm);aspect-ratio:1;object-fit:cover;" />'
+        ? '<img src="' + escapeHtml(safeUrl(post.thumbnail_url)) + '" alt="" style="width:100%;border-radius:var(--radius-sm);aspect-ratio:1;object-fit:cover;" />'
         : "") +
       '<div class="automation-card-top"><span class="badge badge-muted">@' + escapeHtml(post.instagram_username || "") + "</span>" +
       (when ? '<span class="automation-card-footer" style="padding:0;border:none;">' + when + "</span>" : "") +
@@ -478,7 +506,7 @@ async function openAllPostsModal(instagramConfigId, username) {
       return (
         '<div class="automation-card">' +
         (post.thumbnail_url
-          ? '<img src="' + escapeHtml(post.thumbnail_url) + '" alt="" style="width:100%;border-radius:var(--radius-sm);aspect-ratio:1;object-fit:cover;" />'
+          ? '<img src="' + escapeHtml(safeUrl(post.thumbnail_url)) + '" alt="" style="width:100%;border-radius:var(--radius-sm);aspect-ratio:1;object-fit:cover;" />'
           : "") +
         '<div class="automation-card-post" style="white-space:normal;">' + caption + "</div>" +
         '<button class="btn btn-primary btn-sm create-automation-from-post-btn" data-shortcode="' + escapeHtml(post.shortcode || post.media_id) + '">Criar automação</button>' +
@@ -502,9 +530,9 @@ function renderAutomations(rows) {
   grid.innerHTML = rows.map((row) => {
     const statusClass = row.ativo ? "badge-ativo" : "badge-inativo";
     const statusText = row.ativo ? "Ativo" : "Inativo";
-    const created = new Date(row.created_at).toLocaleString("pt-BR");
+    const created = row.created_at ? new Date(row.created_at).toLocaleString("pt-BR") : "—";
     return (
-      '<div class="automation-card" data-id="' + row.id + '">' +
+      '<div class="automation-card" data-id="' + escapeHtml(row.id) + '" data-ativo="' + (row.ativo ? "true" : "false") + '">' +
       '<div class="automation-card-top">' +
       '<span class="badge ' + statusClass + '">' + statusText + "</span>" +
       '<div class="automation-card-actions">' +
@@ -513,7 +541,7 @@ function renderAutomations(rows) {
       "</div></div>" +
       '<div class="automation-card-keyword"><span class="keyword-chip">' + escapeHtml(row.palavra_chave) + "</span></div>" +
       '<div class="automation-card-post">Post: ' + escapeHtml(truncateUrl(row.instagram_media_id, 34)) + "</div>" +
-      '<a class="automation-card-link" href="' + escapeHtml(row.produto_url) + '" target="_blank" rel="noopener">' + escapeHtml(truncateUrl(row.produto_url, 40)) + "</a>" +
+      '<a class="automation-card-link" href="' + escapeHtml(safeUrl(row.produto_url)) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(truncateUrl(row.produto_url, 40)) + "</a>" +
       '<div class="automation-card-footer">Criado em ' + created + "</div>" +
       "</div>"
     );
@@ -561,7 +589,7 @@ $("#automationSearch").addEventListener("input", (e) => {
 async function toggleActive(event) {
   const card = event.currentTarget.closest(".automation-card");
   const id = card.getAttribute("data-id");
-  const currentAtivo = event.currentTarget.title === "Desativar";
+  const currentAtivo = card.getAttribute("data-ativo") === "true";
   try {
     const { error } = await supabase.from(currentUserTable).update({ ativo: !currentAtivo }).eq("id", id);
     if (error) throw error;
@@ -596,12 +624,20 @@ $("#saveAutomationBtn").addEventListener("click", async () => {
   const mediaIdRaw = mediaIdInput.value.trim();
   const palavraChave = palavraChaveInput.value.trim();
   const produtoUrl = produtoUrlInput.value.trim();
-  const imagemUrl = imagemUrlInput.value.trim() || null; // opcional — null não dá erro nenhum
-  const tituloProduto = tituloProdutoInput.value.trim() || null; // opcional também
-  const precoProduto = precoProdutoInput.value.trim() || null; // opcional também
+  const imagemUrl = imagemUrlInput.value.trim() || null;
+  const tituloProduto = tituloProdutoInput.value.trim() || null;
+  const precoProduto = precoProdutoInput.value.trim() || null;
   const igAccountId = $("#automationIgAccount").value || null;
   if (!mediaIdRaw || !palavraChave || !produtoUrl) {
-    showBanner("statusBanner", "Todos os campos são obrigatórios.", "error");
+    showBanner("statusBanner", "Post, palavra-chave e link do produto são obrigatórios.", "error");
+    return;
+  }
+  if (!isValidHttpUrl(produtoUrl)) {
+    showBanner("statusBanner", "O link do produto precisa começar com http:// ou https://", "error");
+    return;
+  }
+  if (imagemUrl && !isValidHttpUrl(imagemUrl)) {
+    showBanner("statusBanner", "A URL da imagem precisa começar com http:// ou https://", "error");
     return;
   }
   if (currentIgAccounts.length === 0) {
@@ -689,7 +725,7 @@ function renderUsers(rows) {
   tbody.innerHTML = rows.map((u) => {
     const statusClass = u.is_active ? "badge-ativo" : "badge-inativo";
     const statusText = u.is_active ? "Ativo" : "Inativo";
-    const created = new Date(u.created_at).toLocaleString("pt-BR");
+    const created = u.created_at ? new Date(u.created_at).toLocaleString("pt-BR") : "—";
     let paymentBadge = "";
     const ps = u.payment_status;
     if (ps === "em_dia") {
@@ -702,7 +738,7 @@ function renderUsers(rows) {
       paymentBadge = '<span class="badge badge-muted">—</span>';
     }
     const dueDateStr = u.payment_due_date
-      ? new Date(u.payment_due_date).toLocaleDateString("pt-BR")
+      ? new Date(u.payment_due_date + (String(u.payment_due_date).length === 10 ? "T00:00:00" : "")).toLocaleDateString("pt-BR")
       : "—";
     const planValueStr = u.monthly_plan_value
       ? "R$ " + Number(u.monthly_plan_value).toFixed(2).replace(".", ",")
@@ -711,7 +747,7 @@ function renderUsers(rows) {
       ? "disabled title='Você não pode desativar a própria conta'"
       : "";
     return (
-      '<tr data-id="' + u.id + '">' +
+      '<tr data-id="' + escapeHtml(u.id) + '">' +
       "<td>" + escapeHtml(u.email) +
       (u.is_admin ? ' <span class="badge badge-ativo">admin</span>' : "") +
       (u.is_founder ? ' <span class="badge badge-founder">🏅 fundador</span>' : "") + "</td>" +
@@ -725,9 +761,9 @@ function renderUsers(rows) {
       '<button class="btn btn-outline btn-sm user-toggle-btn" ' + disableSelfToggle +
       ' data-active="' + u.is_active + '">' +
       (u.is_active ? "Desativar" : "Ativar") + "</button> " +
-      '<button class="btn btn-outline btn-sm edit-payment-btn" data-user-id="' + u.id + '">' +
+      '<button class="btn btn-outline btn-sm edit-payment-btn" data-user-id="' + escapeHtml(u.id) + '">' +
       "Editar cobrança</button> " +
-      '<button class="btn btn-outline btn-sm view-autos-btn" data-user-id="' + u.id + '">' +
+      '<button class="btn btn-outline btn-sm view-autos-btn" data-user-id="' + escapeHtml(u.id) + '">' +
       "Ver automações</button>" +
       "</td></tr>"
     );
@@ -775,9 +811,12 @@ async function toggleUserActive(event) {
     showBanner("statusBanner", "Erro ao alternar status do usuário: " + error.message, "error");
   }
 }
+function userLabel(userId) {
+  const u = allUsers.find((x) => x.id === userId);
+  return (u && u.email) || userId;
+}
 function closeModal() {
-  const overlay = document.querySelector(".modal-overlay");
-  if (overlay) overlay.remove();
+  document.querySelectorAll(".modal-overlay").forEach((overlay) => overlay.remove());
 }
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeModal();
@@ -795,7 +834,7 @@ async function openEditPaymentModal(event) {
         <button class="modal-close" id="closeEditPaymentModal" aria-label="Fechar">&times;</button>
       </div>
       <div class="modal-body">
-        <p class="modal-sub">Alterando os dados abaixo para <strong>${escapeHtml(userId)}</strong>.</p>
+        <p class="modal-sub">Alterando os dados abaixo para <strong>${escapeHtml(userLabel(userId))}</strong>.</p>
         <div class="field">
           <label>Status de pagamento</label>
           <select id="editPaymentStatus">
@@ -855,8 +894,10 @@ async function openEditPaymentModal(event) {
     const valueRaw = $("#editPaymentValue").value;
     const igLimitRaw = $("#editIgLimit").value;
     const dueDate = dueRaw ? dueRaw : null;
-    const monthlyPlanValue = valueRaw ? parseFloat(valueRaw) : null;
-    const igAccountLimit = igLimitRaw ? Math.max(1, parseInt(igLimitRaw, 10)) : 1;
+    const parsedValue = valueRaw ? parseFloat(valueRaw) : null;
+    const monthlyPlanValue = Number.isFinite(parsedValue) ? parsedValue : null;
+    const parsedLimit = igLimitRaw ? parseInt(igLimitRaw, 10) : 1;
+    const igAccountLimit = Number.isFinite(parsedLimit) ? Math.max(1, parsedLimit) : 1;
     try {
       const { error } = await supabase
         .from("profiles")
@@ -885,7 +926,7 @@ async function openViewAutosModal(event) {
   overlay.innerHTML = `
     <div class="modal-box modal-box-lg">
       <div class="modal-header">
-        <h2>Automações — ${escapeHtml(userId)}</h2>
+        <h2>Automações — ${escapeHtml(userLabel(userId))}</h2>
         <button class="modal-close" id="closeViewAutosModal" aria-label="Fechar">&times;</button>
       </div>
       <div class="modal-body" style="max-height:60vh; overflow:auto;">
@@ -924,7 +965,9 @@ async function openViewAutosModal(event) {
     const { data, error } = await supabase.rpc("admin_get_user_automacoes", {
       target_user_id: userId,
     });
-    $("#viewAutosLoading").classList.add("hidden");
+    const loadingEl = $("#viewAutosLoading");
+    if (!loadingEl) return; // modal foi fechado enquanto carregava
+    loadingEl.classList.add("hidden");
     if (error) {
       $("#viewAutosError").textContent = "Erro ao carregar automações: " + error.message;
       $("#viewAutosError").classList.remove("hidden");
@@ -946,7 +989,7 @@ async function openViewAutosModal(event) {
         "<tr>" +
         "<td>" + escapeHtml(row.instagram_media_id) + "</td>" +
         "<td>" + escapeHtml(row.palavra_chave) + "</td>" +
-        '<td><a href="' + escapeHtml(row.produto_url) + '" target="_blank" rel="noopener">' +
+        '<td><a href="' + escapeHtml(safeUrl(row.produto_url)) + '" target="_blank" rel="noopener noreferrer">' +
         escapeHtml(truncateUrl(row.produto_url, 40)) + "</a></td>" +
         '<td><span class="badge ' + statusClass + '">' + statusText + "</span></td>" +
         "<td>" + created + "</td>" +
@@ -954,7 +997,9 @@ async function openViewAutosModal(event) {
       );
     }).join("");
   } catch (err) {
-    $("#viewAutosLoading").classList.add("hidden");
+    const loadingEl = $("#viewAutosLoading");
+    if (!loadingEl) return;
+    loadingEl.classList.add("hidden");
     $("#viewAutosError").textContent = "Erro inesperado: " + err.message;
     $("#viewAutosError").classList.remove("hidden");
   }
