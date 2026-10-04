@@ -991,3 +991,16 @@ tbody tr:hover { background: var(--surface-hover); }
 .page-head .range-nav{width:100%}
 .range-btn{flex:1}
 }
+.nav-collapse{display:none}
+@media (min-width:901px){
+.app-nav{position:sticky;top:var(--topbar-h);align-self:flex-start;height:calc(100vh - var(--topbar-h));height:calc(100dvh - var(--topbar-h));overflow-y:auto;overflow-x:hidden;transition:width .22s var(--ease)}
+.nav-collapse{display:flex;align-items:center;gap:.75rem;width:100%;margin-top:auto;padding:.7em .85em;border:1px solid var(--border-soft);border-radius:var(--radius-sm);background:transparent;color:var(--text-muted);font-family:var(--font-body);font-weight:600;font-size:.85rem;cursor:pointer;white-space:nowrap}
+.nav-collapse:hover{background:var(--surface-hover);color:var(--text)}
+.nav-collapse svg{flex-shrink:0;transition:transform .22s var(--ease)}
+.nav-collapsed .app-nav{width:72px;padding-left:.6rem;padding-right:.6rem}
+.nav-collapsed .nav-item{justify-content:center;padding-left:0;padding-right:0}
+.nav-collapsed .nav-item>span:not(.nav-ico){display:none}
+.nav-collapsed .nav-collapse{justify-content:center;padding-left:0;padding-right:0}
+.nav-collapsed .nav-collapse-label{display:none}
+.nav-collapsed .nav-collapse svg{transform:rotate(180deg)}
+}
