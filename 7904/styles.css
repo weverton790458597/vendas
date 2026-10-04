@@ -695,6 +695,64 @@ tbody tr:hover { background: var(--surface-hover); }
   display: flex; align-items: center; justify-content: center;
   padding: 2rem; background: var(--bg);
 }
+
+/* pagamentos.css — estilos da aba Pagamentos (usa as variáveis do styles.css) */
+
+.badge-warn { background: var(--warning-bg); color: var(--warning); }
+
+/* Card do Pix */
+.pay-pix { display: flex; gap: 1.6rem; align-items: center; flex-wrap: wrap; }
+.pay-pix-qr {
+  width: 190px; height: 190px; flex-shrink: 0;
+  background: #fff; border-radius: var(--radius-md);
+  padding: 10px; display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border-soft);
+}
+.pay-pix-qr img { width: 100%; height: 100%; object-fit: contain; }
+.pay-qr-fallback { color: #6b6280; font-size: 0.8rem; text-align: center; }
+.pay-pix-info { flex: 1; min-width: 240px; }
+.pay-key-label { font-size: 0.78rem; font-weight: 600; color: var(--text-faint); margin-bottom: 0.35rem; }
+.pay-key-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.7rem; flex-wrap: wrap;
+  background: var(--bg-soft); border: 1px dashed var(--border);
+  border-radius: var(--radius-sm); padding: 0.6rem 0.8rem; margin-bottom: 0.5rem;
+}
+.pay-key-row code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1rem; font-weight: 600; color: var(--text); word-break: break-all;
+}
+.pay-key-benef { font-size: 0.78rem; color: var(--text-faint); margin-bottom: 0.9rem; }
+
+/* Lista de cobranças */
+.pay-filter { display: flex; gap: 0.4rem; }
+.pay-list { display: flex; flex-direction: column; gap: 0.65rem; }
+.pay-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: center; gap: 0.9rem;
+  background: var(--bg-soft); border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md); padding: 0.95rem 1.1rem;
+}
+.pay-item-main strong { display: block; font-size: 0.95rem; }
+.pay-item-note { font-size: 0.78rem; color: var(--text-faint); }
+.pay-item-value { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; }
+.pay-item.pay-atrasado { border-color: rgba(239, 67, 96, 0.4); }
+.pay-item.pay-pago .pay-item-value { color: var(--success); }
+
+@media (max-width: 900px) {
+  .pay-pix { flex-direction: column; align-items: stretch; text-align: left; }
+  .pay-pix-qr { margin: 0 auto; }
+  .pay-item {
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "main value" "badge action";
+    gap: 0.6rem 0.8rem;
+  }
+  .pay-item-main { grid-area: main; }
+  .pay-item-value { grid-area: value; text-align: right; }
+  .pay-item .badge { grid-area: badge; justify-self: start; }
+  .pay-item .btn, .pay-item > span:last-child { grid-area: action; justify-self: end; }
+  .pay-filter { overflow-x: auto; }
+}
 .auth-form-card {
   width: 100%; max-width: 380px;
   background: var(--surface);
