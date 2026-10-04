@@ -130,7 +130,8 @@
   </header>
   <div class="app-body">
     <nav class="app-nav">
-      <button type="button" class="nav-item active" data-tab="dashboard">
+      <button type="button" class="nav-item active" data-tab="overview"><span class="nav-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg></span><span>Início</span></button>
+<button type="button" class="nav-item" data-tab="dashboard">
         <span class="nav-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg></span>
         <span>Painel</span>
       </button>
@@ -145,7 +146,20 @@
     </nav>
     <main class="app-main">
       <div id="statusBanner" class="banner"></div>
-      <div id="tab-dashboard" class="tab-panel">
+      <div id="tab-overview" class="tab-panel">
+<div class="page-head panel-heading-row"><div><h1>Visão geral</h1><p>Resumo do desempenho das suas automações.</p></div>
+<div class="range-nav"><button type="button" class="range-btn" data-dias="7">7 dias</button><button type="button" class="range-btn active" data-dias="30">30 dias</button><button type="button" class="range-btn" data-dias="90">90 dias</button></div></div>
+<div id="ovKpis" class="kpi-strip"></div>
+<div class="ov-grid">
+<section class="panel ov-wide"><div class="panel-heading-row"><h2>DMs enviadas por dia</h2></div><div id="ovDaily"></div></section>
+<section class="panel"><div class="panel-heading-row"><h2>Posts que mais geram DMs</h2></div><div id="ovPosts"></div></section>
+<section class="panel"><div class="panel-heading-row"><h2>Formato dos posts</h2></div><div id="ovFormats"></div></section>
+<section class="panel"><div class="panel-heading-row"><h2>Horários de pico</h2></div><div id="ovHours"></div></section>
+<section class="panel"><div class="panel-heading-row"><h2>Envios por conta</h2></div><div id="ovAccounts"></div></section>
+<section class="panel ov-wide"><div class="panel-heading-row"><h2>Erros de envio</h2></div><div id="ovErrors"></div></section>
+</div>
+</div>
+<div id="tab-dashboard" class="tab-panel hidden">
         <div class="page-head panel-heading-row"><div><h1>Painel de automações</h1><p>Acompanhe e gerencie suas automações de comentário e DM.</p></div></div>
         <div class="kpi-strip">
           <div class="kpi-item accent"><svg class="kpi-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span id="kpiTotal" class="kpi-value">0</span><span class="kpi-label">Automações no total</span></div>
@@ -435,6 +449,7 @@
 <script src="mobile-ui.js" defer></script>
 <script src="pwa-install.js" defer></script>
 <script src="subnav.js" defer></script>
+<script type="module" src="visao-geral.js"></script>
 <script type="module" src="pagamentos.js"></script>
 </body>
 </html>
