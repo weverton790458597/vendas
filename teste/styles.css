@@ -961,3 +961,33 @@ tbody tr:hover { background: var(--surface-hover); }
 .pay-pix{padding:1.2rem}
 .pay-pix-qr{width:200px;height:200px}
 }
+.range-nav{display:flex;gap:.25rem;padding:.25rem;background:var(--surface);border:1px solid var(--border-soft);border-radius:var(--radius-pill)}
+.range-btn{border:0;background:transparent;color:var(--text-muted);font-family:var(--font-body);font-weight:600;font-size:.8rem;padding:.45rem .95rem;border-radius:var(--radius-pill);cursor:pointer}
+.range-btn.active{background:var(--accent-grad);color:#fff}
+.ov-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}
+.ov-grid .panel{margin-bottom:0}
+.ov-wide{grid-column:1/-1}
+.ov-svg{width:100%;height:190px;display:block}
+.ov-bar-ok{fill:var(--accent-1)}
+.ov-bar-bad{fill:var(--danger);opacity:.75}
+.ov-axis{display:flex;justify-content:space-between;font-size:.75rem;color:var(--text-faint);margin-top:.4rem}
+.ov-row{margin-bottom:.85rem}
+.ov-row-top{display:flex;justify-content:space-between;gap:.8rem;font-size:.87rem;margin-bottom:.3rem}
+.ov-row-top span{overflow-wrap:anywhere;color:var(--text-muted)}
+.ov-track{height:8px;border-radius:var(--radius-pill);background:var(--border-soft);overflow:hidden}
+.ov-track i{display:block;height:100%;border-radius:inherit;background:var(--accent-grad)}
+.ov-donut-wrap{display:flex;align-items:center;gap:1.4rem;flex-wrap:wrap}
+.ov-donut{width:130px;height:130px;border-radius:50%;flex-shrink:0;-webkit-mask:radial-gradient(circle,transparent 44%,#000 45%);mask:radial-gradient(circle,transparent 44%,#000 45%)}
+.ov-legend{list-style:none;margin:0;padding:0;font-size:.87rem;color:var(--text-muted)}
+.ov-legend li{display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem}
+.ov-legend i{width:10px;height:10px;border-radius:50%}
+.ov-legend b{color:var(--text)}
+.ov-hours{display:flex;align-items:flex-end;gap:3px;height:150px}
+.ov-hour{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:.3rem}
+.ov-hour i{display:block;width:100%;border-radius:3px 3px 0 0;background:var(--accent-grad)}
+.ov-hour span{font-size:.65rem;color:var(--text-faint);height:.8rem}
+@media (max-width:900px){
+.ov-grid{grid-template-columns:1fr}
+.page-head .range-nav{width:100%}
+.range-btn{flex:1}
+}
