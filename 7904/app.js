@@ -15,6 +15,9 @@ let currentProfile = null;
 let currentUserTable = null;
 let allAutomations = [];
 let allUsers = [];
+// Cache de publicações por conta (config_id -> Promise<Map<shortcode, post>>),
+// usado só para mostrar miniatura/legenda do post em cada automação cadastrada.
+const accountPostsCache = {};
 const $ = (selector) => document.querySelector(selector);
 const bannerTimers = {};
 function showBanner(elId, message, type) {
@@ -521,6 +524,83 @@ async function openAllPostsModal(instagramConfigId, username) {
     if (modalGrid) modalGrid.innerHTML = '<div class="empty-state">Erro ao carregar: ' + escapeHtml(error.message) + "</div>";
   }
 }
+// ---------- Automações cadastradas: conta + post de cada automação ----------
+// Descobre a qual conta do Instagram a automação pertence. Automações antigas
+// sem instagram_config_id caem na única conta conectada (se houver só uma).
+function resolveAutomationAccount(row) {
+  if (row.instagram_config_id) {
+    return currentIgAccounts.find((a) => String(a.id) === String(row.instagram_config_id)) || null;
+  }
+  return currentIgAccounts.length === 1 ? currentIgAccounts[0] : null;
+}
+function automationAccountLabel(row) {
+  const acc = resolveAutomationAccount(row);
+  if (acc) return acc.instagram_username ? "@" + acc.instagram_username : "Conta conectada";
+  if (row.instagram_config_id) return "Conta desconectada";
+  return "Conta não identificada";
+}
+// Link público do post; só quando o valor guardado parece um shortcode
+// (IDs numéricos longos de mídia não abrem como /p/<id>).
+function instagramPostLink(mediaId) {
+  const code = String(mediaId || "").trim();
+  if (!/^[A-Za-z0-9_-]+$/.test(code)) return null;
+  if (/^\d{12,}$/.test(code)) return null;
+  return "https://www.instagram.com/p/" + code + "/";
+}
+// Busca (uma vez por conta) as publicações para achar miniatura e legenda.
+function getAccountPosts(configId) {
+  if (!configId) return Promise.resolve(new Map());
+  if (!accountPostsCache[configId]) {
+    accountPostsCache[configId] = supabase.functions
+      .invoke("list-instagram-posts", { body: { mode: "all", instagram_config_id: configId } })
+      .then(({ data, error }) => {
+        if (error) throw error;
+        const map = new Map();
+        ((data && data.posts) || []).forEach((p) => {
+          if (p.shortcode) map.set(String(p.shortcode), p);
+          if (p.media_id) map.set(String(p.media_id), p);
+        });
+        return map;
+      })
+      .catch((err) => {
+        console.error("Erro ao buscar posts da conta:", err.message);
+        delete accountPostsCache[configId]; // permite tentar de novo depois
+        return new Map();
+      });
+  }
+  return accountPostsCache[configId];
+}
+async function enrichAutomationCards(rows) {
+  const configIds = new Set();
+  rows.forEach((row) => {
+    const acc = resolveAutomationAccount(row);
+    if (acc) configIds.add(acc.id);
+  });
+  await Promise.all(Array.from(configIds).map(async (configId) => {
+    const postsMap = await getAccountPosts(configId);
+    document.querySelectorAll('.automation-card[data-config-id="' + configId + '"]').forEach((card) => {
+      const code = card.getAttribute("data-media");
+      const post = postsMap.get(String(code));
+      const thumbBox = card.querySelector(".auto-post-thumb");
+      const captionEl = card.querySelector(".auto-post-caption");
+      if (!thumbBox || !captionEl) return;
+      if (!post) {
+        captionEl.textContent = "Legenda indisponível (post antigo ou removido)";
+        thumbBox.textContent = "📷";
+        return;
+      }
+      captionEl.textContent = post.caption
+        ? truncateUrl(post.caption.replace(/\s+/g, " "), 90)
+        : "(sem legenda)";
+      if (post.thumbnail_url) {
+        thumbBox.innerHTML =
+          '<img src="' + escapeHtml(safeUrl(post.thumbnail_url)) + '" alt="" style="width:100%;height:100%;object-fit:cover;" />';
+      } else {
+        thumbBox.textContent = "📷";
+      }
+    });
+  }));
+}
 function renderAutomations(rows) {
   const grid = $("#automationsTableBody");
   if (!rows || rows.length === 0) {
@@ -531,16 +611,34 @@ function renderAutomations(rows) {
     const statusClass = row.ativo ? "badge-ativo" : "badge-inativo";
     const statusText = row.ativo ? "Ativo" : "Inativo";
     const created = row.created_at ? new Date(row.created_at).toLocaleString("pt-BR") : "—";
+    const acc = resolveAutomationAccount(row);
+    const accountLabel = automationAccountLabel(row);
+    const accountBadgeClass = acc ? "badge-muted" : "badge-danger";
+    const postLink = instagramPostLink(row.instagram_media_id);
+    const postLinkHtml = postLink
+      ? '<a class="automation-card-link" href="' + escapeHtml(postLink) + '" target="_blank" rel="noopener noreferrer">Ver post no Instagram ↗</a>'
+      : "";
+    const productTitle = row.titulo_produto ? escapeHtml(truncateUrl(row.titulo_produto, 40)) : "";
     return (
-      '<div class="automation-card" data-id="' + escapeHtml(row.id) + '" data-ativo="' + (row.ativo ? "true" : "false") + '">' +
+      '<div class="automation-card" data-id="' + escapeHtml(row.id) + '" data-ativo="' + (row.ativo ? "true" : "false") + '"' +
+      ' data-config-id="' + escapeHtml(acc ? acc.id : "") + '" data-media="' + escapeHtml(row.instagram_media_id) + '">' +
       '<div class="automation-card-top">' +
       '<span class="badge ' + statusClass + '">' + statusText + "</span>" +
       '<div class="automation-card-actions">' +
       '<button class="icon-btn toggle-btn" title="' + (row.ativo ? "Desativar" : "Ativar") + '">' + (row.ativo ? "🔇" : "🔊") + "</button>" +
       '<button class="icon-btn delete-btn" title="Excluir">🗑️</button>' +
       "</div></div>" +
+      '<div><span class="badge ' + accountBadgeClass + '" title="Conta do Instagram desta automação">📸 ' + escapeHtml(accountLabel) + "</span></div>" +
+      '<div class="automation-card-postinfo" style="display:flex;gap:0.65rem;align-items:center;">' +
+      '<div class="auto-post-thumb" style="width:56px;height:56px;border-radius:var(--radius-sm);background:var(--surface-2);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--text-faint);">📷</div>' +
+      '<div style="min-width:0;flex:1;">' +
+      '<div class="auto-post-caption" style="font-size:0.8rem;color:var(--text-muted);line-height:1.35;word-break:break-word;">' +
+      (acc ? "Carregando legenda…" : "Conecte a conta para ver o post") + "</div>" +
+      postLinkHtml +
+      "</div></div>" +
       '<div class="automation-card-keyword"><span class="keyword-chip">' + escapeHtml(row.palavra_chave) + "</span></div>" +
-      '<div class="automation-card-post">Post: ' + escapeHtml(truncateUrl(row.instagram_media_id, 34)) + "</div>" +
+      '<div class="automation-card-post">ID do post: ' + escapeHtml(truncateUrl(row.instagram_media_id, 34)) + "</div>" +
+      (productTitle ? '<div class="automation-card-post" style="color:var(--text);font-weight:600;">🛍️ ' + productTitle + "</div>" : "") +
       '<a class="automation-card-link" href="' + escapeHtml(safeUrl(row.produto_url)) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(truncateUrl(row.produto_url, 40)) + "</a>" +
       '<div class="automation-card-footer">Criado em ' + created + "</div>" +
       "</div>"
@@ -548,6 +646,7 @@ function renderAutomations(rows) {
   }).join("");
   document.querySelectorAll(".toggle-btn").forEach((btn) => btn.addEventListener("click", toggleActive));
   document.querySelectorAll(".delete-btn").forEach((btn) => btn.addEventListener("click", deleteAutomation));
+  enrichAutomationCards(rows);
 }
 async function loadAutomations() {
   const loading = $("#loadingAutomations");
@@ -582,7 +681,9 @@ $("#automationSearch").addEventListener("input", (e) => {
   const filtered = allAutomations.filter((r) =>
     (r.palavra_chave || "").toLowerCase().includes(term) ||
     (r.produto_url || "").toLowerCase().includes(term) ||
-    (r.instagram_media_id || "").toLowerCase().includes(term)
+    (r.instagram_media_id || "").toLowerCase().includes(term) ||
+    (r.titulo_produto || "").toLowerCase().includes(term) ||
+    automationAccountLabel(r).toLowerCase().includes(term)
   );
   renderAutomations(filtered);
 });
