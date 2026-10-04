@@ -70,6 +70,7 @@ let pixCode = '';     // Pix copia e cola atual
 let usage = null;     // consumo de mensagens: null = ainda não carregou | [{ id, username, enviadas }]
 let usageError = '';
 let usageSeq = 0;     // descarta respostas antigas se chegarem fora de ordem
+let usagePlanValue = null; // profiles.monthly_plan_value (reserva, se não houver cobrança do mês)
 
 /* ====================  PIX: copia e cola + QR Code  ==================== */
 
@@ -220,6 +221,16 @@ function usageMonthInfo() {
   };
 }
 
+// Mensalidade do mês corrente: a cobrança (competência = dia 1 do mês) tem prioridade;
+// se ainda não foi gerada, cai no valor do plano cadastrado em profiles.
+function mensalidadeDoMes() {
+  const n = new Date();
+  const comp = iso(n.getFullYear(), n.getMonth(), 1);
+  const row = rows.find((p) => String(p.competencia).slice(0, 10) === comp && p.status !== 'cancelado');
+  if (row) return { valor: Number(row.valor), paga: row.status === 'pago' };
+  return usagePlanValue > 0 ? { valor: usagePlanValue, paga: false } : null;
+}
+
 function injectUsageStyles() {
   if (document.getElementById('payUsageStyles')) return;
   const st = document.createElement('style');
@@ -245,6 +256,11 @@ function injectUsageStyles() {
     .use-note { font-size: 0.78rem; color: var(--text-faint); }
     .use-item.over .use-note { color: var(--danger); }
     .use-item.over .use-note b { color: var(--danger); }
+    .use-total { margin-top: 1rem; border: 1px dashed var(--border); border-radius: var(--radius-md); padding: 0.9rem 1.1rem; }
+    .use-total-row { display: flex; justify-content: space-between; gap: 1rem; padding: 0.3rem 0; font-size: 0.92rem; color: var(--text-muted); }
+    .use-total-row.extra.on { color: var(--danger); }
+    .use-total-row.sum { margin-top: 0.35rem; padding-top: 0.7rem; border-top: 1px solid var(--border-soft); font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; color: var(--text); }
+    .use-total-note { font-size: 0.78rem; color: var(--text-faint); margin: 0.5rem 0 0; }
     @media (prefers-reduced-motion: reduce) { .use-bar > i { transition: none; } }
   `;
   document.head.appendChild(st);
@@ -255,7 +271,12 @@ async function loadUsage() {
   let data = null;
   let error = null;
   try {
-    ({ data, error } = await sb.rpc('get_consumo_mensagens'));
+    const [res, plan] = await Promise.all([
+      sb.rpc('get_consumo_mensagens'),
+      me?.id ? sb.from('profiles').select('monthly_plan_value').eq('id', me.id).maybeSingle() : Promise.resolve({ data: null }),
+    ]);
+    ({ data, error } = res);
+    usagePlanValue = Number(plan?.data?.monthly_plan_value) || null; // falha aqui não derruba o painel
   } catch (e) {
     error = e;
   }
@@ -326,7 +347,22 @@ function renderUsage() {
       </div>`;
   }).join('');
 
-  body.innerHTML = kpis + `<div class="use-list">${lista}</div>`;
+  const mensal = mensalidadeDoMes();
+  const linhaMensal = mensal
+    ? `<div class="use-total-row"><span>Mensalidade de ${esc(mes.label)}${mensal.paga ? ' (já paga)' : ''}</span><span>${brl(mensal.valor)}</span></div>`
+    : '';
+  const linhaExtra = `<div class="use-total-row extra ${extra > 0 ? 'on' : ''}"><span>Mensagens excedentes${excedentes > 0 ? ` (${num(excedentes)} × ${brl(preco)})` : ''}</span><span>${brl(extra)}</span></div>`;
+  const linhaTotal = mensal
+    ? `<div class="use-total-row sum"><span>Total do mês</span><span>${brl(round2(mensal.valor + extra))}</span></div>`
+    : '';
+  const notaTotal = !mensal
+    ? 'Não encontrei a mensalidade deste mês para somar ao excedente.'
+    : extra > 0
+      ? 'O excedente continua sendo atualizado a cada mensagem enviada até o fim do mês.'
+      : 'Se alguma conta passar da franquia, o excedente é somado aqui.';
+  const resumo = `<div class="use-total">${linhaMensal}${linhaExtra}${linhaTotal}<p class="use-total-note">${notaTotal}</p></div>`;
+
+  body.innerHTML = kpis + `<div class="use-list">${lista}</div>` + resumo;
 }
 
 /* ---------------------- Montagem da UI ---------------------- */
@@ -693,7 +729,7 @@ function bind() {
   }
 
   sb.auth.onAuthStateChange((event) => {
-    if (event === 'SIGNED_OUT') { me = null; rows = []; clients = []; loaded = false; qrChoice = null; usage = null; usageError = ''; render(); }
+    if (event === 'SIGNED_OUT') { me = null; rows = []; clients = []; loaded = false; qrChoice = null; usage = null; usageError = ''; usagePlanValue = null; render(); }
   });
 
   // Se a aba for aberta por outro código, carrega mesmo assim.
