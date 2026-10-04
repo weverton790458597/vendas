@@ -17,7 +17,7 @@ const CONFIG = {
   WHATSAPP: '5598982672165',           // comprovante vai pra esse WhatsApp ('' esconde o botão)
 
   // ---- Franquia de mensagens (vale POR CONTA do Instagram conectada, renova todo mês) ----
-  FRANQUIA_MENSAGENS: 500,             // mensagens incluídas por conta, por mês
+  FRANQUIA_MENSAGENS: 1,             // mensagens incluídas por conta, por mês
   PRECO_MENSAGEM_EXCEDENTE: 0.10,      // R$ cobrado por cada mensagem acima da franquia
 };
 /* ============================================================ */
