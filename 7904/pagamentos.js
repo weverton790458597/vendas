@@ -71,6 +71,7 @@ let usage = null;     // consumo de mensagens: null = ainda não carregou | [{ i
 let usageError = '';
 let usageSeq = 0;     // descarta respostas antigas se chegarem fora de ordem
 let usagePlanValue = null; // profiles.monthly_plan_value (reserva, se não houver cobrança do mês)
+let closePlan = null;      // admin: prévia do fechamento do mês { mes, proxIso, itens }
 
 /* ====================  PIX: copia e cola + QR Code  ==================== */
 
@@ -217,18 +218,37 @@ function usageMonthInfo() {
   const prox = new Date(n.getFullYear(), n.getMonth() + 1, 1);
   return {
     label: fmtMonth(iso(n.getFullYear(), n.getMonth(), 1)),
+    proximo: fmtMonth(iso(prox.getFullYear(), prox.getMonth(), 1)),
     renova: fmtDate(iso(prox.getFullYear(), prox.getMonth(), 1)),
   };
 }
 
-// Mensalidade do mês corrente: a cobrança (competência = dia 1 do mês) tem prioridade;
-// se ainda não foi gerada, cai no valor do plano cadastrado em profiles.
+// Quando o admin "fecha o mês", o excedente de mensagens do mês anterior é somado ao `valor`
+// da cobrança do mês seguinte e registrado em `observacao` neste formato (usado como trava
+// anti-duplicidade e para mostrar ao cliente por que a fatura está maior):
+//   [exc:2026-09:6.00] Inclui R$ 6,00 de excedente de mensagens de Setembro de 2026 (60 × R$ 0,10)
+function excedentesIncluidos(p) {
+  const out = [];
+  const re = /\[exc:(\d{4}-\d{2}):([\d.]+)\]\s*([^|\[]*)/g;
+  const obs = String((p && p.observacao) || '');
+  let m;
+  while ((m = re.exec(obs))) out.push({ mes: m[1], valor: Number(m[2]), texto: m[3].trim() });
+  return out;
+}
+
+// Fatura do mês corrente: a cobrança (competência = dia 1 do mês) tem prioridade; se ainda
+// não foi gerada, cai no valor do plano cadastrado em profiles. `valor` aqui é só a
+// mensalidade (já sem o excedente de meses anteriores que a cobrança possa carregar).
 function mensalidadeDoMes() {
   const n = new Date();
   const comp = iso(n.getFullYear(), n.getMonth(), 1);
   const row = rows.find((p) => String(p.competencia).slice(0, 10) === comp && p.status !== 'cancelado');
-  if (row) return { valor: Number(row.valor), paga: row.status === 'pago' };
-  return usagePlanValue > 0 ? { valor: usagePlanValue, paga: false } : null;
+  if (row) {
+    const inclusos = excedentesIncluidos(row);
+    const somaInclusos = round2(inclusos.reduce((sum, e) => sum + e.valor, 0));
+    return { valor: round2(Number(row.valor) - somaInclusos), inclusos, fatura: Number(row.valor), paga: row.status === 'pago' };
+  }
+  return usagePlanValue > 0 ? { valor: usagePlanValue, inclusos: [], fatura: usagePlanValue, paga: false } : null;
 }
 
 function injectUsageStyles() {
@@ -260,6 +280,7 @@ function injectUsageStyles() {
     .use-total-row { display: flex; justify-content: space-between; gap: 1rem; padding: 0.3rem 0; font-size: 0.92rem; color: var(--text-muted); }
     .use-total-row.extra.on { color: var(--danger); }
     .use-total-row.sum { margin-top: 0.35rem; padding-top: 0.7rem; border-top: 1px solid var(--border-soft); font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; color: var(--text); }
+    .use-total-row.soon { margin-top: 0.6rem; padding-top: 0.7rem; border-top: 1px dashed var(--border-soft); }
     .use-total-note { font-size: 0.78rem; color: var(--text-faint); margin: 0.5rem 0 0; }
     @media (prefers-reduced-motion: reduce) { .use-bar > i { transition: none; } }
   `;
@@ -322,7 +343,7 @@ function renderUsage() {
       <div class="kpi-item accent"><span class="kpi-value">${num(total)}</span><span class="kpi-label">Enviadas em ${esc(mes.label)}</span></div>
       <div class="kpi-item"><span class="kpi-value">${num(restantes)}</span><span class="kpi-label">Ainda disponíveis sem custo extra</span></div>
       <div class="kpi-item ${extra > 0 ? 'is-danger' : ''}"><span class="kpi-value">${brl(extra)}</span><span class="kpi-label">${excedentes > 0
-        ? `Excedente: ${num(excedentes)} ${plural(excedentes, 'mensagem', 'mensagens')} × ${brl(preco)}`
+        ? `${num(excedentes)} ${plural(excedentes, 'mensagem', 'mensagens')} × ${brl(preco)} · entra na fatura de ${esc(mes.proximo)}`
         : 'Nenhum excedente neste mês'}</span></div>
     </div>`;
 
@@ -349,18 +370,20 @@ function renderUsage() {
 
   const mensal = mensalidadeDoMes();
   const linhaMensal = mensal
-    ? `<div class="use-total-row"><span>Mensalidade de ${esc(mes.label)}${mensal.paga ? ' (já paga)' : ''}</span><span>${brl(mensal.valor)}</span></div>`
+    ? `<div class="use-total-row"><span>Mensalidade de ${esc(mes.label)}</span><span>${brl(mensal.valor)}</span></div>`
     : '';
-  const linhaExtra = `<div class="use-total-row extra ${extra > 0 ? 'on' : ''}"><span>Mensagens excedentes${excedentes > 0 ? ` (${num(excedentes)} × ${brl(preco)})` : ''}</span><span>${brl(extra)}</span></div>`;
-  const linhaTotal = mensal
-    ? `<div class="use-total-row sum"><span>Total do mês</span><span>${brl(round2(mensal.valor + extra))}</span></div>`
+  const linhasIncl = mensal
+    ? mensal.inclusos.map((e) => `<div class="use-total-row extra on"><span>Excedente de ${esc(fmtMonth(e.mes + '-01'))} (cobrado nesta fatura)</span><span>${brl(e.valor)}</span></div>`).join('')
     : '';
-  const notaTotal = !mensal
-    ? 'Não encontrei a mensalidade deste mês para somar ao excedente.'
-    : extra > 0
-      ? 'O excedente continua sendo atualizado a cada mensagem enviada até o fim do mês.'
-      : 'Se alguma conta passar da franquia, o excedente é somado aqui.';
-  const resumo = `<div class="use-total">${linhaMensal}${linhaExtra}${linhaTotal}<p class="use-total-note">${notaTotal}</p></div>`;
+  const linhaFatura = mensal
+    ? `<div class="use-total-row sum"><span>Fatura de ${esc(mes.label)}${mensal.paga ? ' (já paga)' : ''}</span><span>${brl(mensal.fatura)}</span></div>`
+    : '';
+  const linhaAcumulando = `<div class="use-total-row soon extra ${extra > 0 ? 'on' : ''}"><span>Excedente de ${esc(mes.label)} até agora${excedentes > 0 ? ` (${num(excedentes)} × ${brl(preco)})` : ''}</span><span>${brl(extra)}</span></div>`;
+  const notaTotal = (extra > 0
+    ? `Esse valor será somado à fatura de ${mes.proximo} e continua sendo atualizado a cada mensagem enviada até o fim do mês.`
+    : `Se alguma conta passar da franquia, o excedente de ${mes.label} entra na fatura de ${mes.proximo}.`)
+    + (mensal ? '' : ' Não encontrei a fatura deste mês para mostrar a mensalidade.');
+  const resumo = `<div class="use-total">${linhaMensal}${linhasIncl}${linhaFatura}${linhaAcumulando}<p class="use-total-note">${esc(notaTotal)}</p></div>`;
 
   body.innerHTML = kpis + `<div class="use-list">${lista}</div>` + resumo;
 }
@@ -396,7 +419,7 @@ function ensureUI() {
         <div class="panel-heading-row"><h2>Consumo de mensagens</h2>
           <span class="badge badge-muted" id="payUsageMonth"></span>
         </div>
-        <p class="panel-lead">Cada conta conectada inclui ${esc(num(CONFIG.FRANQUIA_MENSAGENS))} mensagens por mês. Acima disso, cada mensagem extra custa ${esc(brl(CONFIG.PRECO_MENSAGEM_EXCEDENTE))}. A franquia é individual: a sobra de uma conta não cobre o excedente de outra.</p>
+        <p class="panel-lead">Cada conta conectada inclui ${esc(num(CONFIG.FRANQUIA_MENSAGENS))} mensagens por mês. Acima disso, cada mensagem extra custa ${esc(brl(CONFIG.PRECO_MENSAGEM_EXCEDENTE))}. A franquia é individual: a sobra de uma conta não cobre o excedente de outra. O excedente de cada mês é somado à fatura do mês seguinte.</p>
         <div id="payUsageBody"></div>
       </section>
 
@@ -460,6 +483,14 @@ function ensureUI() {
         </div>
         <button type="button" id="payGenBtn" class="btn btn-primary">Gerar cobranças</button>
         <p class="field-hint">Meses que já têm cobrança para esse cliente são ignorados (não duplica).</p>
+
+        <h3 style="margin:1.8rem 0 .4rem;">Fechar mês: excedente de mensagens</h3>
+        <p class="field-hint" style="margin-top:0;">Soma o excedente de cada cliente (acima de ${esc(num(CONFIG.FRANQUIA_MENSAGENS))} por conta, ${esc(brl(CONFIG.PRECO_MENSAGEM_EXCEDENTE))} cada) na cobrança pendente do mês seguinte. Você confere a prévia antes de aplicar.</p>
+        <div class="automation-form-grid">
+          <div class="field"><span>Mês a fechar</span><input type="month" id="payCloseMonth" /></div>
+          <div class="field"><button type="button" id="payClosePreviewBtn" class="btn btn-outline" style="margin-top:1.7rem;">Calcular prévia</button></div>
+        </div>
+        <div id="payClosePreview"></div>
       </section>`;
     main.appendChild(panel);
   }
@@ -622,6 +653,161 @@ async function gerarCobrancas() {
   if (userId === me?.id) await loadPayments();
 }
 
+/* ---------------------- Admin: fechar mês (excedente de mensagens) ---------------------- */
+function fillCloseDefault() {
+  const input = $('payCloseMonth');
+  if (!input || input.value) return;
+  const n = new Date();
+  const ant = new Date(n.getFullYear(), n.getMonth() - 1, 1);
+  const val = `${ant.getFullYear()}-${pad(ant.getMonth() + 1)}`;
+  input.value = val;
+  input.max = val; // só meses já encerrados
+}
+
+const CLOSE_STATES = {
+  ok:           { badge: 'badge-ativo', label: 'Pronto' },
+  ja:           { badge: 'badge-muted', label: 'Já aplicado' },
+  sem_cobranca: { badge: 'badge-warn',  label: 'Sem cobrança' },
+  bloqueada:    { badge: 'badge-warn',  label: 'Bloqueada' },
+};
+
+async function calcularFechamento() {
+  const val = $('payCloseMonth').value; // 'YYYY-MM'
+  if (!/^\d{4}-\d{2}$/.test(val)) { showBanner('Escolha o mês que será fechado.'); return; }
+  const [y, m] = val.split('-').map(Number);
+  const mesIso = iso(y, m - 1, 1);
+  const hoje = new Date();
+  if (mesIso >= iso(hoje.getFullYear(), hoje.getMonth(), 1)) {
+    showBanner('Só dá para fechar meses já encerrados.');
+    return;
+  }
+  const prox = new Date(y, m, 1); // m é 1-12, então isto já é o mês seguinte
+  const proxIso = iso(prox.getFullYear(), prox.getMonth(), 1);
+  const marcador = `[exc:${val}:`;
+
+  const btn = $('payClosePreviewBtn');
+  btn.disabled = true; btn.textContent = 'Calculando…';
+  showBanner('');
+  try {
+    const { data, error } = await sb.rpc('admin_get_consumo_mensagens', { p_mes: mesIso });
+    if (error) throw error;
+
+    // Excedente por cliente = soma dos excedentes de cada conta (franquia é por conta).
+    const porUser = new Map();
+    for (const r of data || []) {
+      const u = usageOf(Number(r.enviadas) || 0);
+      const e = porUser.get(r.user_id) || { userId: r.user_id, email: r.email, excedentes: 0, extra: 0 };
+      e.excedentes += u.excedentes;
+      e.extra = round2(e.extra + u.extra);
+      porUser.set(r.user_id, e);
+    }
+    const devedores = [...porUser.values()].filter((e) => e.extra > 0);
+
+    let cobrancas = [];
+    if (devedores.length) {
+      const { data: cs, error: e2 } = await sb.from('pagamentos')
+        .select('id, user_id, competencia, valor, status, observacao')
+        .eq('competencia', proxIso)
+        .in('user_id', devedores.map((d) => d.userId));
+      if (e2) throw e2;
+      cobrancas = cs || [];
+    }
+    const porCobranca = Object.fromEntries(cobrancas.map((c) => [c.user_id, c]));
+
+    const itens = devedores.map((d) => {
+      const alvo = porCobranca[d.userId] || null;
+      let estado = 'ok';
+      let motivo = '';
+      if (!alvo) {
+        estado = 'sem_cobranca';
+        motivo = `Não existe cobrança de ${fmtMonth(proxIso)}. Gere as cobranças desse cliente primeiro.`;
+      } else if (String(alvo.observacao || '').includes(marcador)) {
+        estado = 'ja';
+        motivo = 'Esse excedente já foi somado nesta cobrança.';
+      } else if (alvo.status !== 'pendente') {
+        estado = 'bloqueada';
+        motivo = `A cobrança está “${(STATUS_UI[alvo.status] || {}).label || alvo.status}”; só dá para alterar o valor de cobrança pendente.`;
+      }
+      const novo = alvo ? round2(Number(alvo.valor) + d.extra) : null;
+      return { ...d, alvo, novo, estado, motivo };
+    });
+
+    closePlan = { val, mesIso, proxIso, itens };
+    renderFechamento(!(data || []).length);
+  } catch (e) {
+    console.error('[pagamentos fechamento]', e);
+    closePlan = null;
+    $('payClosePreview').innerHTML = '';
+    showBanner(String(e?.message || '').includes('acesso negado')
+      ? 'Apenas administradores podem fechar o mês.'
+      : 'Não consegui calcular o fechamento. Confira se o SQL fechamento_excedente.sql foi executado. (' + (e?.message || e) + ')');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Calcular prévia';
+  }
+}
+
+function renderFechamento(semContas) {
+  const box = $('payClosePreview');
+  if (!box || !closePlan) return;
+  const { mesIso, proxIso, itens } = closePlan;
+  const cab = `<p class="field-hint" style="margin:1rem 0 .6rem;">Fechando <b>${esc(fmtMonth(mesIso))}</b> → o excedente entra na cobrança de <b>${esc(fmtMonth(proxIso))}</b>.</p>`;
+  if (!itens.length) {
+    box.innerHTML = cab + `<div class="empty-state">${semContas ? 'Nenhuma conta do Instagram conectada.' : 'Nenhum cliente passou da franquia neste mês. Nada a cobrar. 🎉'}</div>`;
+    return;
+  }
+  const prontos = itens.filter((i) => i.estado === 'ok');
+  const totalProntos = round2(prontos.reduce((sum, i) => sum + i.extra, 0));
+  const linhas = itens.map((i) => {
+    const st = CLOSE_STATES[i.estado];
+    const detalhe = i.estado === 'ok'
+      ? `${num(i.excedentes)} ${plural(i.excedentes, 'mensagem', 'mensagens')} acima da franquia · +${brl(i.extra)} · cobrança de ${fmtMonth(proxIso)}: ${brl(i.alvo.valor)} → <b>${brl(i.novo)}</b>`
+      : `${num(i.excedentes)} ${plural(i.excedentes, 'mensagem', 'mensagens')} acima da franquia · ${brl(i.extra)} · ${esc(i.motivo)}`;
+    return `
+      <div class="ig-tester-admin-row">
+        <div class="ig-tester-admin-info">
+          <strong>${esc(i.email || i.userId)}</strong>
+          <span class="ig-tester-admin-date">${detalhe}</span>
+        </div>
+        <div class="ig-tester-admin-actions"><span class="badge ${st.badge}">${st.label}</span></div>
+      </div>`;
+  }).join('');
+  const acao = prontos.length
+    ? `<button type="button" class="btn btn-primary" id="payCloseApplyBtn" style="margin-top:.9rem;">Aplicar em ${prontos.length} ${plural(prontos.length, 'cobrança', 'cobranças')} (+${brl(totalProntos)})</button>`
+    : '<p class="field-hint">Nada pronto para aplicar.</p>';
+  box.innerHTML = cab + linhas + acao;
+}
+
+async function aplicarFechamento(btn) {
+  if (!closePlan) return;
+  const { val, mesIso, proxIso, itens } = closePlan;
+  const prontos = itens.filter((i) => i.estado === 'ok');
+  if (!prontos.length) return;
+  const total = round2(prontos.reduce((sum, i) => sum + i.extra, 0));
+  if (!confirm(`Somar ${brl(total)} de excedente em ${prontos.length} cobrança(s) de ${fmtMonth(proxIso)}?\n\nO valor da cobrança de cada cliente será alterado.`)) return;
+
+  btn.disabled = true; btn.textContent = 'Aplicando…';
+  let ok = 0;
+  const falhas = [];
+  for (const i of prontos) {
+    const texto = `Inclui ${brl(i.extra)} de excedente de mensagens de ${fmtMonth(mesIso)} (${num(i.excedentes)} × ${brl(CONFIG.PRECO_MENSAGEM_EXCEDENTE)})`;
+    const obs = (i.alvo.observacao ? String(i.alvo.observacao) + ' | ' : '') + `[exc:${val}:${i.extra.toFixed(2)}] ${texto}`;
+    // Trava: só altera se a cobrança continua pendente e com o mesmo valor visto na prévia.
+    const { data, error } = await sb.from('pagamentos')
+      .update({ valor: i.novo, observacao: obs })
+      .eq('id', i.alvo.id).eq('status', 'pendente').eq('valor', i.alvo.valor)
+      .select('id');
+    if (error || !data?.length) {
+      console.error('[pagamentos fechamento]', error || 'nenhuma linha alterada', i.email);
+      falhas.push(i.email || i.userId);
+    } else ok++;
+  }
+  await calcularFechamento(); // atualiza a prévia (essas cobranças passam a "Já aplicado")
+  await loadPayments();
+  // O aviso vem por último porque as duas chamadas acima limpam o banner.
+  if (falhas.length) showBanner(`Aplicado em ${ok}. Não consegui aplicar em: ${falhas.join(', ')} (a cobrança mudou ou houve erro). Confira a prévia.`);
+  else showBanner(`Excedente somado em ${ok} ${plural(ok, 'cobrança', 'cobranças')}.`, 'success');
+}
+
 /* ---------------------- Render ---------------------- */
 function render() {
   const list = $('payList');
@@ -668,6 +854,7 @@ function render() {
         <div class="pay-item-main">
           <strong>${esc(fmtMonth(p.competencia))}</strong>
           <span class="pay-item-note">${esc(note)}</span>
+          ${excedentesIncluidos(p).map((e) => `<span class="pay-item-note" style="display:block;">${esc(e.texto)}</span>`).join('')}
         </div>
         <div class="pay-item-value">${brl(p.valor)}</div>
         <span class="badge ${ui.cls}">${ui.label}</span>
@@ -719,6 +906,11 @@ function bind() {
   });
   $('payGenUser')?.addEventListener('change', fillGenDefaults);
   $('payGenBtn')?.addEventListener('click', gerarCobrancas);
+  $('payClosePreviewBtn')?.addEventListener('click', calcularFechamento);
+  $('payClosePreview')?.addEventListener('click', (ev) => {
+    const b = ev.target.closest('#payCloseApplyBtn');
+    if (b) aplicarFechamento(b);
+  });
 
   if (CONFIG.WHATSAPP) {
     const w = $('payWhatsBtn');
@@ -729,7 +921,7 @@ function bind() {
   }
 
   sb.auth.onAuthStateChange((event) => {
-    if (event === 'SIGNED_OUT') { me = null; rows = []; clients = []; loaded = false; qrChoice = null; usage = null; usageError = ''; usagePlanValue = null; render(); }
+    if (event === 'SIGNED_OUT') { me = null; rows = []; clients = []; loaded = false; qrChoice = null; usage = null; usageError = ''; usagePlanValue = null; closePlan = null; render(); }
   });
 
   // Se a aba for aberta por outro código, carrega mesmo assim.
@@ -744,6 +936,7 @@ function bind() {
 function init() {
   injectUsageStyles();
   ensureUI();
+  fillCloseDefault();
   bind();
   render();
 }
