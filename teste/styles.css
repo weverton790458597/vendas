@@ -945,3 +945,19 @@ tbody tr:hover { background: var(--surface-hover); }
 .page-head p{font-size:.84rem}
 .form-step{margin-top:1.1rem}
 }
+.pay-admin-stack{display:flex;flex-direction:column}
+.pay-actions{display:flex;gap:.5rem;flex-wrap:wrap}
+.field-offset{margin:1.7rem 0 0}
+.pay-pix{padding:1.6rem 1.8rem;gap:2rem}
+.pay-pix-qr{width:220px;height:220px;box-shadow:var(--shadow-pop)}
+#payQr{width:100%;height:100%}
+.pay-pix-info .panel-lead{margin-top:0}
+.pay-pix-info .field{margin-bottom:.9rem}
+.pay-item{background:var(--surface);transition:border-color .15s var(--ease),transform .15s var(--ease)}
+.pay-item:hover{border-color:var(--accent-1)}
+.pay-filter{flex-wrap:nowrap}
+.tab-panel:has(#payAdmin.hidden) .seg-btn[data-seg="seg-pay-admin"]{display:none}
+@media (max-width:900px){
+.pay-pix{padding:1.2rem}
+.pay-pix-qr{width:200px;height:200px}
+}
