@@ -409,29 +409,29 @@ function ensureUI() {
     panel.id = 'tab-' + TAB;
     panel.className = 'tab-panel hidden';
     panel.innerHTML = `
-      <div class="panel-heading-row"><h1 style="margin:0;">Pagamentos</h1>
-        <button type="button" id="payRefreshBtn" class="btn btn-outline btn-sm">Atualizar</button>
-      </div>
+      <div class="page-head panel-heading-row"><div><h1>Pagamentos</h1><p>Cobranças, Pix e consumo de mensagens.</p></div><button type="button" id="payRefreshBtn" class="btn btn-outline btn-sm">Atualizar</button></div>
       <div id="payBanner" class="banner"></div>
       <div id="payKpis" class="kpi-strip"></div>
 
-      <section class="panel" id="payUsage">
-        <div class="panel-heading-row"><h2>Consumo de mensagens</h2>
-          <span class="badge badge-muted" id="payUsageMonth"></span>
+      <nav class="seg-nav"><button type="button" class="seg-btn active" data-seg="seg-pay-list">Cobranças</button><button type="button" class="seg-btn" data-seg="seg-pay-pix">Pix</button><button type="button" class="seg-btn" data-seg="seg-pay-usage">Consumo</button><button type="button" class="seg-btn" data-seg="seg-pay-admin">Admin</button></nav><div id="seg-pay-list" class="seg-panel"><section class="panel panel-plain">
+        <div class="panel-heading-row"><h2>Suas cobranças</h2>
+          <div class="pay-filter">
+            <button type="button" class="subtab-btn active" data-payfilter="abertas">Em aberto</button>
+            <button type="button" class="subtab-btn" data-payfilter="pagas">Pagas</button>
+            <button type="button" class="subtab-btn" data-payfilter="todas">Todas</button>
+          </div>
         </div>
-        <p class="panel-lead">Cada conta conectada inclui ${esc(num(CONFIG.FRANQUIA_MENSAGENS))} mensagens por mês. Acima disso, cada mensagem extra custa ${esc(brl(CONFIG.PRECO_MENSAGEM_EXCEDENTE))}. A franquia é individual: a sobra de uma conta não cobre o excedente de outra. O excedente de cada mês é somado à fatura do mês seguinte.</p>
-        <div id="payUsageBody"></div>
-      </section>
-
-      <section class="panel pay-pix">
-        <div class="pay-pix-qr" style="width:220px;height:220px;">
-          <div id="payQr" style="width:100%;height:100%;"></div>
+        <div id="payLoading" class="loading-row hidden">Carregando pagamentos…</div>
+        <div id="payList" class="pay-list"></div>
+      </section></div><div id="seg-pay-pix" class="seg-panel hidden"><section class="panel pay-pix">
+        <div class="pay-pix-qr">
+          <div id="payQr"></div>
         </div>
         <div class="pay-pix-info">
           <h2>Pague via Pix</h2>
-          <p class="panel-lead" style="margin-top:0;">Escaneie o QR Code no app do seu banco ou use o Pix copia e cola. Depois de pagar, clique em <b>“Já paguei”</b> na cobrança correspondente.</p>
+          <p class="panel-lead">Escaneie o QR Code no app do seu banco ou use o Pix copia e cola. Depois de pagar, clique em <b>“Já paguei”</b> na cobrança correspondente.</p>
 
-          <div class="field" style="margin-bottom:0.9rem;">
+          <div class="field">
             <span>Valor do QR Code</span>
             <select id="payQrAmount"></select>
             <p id="payQrHint" class="field-hint"></p>
@@ -443,40 +443,25 @@ function ensureUI() {
             <button type="button" id="payCopyBtn" class="btn btn-primary btn-sm">Copiar chave</button>
           </div>
           <div class="pay-key-benef">Favorecido: ${esc(CONFIG.PIX_BENEFICIARIO)}</div>
-          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+          <div class="pay-actions">
             <button type="button" id="payCopyCodeBtn" class="btn btn-outline btn-sm">📋 Copiar Pix copia e cola</button>
             <a id="payWhatsBtn" class="btn btn-outline btn-sm hidden" target="_blank" rel="noopener">💬 Enviar comprovante no WhatsApp</a>
           </div>
         </div>
-      </section>
-
-      <section class="panel panel-plain">
-        <div class="panel-heading-row"><h2>Suas cobranças</h2>
-          <div class="pay-filter">
-            <button type="button" class="subtab-btn active" data-payfilter="abertas">Em aberto</button>
-            <button type="button" class="subtab-btn" data-payfilter="pagas">Pagas</button>
-            <button type="button" class="subtab-btn" data-payfilter="todas">Todas</button>
-          </div>
+      </section></div><div id="seg-pay-usage" class="seg-panel hidden"><section class="panel" id="payUsage">
+        <div class="panel-heading-row"><h2>Consumo de mensagens</h2>
+          <span class="badge badge-muted" id="payUsageMonth"></span>
         </div>
-        <div id="payLoading" class="loading-row hidden">Carregando pagamentos…</div>
-        <div id="payList" class="pay-list"></div>
-      </section>
-
-      <!-- Só aparece para admin -->
-      <section id="payAdmin" class="panel hidden">
-        <div class="panel-heading-row"><h2>🛠️ Gerenciar clientes (admin)</h2></div>
-
-        <h3 style="margin-bottom:.6rem;">Aguardando confirmação</h3>
-        <div id="payAdminPending" style="margin-bottom:1.6rem;"></div>
-
-        <h3 style="margin-bottom:.6rem;">Gerar cobranças</h3>
+        <p class="panel-lead">Cada conta conectada inclui ${esc(num(CONFIG.FRANQUIA_MENSAGENS))} mensagens por mês. Acima disso, cada mensagem extra custa ${esc(brl(CONFIG.PRECO_MENSAGEM_EXCEDENTE))}. A franquia é individual: a sobra de uma conta não cobre o excedente de outra. O excedente de cada mês é somado à fatura do mês seguinte.</p>
+        <div id="payUsageBody"></div>
+      </section></div><div id="seg-pay-admin" class="seg-panel hidden"><div id="payAdmin" class="pay-admin-stack hidden"><section class="panel"><div class="panel-heading-row"><h2>Aguardando confirmação</h2></div><div id="payAdminPending"></div></section><section class="panel"><div class="panel-heading-row"><h2>Gerar cobranças</h2></div>
         <div class="automation-form-grid">
           <div class="field field-full"><span>Cliente</span><select id="payGenUser"></select></div>
           <div class="field"><span>Valor mensal (R$)</span><input type="number" id="payGenValor" step="0.01" min="0" placeholder="49,90" /></div>
           <div class="field"><span>Dia do vencimento (1–28)</span><input type="number" id="payGenDia" min="1" max="28" value="10" /></div>
           <div class="field"><span>Quantidade de meses</span><input type="number" id="payGenMeses" min="1" max="36" value="12" /></div>
           <div class="field">
-            <label class="founder-idea-check" style="margin:1.7rem 0 0;">
+            <label class="founder-idea-check field-offset">
               <input type="checkbox" id="payGenAtual" /><span>Começar no mês atual</span>
             </label>
           </div>
@@ -484,14 +469,13 @@ function ensureUI() {
         <button type="button" id="payGenBtn" class="btn btn-primary">Gerar cobranças</button>
         <p class="field-hint">Meses que já têm cobrança para esse cliente são ignorados (não duplica).</p>
 
-        <h3 style="margin:1.8rem 0 .4rem;">Fechar mês: excedente de mensagens</h3>
-        <p class="field-hint" style="margin-top:0;">Soma o excedente de cada cliente (acima de ${esc(num(CONFIG.FRANQUIA_MENSAGENS))} por conta, ${esc(brl(CONFIG.PRECO_MENSAGEM_EXCEDENTE))} cada) na cobrança pendente do mês seguinte. Você confere a prévia antes de aplicar.</p>
+        </section><section class="panel"><div class="panel-heading-row"><h2>Fechar mês: excedente de mensagens</h2></div>
+        <p class="field-hint">Soma o excedente de cada cliente (acima de ${esc(num(CONFIG.FRANQUIA_MENSAGENS))} por conta, ${esc(brl(CONFIG.PRECO_MENSAGEM_EXCEDENTE))} cada) na cobrança pendente do mês seguinte. Você confere a prévia antes de aplicar.</p>
         <div class="automation-form-grid">
           <div class="field"><span>Mês a fechar</span><input type="month" id="payCloseMonth" /></div>
-          <div class="field"><button type="button" id="payClosePreviewBtn" class="btn btn-outline" style="margin-top:1.7rem;">Calcular prévia</button></div>
+          <div class="field"><button type="button" id="payClosePreviewBtn" class="btn btn-outline field-offset">Calcular prévia</button></div>
         </div>
-        <div id="payClosePreview"></div>
-      </section>`;
+        <div id="payClosePreview"></div></section></div></div>`;
     main.appendChild(panel);
   }
 }
