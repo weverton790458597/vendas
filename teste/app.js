@@ -62,6 +62,18 @@ function extractShortcode(input) {
   const match = cleanUrl.match(/\/(?:p|reel|reels|tv)\/([A-Za-z0-9_-]+)/);
   return match ? match[1] : value;
 }
+// O supabase-js esconde o corpo do erro de Edge Functions ("non-2xx status code").
+// Esta função lê o corpo da resposta e devolve a mensagem real.
+async function getFunctionErrorMessage(error) {
+  try {
+    const ctx = error && error.context;
+    if (ctx && typeof ctx.json === "function") {
+      const body = await ctx.json();
+      if (body && (body.error || body.message)) return String(body.error || body.message);
+    }
+  } catch (_) { /* corpo não era JSON */ }
+  return (error && error.message) || "Erro desconhecido";
+}
 function applyTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
   try { localStorage.setItem("ap-theme", theme); } catch (_) { /* storage indisponível */ }
@@ -320,6 +332,7 @@ async function disconnectIgAccount(configId) {
   try {
     const { error } = await supabase.from("instagram_config").delete().eq("id", configId).eq("user_id", currentUser.id);
     if (error) throw error;
+    delete accountPostsCache[configId];
     showBanner("statusBanner", "Instagram desconectado.", "success");
     await loadIgConfig();
   } catch (error) {
@@ -453,15 +466,21 @@ function renderLatestPosts(posts) {
 async function loadLatestPosts() {
   const grid = $("#latestPostsGrid");
   if (!grid) return;
+  if (currentIgAccounts.length === 0) {
+    renderLatestPosts([]);
+    return;
+  }
   grid.innerHTML = '<div class="loading-row">Carregando publicações…</div>';
   try {
     const { data, error } = await supabase.functions.invoke("list-instagram-posts", {
       body: { mode: "latest" },
     });
     if (error) throw error;
+    if (data && data.error) throw new Error(data.error);
     renderLatestPosts(data && data.posts);
   } catch (error) {
-    grid.innerHTML = '<div class="empty-state">Erro ao carregar publicações: ' + escapeHtml(error.message) + "</div>";
+    const msg = await getFunctionErrorMessage(error);
+    grid.innerHTML = '<div class="empty-state">Erro ao carregar publicações: ' + escapeHtml(msg) + "</div>";
   }
 }
 function fillAutomationForm(shortcode) {
@@ -497,6 +516,7 @@ async function openAllPostsModal(instagramConfigId, username) {
       body: { mode: "all", instagram_config_id: instagramConfigId },
     });
     if (error) throw error;
+    if (data && data.error) throw new Error(data.error);
     const posts = (data && data.posts) || [];
     const modalGrid = $("#allPostsModalGrid");
     if (!modalGrid) return;
@@ -520,8 +540,9 @@ async function openAllPostsModal(instagramConfigId, username) {
       btn.addEventListener("click", () => fillAutomationForm(btn.getAttribute("data-shortcode")))
     );
   } catch (error) {
+    const msg = await getFunctionErrorMessage(error);
     const modalGrid = $("#allPostsModalGrid");
-    if (modalGrid) modalGrid.innerHTML = '<div class="empty-state">Erro ao carregar: ' + escapeHtml(error.message) + "</div>";
+    if (modalGrid) modalGrid.innerHTML = '<div class="empty-state">Erro ao carregar: ' + escapeHtml(msg) + "</div>";
   }
 }
 // ---------- Automações cadastradas: conta + post de cada automação ----------
@@ -548,6 +569,8 @@ function instagramPostLink(mediaId) {
   return "https://www.instagram.com/p/" + code + "/";
 }
 // Busca (uma vez por conta) as publicações para achar miniatura e legenda.
+// Em caso de erro, mantém um cache vazio por 60s para não repetir a chamada
+// a cada re-render (evita o "spam" de requisições).
 function getAccountPosts(configId) {
   if (!configId) return Promise.resolve(new Map());
   if (!accountPostsCache[configId]) {
@@ -555,6 +578,7 @@ function getAccountPosts(configId) {
       .invoke("list-instagram-posts", { body: { mode: "all", instagram_config_id: configId } })
       .then(({ data, error }) => {
         if (error) throw error;
+        if (data && data.error) throw new Error(data.error);
         const map = new Map();
         ((data && data.posts) || []).forEach((p) => {
           if (p.shortcode) map.set(String(p.shortcode), p);
@@ -562,9 +586,10 @@ function getAccountPosts(configId) {
         });
         return map;
       })
-      .catch((err) => {
-        console.error("Erro ao buscar posts da conta:", err.message);
-        delete accountPostsCache[configId]; // permite tentar de novo depois
+      .catch(async (err) => {
+        const msg = await getFunctionErrorMessage(err);
+        console.error("Erro ao buscar posts da conta:", msg);
+        setTimeout(() => { delete accountPostsCache[configId]; }, 60000);
         return new Map();
       });
   }
@@ -800,7 +825,10 @@ $("#inviteUserBtn").addEventListener("click", async () => {
     if (founderCheckbox) founderCheckbox.checked = false;
     await loadUsers();
   } catch (error) {
-    showBanner("statusBanner", "Erro ao convidar: " + error.message, "error");
+    // Mostra a mensagem REAL devolvida pela Edge Function (em vez do genérico "non-2xx").
+    const msg = await getFunctionErrorMessage(error);
+    console.error("admin-invite-user:", msg, error);
+    showBanner("statusBanner", "Erro ao convidar: " + msg, "error");
   } finally {
     $("#inviteUserBtn").disabled = false;
   }
