@@ -1,115 +1,163 @@
 // layout.js
-// Comportamento da interface nova. Não acessa Supabase nem dados: só cuida de
-// layout. Isolado — não depende de nenhum outro arquivo do projeto.
-//
-//  1. Cor da barra do navegador (theme-color) acompanha o tema claro/escuro.
-//  2. Trava a rolagem da página quando a folha "Nova automação" (celular) ou
-//     um modal está aberto.
-//  3. Tabelas viram cartões no celular: copia o título de cada coluna para
-//     data-label nas células (o CSS mostra esse rótulo).
-//  4. Abas e menu: rolam até a aba tocada, voltam ao topo ao trocar de tela e
-//     marcam aria-current no item ativo.
-//  5. Barra de topo (celular) ganha uma linha ao rolar. Esc fecha a folha.
-
+// Melhorias só de INTERFACE. Não faz chamadas ao Supabase, não altera dados
+// e não depende de nenhum outro script do projeto. Se este arquivo for
+// removido, tudo continua funcionando (só perde estes extras):
+//   1. Título da página (topbar + aba do navegador) acompanha o menu ativo
+//   2. Sombra na topbar ao rolar a página
+//   3. Volta ao topo ao trocar de aba do menu
+//   4. Trava a rolagem do fundo quando há modal / folha aberta
+//   5. Mostrar/ocultar senha
+//   6. Enter envia login, criação de senha e convite
+//   7. Botões [data-goto-subtab] (ex.: "Escolher nas últimas publicações")
+//   8. Esc / clique fora fecham os modais de produto
+//   9. Sub-aba ativa centraliza na faixa horizontal (celular)
 (function () {
   "use strict";
 
-  var root = document.documentElement;
-  var MOBILE = window.matchMedia("(max-width: 900px)");
-  var REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)");
-  var THEME_COLORS = { light: "#eef0f7", dark: "#0f0d1f" };
+  var BASE_TITLE = "Achei & Postei";
+  var $ = function (sel, root) { return (root || document).querySelector(sel); };
+  var isMobile = function () { return window.matchMedia("(max-width: 900px)").matches; };
 
-  function $(sel) { return document.querySelector(sel); }
-  function all(sel) { return document.querySelectorAll(sel); }
-
-  /* 1. theme-color */
-  function syncThemeColor() {
-    var meta = document.getElementById("themeColorMeta");
-    var theme = root.getAttribute("data-theme") === "dark" ? "dark" : "light";
-    if (meta) meta.setAttribute("content", THEME_COLORS[theme]);
+  /* 1. Título acompanha o menu ativo ---------------------------------- */
+  function syncTitle() {
+    var crumb = $("#pageCrumb");
+    var active = $(".app-nav .nav-item.active");
+    if (!active) return;
+    var label = active.querySelector("span:not(.nav-ico)");
+    if (!label) return;
+    var text = label.textContent.trim();
+    if (crumb && crumb.textContent !== text) crumb.textContent = text;
+    var appScreen = $("#appScreen");
+    if (appScreen && !appScreen.classList.contains("hidden")) {
+      document.title = text + " — " + BASE_TITLE;
+    }
   }
-  syncThemeColor();
-  new MutationObserver(syncThemeColor).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
 
-  /* 2. trava de rolagem */
-  function isShown(el) { return el && !el.classList.contains("hidden"); }
-  function syncScrollLock() {
-    var sheetOpen = MOBILE.matches && isShown(document.getElementById("subtab-new"));
-    var modalOpen = false;
-    all(".modal-overlay, .install-sheet-overlay").forEach(function (m) {
-      if (isShown(m)) modalOpen = true;
+  function watchNav() {
+    var nav = $(".app-nav");
+    if (!nav) return;
+    // pagamentos.js insere botões depois do carregamento, por isso observa filhos também
+    new MutationObserver(syncTitle).observe(nav, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["class"],
     });
-    document.body.classList.toggle("is-locked", sheetOpen || modalOpen);
+    var appScreen = $("#appScreen");
+    if (appScreen) {
+      new MutationObserver(syncTitle).observe(appScreen, { attributes: true, attributeFilter: ["class"] });
+    }
+    syncTitle();
   }
 
-  /* 3. rótulos das células */
-  function labelTables() {
-    all("table").forEach(function (table) {
-      var heads = Array.prototype.map.call(table.querySelectorAll("thead th"), function (th) {
-        return th.textContent.trim();
-      });
-      if (!heads.length) return;
-      table.querySelectorAll("tbody tr").forEach(function (tr) {
-        if (tr.dataset.labelled === "1") return;
-        Array.prototype.forEach.call(tr.children, function (td, i) {
-          if (!td.hasAttribute("colspan") && heads[i]) td.setAttribute("data-label", heads[i]);
-        });
-        tr.dataset.labelled = "1";
-      });
+  /* 2. Sombra da topbar ------------------------------------------------ */
+  function watchScroll() {
+    var bar = $(".app-topbar");
+    if (!bar) return;
+    var tick = false;
+    function update() {
+      tick = false;
+      bar.classList.toggle("is-scrolled", window.scrollY > 4);
+    }
+    window.addEventListener("scroll", function () {
+      if (!tick) { tick = true; requestAnimationFrame(update); }
+    }, { passive: true });
+    update();
+  }
+
+  /* 4. Trava de rolagem com modal aberto -------------------------------- */
+  var lockQueued = false;
+  function updateScrollLock() {
+    lockQueued = false;
+    var modalOpen = !!document.querySelector(".modal-overlay:not(.hidden), .install-sheet-overlay, .trial-overlay");
+    var sheet = $("#subtab-new");
+    var sheetOpen = isMobile() && sheet && !sheet.classList.contains("hidden");
+    document.body.classList.toggle("no-scroll", modalOpen || !!sheetOpen);
+  }
+  function queueLock() {
+    if (lockQueued) return;
+    lockQueued = true;
+    requestAnimationFrame(updateScrollLock);
+  }
+  function watchLock() {
+    new MutationObserver(queueLock).observe(document.body, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["class"],
     });
+    window.addEventListener("resize", queueLock);
   }
 
-  /* 4. menu ativo */
-  function syncNavState() {
-    all(".app-nav .nav-item").forEach(function (b) {
-      if (b.classList.contains("active")) b.setAttribute("aria-current", "page");
-      else b.removeAttribute("aria-current");
-    });
-  }
-
-  var queued = false;
-  function refresh() {
-    if (queued) return;
-    queued = true;
-    requestAnimationFrame(function () {
-      queued = false;
-      syncScrollLock();
-      labelTables();
-      syncNavState();
-    });
-  }
-  new MutationObserver(refresh).observe(document.body, {
-    subtree: true, childList: true, attributes: true, attributeFilter: ["class"]
-  });
-  MOBILE.addEventListener && MOBILE.addEventListener("change", refresh);
-
-  var behavior = function () { return REDUCED.matches ? "auto" : "smooth"; };
-
+  /* Cliques delegados ---------------------------------------------------- */
   document.addEventListener("click", function (e) {
-    var tab = e.target.closest(".subtab-btn, .seg-btn");
-    if (tab && tab.scrollIntoView) {
-      tab.scrollIntoView({ inline: "center", block: "nearest", behavior: behavior() });
+    var t = e.target;
+
+    // 3. voltar ao topo ao trocar de aba do menu
+    if (t.closest(".app-nav .nav-item")) window.scrollTo(0, 0);
+
+    // 5. mostrar / ocultar senha
+    var pw = t.closest("[data-pw-toggle]");
+    if (pw) {
+      var input = document.getElementById(pw.getAttribute("data-pw-toggle"));
+      if (input) {
+        var show = input.type === "password";
+        input.type = show ? "text" : "password";
+        pw.classList.toggle("on", show);
+        var label = show ? "Ocultar senha" : "Mostrar senha";
+        pw.setAttribute("aria-label", label);
+        pw.setAttribute("title", label);
+        input.focus();
+      }
+      return;
     }
-    if (e.target.closest(".app-nav .nav-item")) {
-      window.scrollTo({ top: 0, behavior: "auto" });
+
+    // 7. atalhos para sub-abas
+    var go = t.closest("[data-goto-subtab]");
+    if (go) {
+      var target = $('.subtab-btn[data-subtab="' + go.getAttribute("data-goto-subtab") + '"]');
+      if (target) target.click();
+      return;
     }
+
+    // 9. centraliza a sub-aba ativa na faixa horizontal
+    var sub = t.closest(".subtab-btn");
+    if (sub && typeof sub.scrollIntoView === "function") {
+      sub.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+    }
+
+    // 8. clique no fundo escuro fecha os modais de produto
+    if (t.id === "produtoModal") { var c1 = $("#closeProdutoModalBtn"); if (c1) c1.click(); }
+    if (t.id === "produtoPickerModal") { var c2 = $("#closeProdutoPickerBtn"); if (c2) c2.click(); }
   });
 
-  /* 5. barra de topo e Esc */
-  var topbar = null;
-  window.addEventListener("scroll", function () {
-    topbar = topbar || $(".app-topbar");
-    if (topbar) topbar.classList.toggle("is-scrolled", window.scrollY > 4);
-  }, { passive: true });
-
+  /* 6 e 8. Teclado -------------------------------------------------------- */
+  var ENTER_MAP = {
+    authEmail: "authSubmitBtn",
+    authPassword: "authSubmitBtn",
+    newPassword: "setPasswordBtn",
+    inviteEmail: "inviteUserBtn",
+  };
   document.addEventListener("keydown", function (e) {
-    if (e.key !== "Escape" || !MOBILE.matches) return;
-    if (isShown(document.getElementById("subtab-new"))) {
-      var close = $("[data-close-sheet]");
-      if (close) close.click();
+    if (e.key === "Enter" && e.target && ENTER_MAP[e.target.id]) {
+      var btn = document.getElementById(ENTER_MAP[e.target.id]);
+      if (btn && !btn.disabled) { e.preventDefault(); btn.click(); }
+      return;
+    }
+    if (e.key === "Escape") {
+      var pm = $("#produtoModal:not(.hidden)");
+      var pk = $("#produtoPickerModal:not(.hidden)");
+      var is = $("#installSheetOverlay");
+      if (pm) { var a = $("#closeProdutoModalBtn"); if (a) a.click(); }
+      else if (pk) { var b = $("#closeProdutoPickerBtn"); if (b) b.click(); }
+      else if (is) { var c = $("#installSheetCloseBtn"); if (c) c.click(); }
     }
   });
 
-  document.addEventListener("DOMContentLoaded", refresh);
-  refresh();
+  document.addEventListener("DOMContentLoaded", function () {
+    watchNav();
+    watchScroll();
+    watchLock();
+    updateScrollLock();
+  });
 })();
