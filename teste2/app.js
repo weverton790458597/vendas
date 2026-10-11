@@ -1,1123 +1,178 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+/* =========================================================
+   CONFIGURAÇÃO E CLIENT SUPABASE
+   ========================================================= */
+const APP_NAME = "Achei & Postei";
 const SUPABASE_URL = "https://abdliioyzkylccfylils.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFiZGxpaW95emt5bGNjZnlsaWxzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNzkxMzIsImV4cCI6MjA4MzY1NTEzMn0.5s0zEdAgxx92pbC9yx75hHMfysHr2Aad86GhC1-tEmU";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFiZGxpaW95emt5bGNjZnlsaWxzIiwicm9sIjoiYW5vbiIsImlhdCI6MTc2ODA3OTEzMiwiZXhwIjoyMDgzNjUxMzIyfQ.5s0zEdAgxx92pbC9yx75hHMfysHr2Aad86GhC1-tEmU";
+const SUPPORT_WHATSAPP_NUMBER = "5598982672165";
 const INSTAGRAM_APP_ID = "1432929018522131";
 const INSTAGRAM_REDIRECT_URI = SUPABASE_URL + "/functions/v1/instagram-oauth-callback";
 const INSTAGRAM_SCOPES = "instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments";
-// WhatsApp de suporte (só dígitos, com DDI 55 + DDD).
-const SUPPORT_WHATSAPP_NUMBER = "5598981460747";
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true },
-  db: { schema: "public" },
-});
-let currentUser = null;
-let currentProfile = null;
-let currentUserTable = null;
-let allAutomations = [];
-let allUsers = [];
-// Cache de publicações por conta (config_id -> Promise<Map<shortcode, post>>),
-// usado só para mostrar miniatura/legenda do post em cada automação cadastrada.
-const accountPostsCache = {};
-const $ = (selector) => document.querySelector(selector);
-const bannerTimers = {};
-function showBanner(elId, message, type) {
-  const el = $("#" + elId);
-  if (!el) return;
-  el.textContent = message;
-  el.className = "banner " + type;
-  clearTimeout(bannerTimers[elId]);
-  bannerTimers[elId] = setTimeout(() => { el.className = "banner"; }, 5000);
-}
-function escapeHtml(text) {
-  if (text === null || text === undefined) return "";
-  const div = document.createElement("div");
-  div.textContent = String(text);
-  return div.innerHTML;
-}
-function truncateUrl(url, maxLen) {
-  const s = url === null || url === undefined ? "" : String(url);
-  return s.length <= maxLen ? s : s.substring(0, maxLen) + "...";
-}
-// Só permite http(s) em links — bloqueia javascript: e afins.
-function safeUrl(url) {
-  try {
-    const u = new URL(String(url || "").trim());
-    return u.protocol === "http:" || u.protocol === "https:" ? u.href : "#";
-  } catch {
-    return "#";
-  }
-}
-function isValidHttpUrl(url) {
-  try {
-    const u = new URL(String(url || "").trim());
-    return u.protocol === "http:" || u.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-function extractShortcode(input) {
-  const value = String(input || "").trim();
-  if (!value.includes("instagram.com")) return value;
-  const cleanUrl = value.split("?")[0];
-  const match = cleanUrl.match(/\/(?:p|reel|reels|tv)\/([A-Za-z0-9_-]+)/);
-  return match ? match[1] : value;
-}
-function applyTheme(theme) {
-  document.documentElement.setAttribute("data-theme", theme);
-  try { localStorage.setItem("ap-theme", theme); } catch (_) { /* storage indisponível */ }
-}
-(function restoreTheme() {
-  try {
-    const saved = localStorage.getItem("ap-theme");
-    if (saved === "dark" || saved === "light") document.documentElement.setAttribute("data-theme", saved);
-  } catch (_) { /* ignora */ }
-})();
-document.querySelectorAll("[data-theme-toggle]").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const current = document.documentElement.getAttribute("data-theme");
-    applyTheme(current === "dark" ? "light" : "dark");
-  });
-});
-$("#authSubmitBtn").addEventListener("click", async () => {
-  const email = $("#authEmail").value.trim();
-  const password = $("#authPassword").value;
-  if (!email || !password) {
-    showBanner("authBanner", "Preencha e-mail e senha.", "error");
-    return;
-  }
-  try {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    await bootstrapSession();
-  } catch (error) {
-    showBanner("authBanner", error.message, "error");
-  }
-});
-$("#blockedLogoutBtn").addEventListener("click", () => supabase.auth.signOut().then(() => location.reload()));
-$("#logoutBtn").addEventListener("click", () => supabase.auth.signOut().then(() => location.reload()));
-function isInviteOrRecoveryLink() {
-  const hash = window.location.hash || "";
-  return hash.includes("type=invite") || hash.includes("type=recovery");
-}
-$("#setPasswordBtn").addEventListener("click", async () => {
-  const newPassword = $("#newPassword").value;
-  if (!newPassword || newPassword.length < 6) {
-    showBanner("setPasswordBanner", "A senha precisa ter pelo menos 6 caracteres.", "error");
-    return;
-  }
-  try {
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) throw error;
-    history.replaceState(null, "", window.location.pathname);
-    await bootstrapSession();
-  } catch (error) {
-    showBanner("setPasswordBanner", error.message, "error");
-  }
-});
-function handleInstagramOauthReturn() {
-  const params = new URLSearchParams(window.location.search);
-  const connected = params.get("ig_connected");
-  const error = params.get("ig_error");
-  if (connected) {
-    showBanner("statusBanner", "Instagram conectado com sucesso!", "success");
-  } else if (error) {
-    showBanner("statusBanner", "Erro ao conectar Instagram: " + error, "error");
-  }
-  if (connected || error) {
-    params.delete("ig_connected");
-    params.delete("ig_error");
-    const clean = window.location.pathname + (params.toString() ? "?" + params.toString() : "");
-    history.replaceState(null, "", clean);
-  }
-}
-async function bootstrapSession() {
-  if (isInviteOrRecoveryLink()) {
-    showScreen("setPassword");
-    return;
-  }
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    showScreen("auth");
-    return;
-  }
-  currentUser = session.user;
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", currentUser.id)
-    .maybeSingle();
-  if (error || !profile) {
-    showBanner("authBanner", "Erro ao carregar perfil. Tente novamente.", "error");
-    showScreen("auth");
-    return;
-  }
-  currentProfile = profile;
-  currentUserTable = currentProfile.automacoes_table_name;
-  if (!profile.is_active) {
-    showScreen("blocked");
-    return;
-  }
-  $("#userEmailLabel").textContent = currentUser.email;
-  $("#userAvatar").textContent = currentUser.email.charAt(0).toUpperCase();
-  $("#adminTabBtn").classList.toggle("hidden", !profile.is_admin);
-  const founderBadge = $("#founderBadgeIco");
-  const founderPanel = $("#founderPanel");
-  if (founderBadge) founderBadge.classList.toggle("hidden", !profile.is_founder);
-  if (founderPanel) founderPanel.classList.toggle("hidden", !profile.is_founder);
-  updatePlanLinks();
-  showScreen("app");
-  handleInstagramOauthReturn();
-  await loadIgConfig();
-  await loadAutomations();
-  await loadLatestPosts();
-  if (profile.is_founder) await loadFounderIdeaTermsState();
-}
-// ---------- Planos / mais contas ----------
-function updatePlanLinks() {
-  const email = currentUser ? currentUser.email : "";
-  const oneBtn = $("#planOneAccountBtn");
-  if (oneBtn) {
-    oneBtn.href = whatsappLink(
-      "Olá! Quero contratar o plano de 1 conta do Instagram (R$ 49,90/mês) no Respondi. Meu e-mail: " + email
-    );
-  }
-  const threeBtn = $("#planThreeAccountsBtn");
-  if (threeBtn) {
-    threeBtn.href = whatsappLink(
-      "Olá! Quero contratar o plano de até 3 contas do Instagram (R$ 89,90/mês) no Respondi. Meu e-mail: " + email
-    );
-  }
-  const slider = $("#planAccountsSlider");
-  const sliderBtn = $("#planSliderBtn");
-  if (slider && sliderBtn) {
-    const n = parseInt(slider.value, 10) || 3;
-    const price = suggestPlanValue(n);
-    $("#planAccountsCount").textContent = n;
-    $("#planSliderPrice").textContent = formatBRL(price);
-    sliderBtn.href = whatsappLink(
-      "Olá! Quero atualizar meu plano no Respondi para " + n + " contas do Instagram (" +
-      formatBRL(price) + "/mês). Meu e-mail: " + email
-    );
-  }
-}
-function initPlansUI() {
-  const slider = $("#planAccountsSlider");
-  if (slider) slider.addEventListener("input", updatePlanLinks);
-  updatePlanLinks();
-}
-initPlansUI();
-// ---------- Selo de Membro Fundador: termo de uso de ideias ----------
-function renderFounderIdeaState(accepted) {
-  const acceptedBox = $("#founderIdeaAccepted");
-  const pendingBox = $("#founderIdeaPending");
-  const suggestBtn = $("#founderSuggestBtn");
-  if (!acceptedBox || !pendingBox) return;
-  acceptedBox.classList.toggle("hidden", !accepted);
-  pendingBox.classList.toggle("hidden", accepted);
-  if (accepted && suggestBtn && currentUser) {
-    suggestBtn.href = whatsappLink(
-      "Olá! Sou membro fundador do Respondi e já aceitei os Termos de Uso de Ideias. " +
-      "Quero sugerir uma nova função pra plataforma: [descreva sua ideia aqui]. Meu e-mail: " + currentUser.email
-    );
-  }
-}
-async function loadFounderIdeaTermsState() {
-  try {
-    const { data, error } = await supabase
-      .from("idea_terms_acceptances")
-      .select("id")
-      .eq("user_id", currentUser.id)
-      .maybeSingle();
-    if (error) throw error;
-    renderFounderIdeaState(!!data);
-  } catch (error) {
-    // Tabela pode não existir ainda em ambientes antigos — não trava o painel por isso.
-    console.error("Erro ao verificar aceite dos termos de ideias:", error.message);
-    renderFounderIdeaState(false);
-  }
-}
-const founderIdeaCheckbox = $("#founderIdeaTermsCheckbox");
-const founderIdeaAcceptBtn = $("#founderIdeaAcceptBtn");
-if (founderIdeaCheckbox && founderIdeaAcceptBtn) {
-  founderIdeaCheckbox.addEventListener("change", () => {
-    founderIdeaAcceptBtn.disabled = !founderIdeaCheckbox.checked;
-  });
-  founderIdeaAcceptBtn.addEventListener("click", async () => {
-    if (!currentUser || !founderIdeaCheckbox.checked) return;
-    founderIdeaAcceptBtn.disabled = true;
-    founderIdeaAcceptBtn.textContent = "Salvando…";
-    try {
-      const { error } = await supabase.from("idea_terms_acceptances").upsert({
-        user_id: currentUser.id,
-        accepted_at: new Date().toISOString(),
-      });
-      if (error) throw error;
-      renderFounderIdeaState(true);
-    } catch (error) {
-      showBanner("statusBanner", "Erro ao registrar aceite dos termos: " + error.message, "error");
-      founderIdeaAcceptBtn.disabled = false;
-    } finally {
-      founderIdeaAcceptBtn.textContent = "Aceitar e sugerir função no WhatsApp";
-    }
-  });
-}
-function showScreen(name) {
-  $("#authScreen").classList.toggle("hidden", name !== "auth");
-  $("#setPasswordScreen").classList.toggle("hidden", name !== "setPassword");
-  $("#blockedScreen").classList.toggle("hidden", name !== "blocked");
-  $("#appScreen").classList.toggle("hidden", name !== "app");
-}
-document.querySelectorAll(".nav-item").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".nav-item").forEach((b) => b.classList.remove("active"));
-    btn.classList.add("active");
-    const tab = btn.getAttribute("data-tab");
-    $("#tab-dashboard").classList.toggle("hidden", tab !== "dashboard");
-    $("#tab-accounts").classList.toggle("hidden", tab !== "accounts");
-    $("#tab-admin").classList.toggle("hidden", tab !== "admin");
-    if (tab === "admin") loadUsers();
-    if (tab === "accounts") loadIgConfig();
-  });
-});
-let currentIgAccounts = [];
-// Tabela de preços oficial: 1 conta R$49,90 | até 3 contas R$89,90 | cada conta extra além de 3, +R$29,90
-function suggestPlanValue(limit) {
-  const n = Number(limit) || 1;
-  if (n <= 1) return 49.9;
-  if (n <= 3) return 89.9;
-  return Math.round((89.9 + (n - 3) * 29.9) * 100) / 100;
-}
-function formatBRL(value) {
-  return "R$ " + Number(value).toFixed(2).replace(".", ",");
-}
-function whatsappLink(message) {
-  return "https://wa.me/" + SUPPORT_WHATSAPP_NUMBER + "?text=" + encodeURIComponent(message);
-}
-async function startInstagramConnect(configId) {
-  try {
-    const insertPayload = { user_id: currentUser.id };
-    if (configId) insertPayload.instagram_config_id = configId;
-    const { data, error } = await supabase
-      .from("oauth_states")
-      .insert(insertPayload)
-      .select("id")
-      .single();
-    if (error) throw error;
-    const params = new URLSearchParams({
-      client_id: INSTAGRAM_APP_ID,
-      redirect_uri: INSTAGRAM_REDIRECT_URI,
-      response_type: "code",
-      scope: INSTAGRAM_SCOPES,
-      state: data.id,
-    });
-    window.location.href = "https://api.instagram.com/oauth/authorize?" + params.toString();
-  } catch (error) {
-    showBanner("statusBanner", "Não foi possível iniciar a conexão: " + error.message, "error");
-  }
-}
-async function disconnectIgAccount(configId) {
-  if (!confirm("Tem certeza que deseja desconectar esta conta do Instagram? As automações ligadas a ela vão parar de funcionar até você reconectar.")) return;
-  try {
-    const { error } = await supabase.from("instagram_config").delete().eq("id", configId).eq("user_id", currentUser.id);
-    if (error) throw error;
-    showBanner("statusBanner", "Instagram desconectado.", "success");
-    await loadIgConfig();
-  } catch (error) {
-    showBanner("statusBanner", "Erro ao desconectar: " + error.message, "error");
-  }
-}
-function renderIgAccounts() {
-  const list = $("#igAccountsList");
-  const footer = $("#igStatusFooter");
-  const limitText = $("#igLimitText");
-  const addBtn = $("#addIgAccountBtn");
-  const limit = (currentProfile && currentProfile.ig_account_limit) || 1;
-  const count = currentIgAccounts.length;
-  if (count === 0) {
-    list.innerHTML =
-      '<div class="ig-status-row">' +
-      '<span class="ig-dot ig-dot-off"></span>' +
-      '<div class="ig-status-text">' +
-      "<strong>Instagram não conectado</strong>" +
-      "<p>Conecte sua conta profissional para ativar as respostas automáticas.</p>" +
-      "</div></div>";
-  } else {
-    list.innerHTML = currentIgAccounts.map((acc) => {
-      const username = acc.instagram_username ? "@" + escapeHtml(acc.instagram_username) : "Conta conectada";
-      return (
-        '<div class="ig-status-row ig-account-row" data-id="' + escapeHtml(acc.id) + '">' +
-        '<span class="ig-dot ig-dot-on"></span>' +
-        '<div class="ig-status-text">' +
-        "<strong>" + username + "</strong>" +
-        "<p>As automações já podem responder comentários e enviar Direct.</p>" +
-        "</div>" +
-        '<div class="ig-status-actions">' +
-        '<button class="btn btn-outline btn-sm ig-reconnect-btn" data-id="' + escapeHtml(acc.id) + '">Reconectar</button>' +
-        '<button class="btn btn-danger-ghost btn-sm ig-disconnect-btn" data-id="' + escapeHtml(acc.id) + '">Desconectar</button>' +
-        "</div></div>"
-      );
-    }).join("");
-  }
-  list.classList.remove("hidden");
-  document.querySelectorAll(".ig-reconnect-btn").forEach((btn) =>
-    btn.addEventListener("click", () => startInstagramConnect(btn.getAttribute("data-id")))
-  );
-  document.querySelectorAll(".ig-disconnect-btn").forEach((btn) =>
-    btn.addEventListener("click", () => disconnectIgAccount(btn.getAttribute("data-id")))
-  );
-  const atLimit = count >= limit;
-  addBtn.textContent = count === 0 ? "Conectar Instagram" : "+ Adicionar conta do Instagram";
-  addBtn.disabled = atLimit;
-  addBtn.title = atLimit ? "Limite de contas do seu plano atingido. Fale com o suporte para aumentar o limite." : "";
-  limitText.textContent = count + " de " + limit + " conta" + (limit === 1 ? "" : "s") + " do plano em uso" + (atLimit ? " — limite atingido" : "");
-  footer.classList.remove("hidden");
-  updateAutomationIgSelector();
-}
-$("#addIgAccountBtn").addEventListener("click", () => startInstagramConnect());
-function updateAutomationIgSelector() {
-  const field = $("#automationIgAccountField");
-  const select = $("#automationIgAccount");
-  if (currentIgAccounts.length <= 1) {
-    field.classList.add("hidden");
-    select.innerHTML = currentIgAccounts[0]
-      ? '<option value="' + escapeHtml(currentIgAccounts[0].id) + '">' + escapeHtml(currentIgAccounts[0].id) + "</option>"
-      : "";
-    return;
-  }
-  field.classList.remove("hidden");
-  select.innerHTML = currentIgAccounts.map((acc) =>
-    '<option value="' + escapeHtml(acc.id) + '">' + (acc.instagram_username ? "@" + escapeHtml(acc.instagram_username) : "Conta " + escapeHtml(String(acc.id).slice(0, 8))) + "</option>"
-  ).join("");
-}
-async function loadIgConfig() {
-  const loading = $("#igLoadingStatus");
-  loading.classList.remove("hidden");
-  $("#igAccountsList").classList.add("hidden");
-  $("#igStatusFooter").classList.add("hidden");
-  try {
-    const { data, error } = await supabase
-      .from("instagram_config")
-      .select("id, instagram_business_account_id, instagram_username")
-      .eq("user_id", currentUser.id)
-      .order("created_at", { ascending: true });
-    if (error) throw error;
-    currentIgAccounts = data || [];
-    renderIgAccounts();
-  } catch (error) {
-    console.error(error.message);
-    currentIgAccounts = [];
-    renderIgAccounts();
-  } finally {
-    loading.classList.add("hidden");
-  }
-}
-function updateAutomationKpis(rows) {
-  const total = rows.length;
-  const ativas = rows.filter((r) => r.ativo).length;
-  $("#kpiTotal").textContent = total;
-  $("#kpiAtivas").textContent = ativas;
-  $("#kpiPausadas").textContent = total - ativas;
-}
-function renderLatestPosts(posts) {
-  const grid = $("#latestPostsGrid");
-  if (!grid) return;
-  if (!posts || posts.length === 0) {
-    grid.innerHTML = '<div class="empty-state">Nenhuma publicação encontrada nas contas conectadas.</div>';
-    return;
-  }
-  grid.innerHTML = posts.map((post) => {
-    const caption = post.caption ? escapeHtml(truncateUrl(post.caption.replace(/\s+/g, " "), 60)) : "(sem legenda)";
-    const when = post.timestamp ? new Date(post.timestamp).toLocaleDateString("pt-BR") : "";
-    return (
-      '<div class="automation-card">' +
-      (post.thumbnail_url
-        ? '<img src="' + escapeHtml(safeUrl(post.thumbnail_url)) + '" alt="" style="width:100%;border-radius:var(--radius-sm);aspect-ratio:1;object-fit:cover;" />'
-        : "") +
-      '<div class="automation-card-top"><span class="badge badge-muted">@' + escapeHtml(post.instagram_username || "") + "</span>" +
-      (when ? '<span class="automation-card-footer" style="padding:0;border:none;">' + when + "</span>" : "") +
-      "</div>" +
-      '<div class="automation-card-post" style="white-space:normal;">' + caption + "</div>" +
-      '<div class="automation-card-actions" style="justify-content:flex-start;gap:0.5rem;">' +
-      '<button class="btn btn-primary btn-sm create-automation-from-post-btn" data-shortcode="' + escapeHtml(post.shortcode || post.media_id) + '">Criar automação</button>' +
-      '<button class="btn btn-outline btn-sm view-all-posts-btn" data-config-id="' + escapeHtml(post.instagram_config_id) + '" data-username="' + escapeHtml(post.instagram_username || "") + '">Ver todas</button>' +
-      "</div></div>"
-    );
-  }).join("");
-  grid.querySelectorAll(".create-automation-from-post-btn").forEach((btn) =>
-    btn.addEventListener("click", () => fillAutomationForm(btn.getAttribute("data-shortcode")))
-  );
-  grid.querySelectorAll(".view-all-posts-btn").forEach((btn) =>
-    btn.addEventListener("click", () => openAllPostsModal(btn.getAttribute("data-config-id"), btn.getAttribute("data-username")))
-  );
-}
-async function loadLatestPosts() {
-  const grid = $("#latestPostsGrid");
-  if (!grid) return;
-  grid.innerHTML = '<div class="loading-row">Carregando publicações…</div>';
-  try {
-    const { data, error } = await supabase.functions.invoke("list-instagram-posts", {
-      body: { mode: "latest" },
-    });
-    if (error) throw error;
-    renderLatestPosts(data && data.posts);
-  } catch (error) {
-    grid.innerHTML = '<div class="empty-state">Erro ao carregar publicações: ' + escapeHtml(error.message) + "</div>";
-  }
-}
-function fillAutomationForm(shortcode) {
-  $("#instagramMediaId").value = shortcode || "";
-  $("#palavraChave").focus();
-  const panel = $("#instagramMediaId").closest("section");
-  if (panel) panel.scrollIntoView({ behavior: "smooth", block: "start" });
-  closeAllPostsModal();
-}
-function closeAllPostsModal() {
-  const existing = document.getElementById("allPostsModalOverlay");
-  if (existing) existing.remove();
-}
-async function openAllPostsModal(instagramConfigId, username) {
-  closeAllPostsModal();
-  const overlay = document.createElement("div");
-  overlay.className = "modal-overlay";
-  overlay.id = "allPostsModalOverlay";
-  overlay.innerHTML =
-    '<div class="modal-box modal-box-lg">' +
-    '<div class="modal-header"><h2>Publicações de @' + escapeHtml(username || "") + '</h2>' +
-    '<button type="button" class="modal-close" id="allPostsModalCloseBtn">&times;</button></div>' +
-    '<div class="modal-body"><div id="allPostsModalGrid" class="automation-grid"><div class="loading-row">Carregando…</div></div></div>' +
-    "</div>";
-  document.body.appendChild(overlay);
-  $("#allPostsModalCloseBtn").addEventListener("click", closeAllPostsModal);
-  overlay.addEventListener("click", (event) => {
-    if (event.target === overlay) closeAllPostsModal();
-  });
+const META_APP_URL = "https://developers.facebook.com/apps/";
+const RULES_TABLE = "auto_automation_rules";
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
 
-  try {
-    const { data, error } = await supabase.functions.invoke("list-instagram-posts", {
-      body: { mode: "all", instagram_config_id: instagramConfigId },
-    });
-    if (error) throw error;
-    const posts = (data && data.posts) || [];
-    const modalGrid = $("#allPostsModalGrid");
-    if (!modalGrid) return;
-    if (posts.length === 0) {
-      modalGrid.innerHTML = '<div class="empty-state">Nenhuma publicação encontrada.</div>';
-      return;
-    }
-    modalGrid.innerHTML = posts.map((post) => {
-      const caption = post.caption ? escapeHtml(truncateUrl(post.caption.replace(/\s+/g, " "), 50)) : "(sem legenda)";
-      return (
-        '<div class="automation-card">' +
-        (post.thumbnail_url
-          ? '<img src="' + escapeHtml(safeUrl(post.thumbnail_url)) + '" alt="" style="width:100%;border-radius:var(--radius-sm);aspect-ratio:1;object-fit:cover;" />'
-          : "") +
-        '<div class="automation-card-post" style="white-space:normal;">' + caption + "</div>" +
-        '<button class="btn btn-primary btn-sm create-automation-from-post-btn" data-shortcode="' + escapeHtml(post.shortcode || post.media_id) + '">Criar automação</button>' +
-        "</div>"
-      );
-    }).join("");
-    modalGrid.querySelectorAll(".create-automation-from-post-btn").forEach((btn) =>
-      btn.addEventListener("click", () => fillAutomationForm(btn.getAttribute("data-shortcode")))
-    );
-  } catch (error) {
-    const modalGrid = $("#allPostsModalGrid");
-    if (modalGrid) modalGrid.innerHTML = '<div class="empty-state">Erro ao carregar: ' + escapeHtml(error.message) + "</div>";
-  }
-}
-// ---------- Automações cadastradas: conta + post de cada automação ----------
-// Descobre a qual conta do Instagram a automação pertence. Automações antigas
-// sem instagram_config_id caem na única conta conectada (se houver só uma).
-function resolveAutomationAccount(row) {
-  if (row.instagram_config_id) {
-    return currentIgAccounts.find((a) => String(a.id) === String(row.instagram_config_id)) || null;
-  }
-  return currentIgAccounts.length === 1 ? currentIgAccounts[0] : null;
-}
-function automationAccountLabel(row) {
-  const acc = resolveAutomationAccount(row);
-  if (acc) return acc.instagram_username ? "@" + acc.instagram_username : "Conta conectada";
-  if (row.instagram_config_id) return "Conta desconectada";
-  return "Conta não identificada";
-}
-// Link público do post; só quando o valor guardado parece um shortcode
-// (IDs numéricos longos de mídia não abrem como /p/<id>).
-function instagramPostLink(mediaId) {
-  const code = String(mediaId || "").trim();
-  if (!/^[A-Za-z0-9_-]+$/.test(code)) return null;
-  if (/^\d{12,}$/.test(code)) return null;
-  return "https://www.instagram.com/p/" + code + "/";
-}
-// Busca (uma vez por conta) as publicações para achar miniatura e legenda.
-function getAccountPosts(configId) {
-  if (!configId) return Promise.resolve(new Map());
-  if (!accountPostsCache[configId]) {
-    accountPostsCache[configId] = supabase.functions
-      .invoke("list-instagram-posts", { body: { mode: "all", instagram_config_id: configId } })
-      .then(({ data, error }) => {
-        if (error) throw error;
-        const map = new Map();
-        ((data && data.posts) || []).forEach((p) => {
-          if (p.shortcode) map.set(String(p.shortcode), p);
-          if (p.media_id) map.set(String(p.media_id), p);
-        });
-        return map;
-      })
-      .catch((err) => {
-        console.error("Erro ao buscar posts da conta:", err.message);
-        delete accountPostsCache[configId]; // permite tentar de novo depois
-        return new Map();
-      });
-  }
-  return accountPostsCache[configId];
-}
-async function enrichAutomationCards(rows) {
-  const configIds = new Set();
-  rows.forEach((row) => {
-    const acc = resolveAutomationAccount(row);
-    if (acc) configIds.add(acc.id);
-  });
-  await Promise.all(Array.from(configIds).map(async (configId) => {
-    const postsMap = await getAccountPosts(configId);
-    document.querySelectorAll('.automation-card[data-config-id="' + configId + '"]').forEach((card) => {
-      const code = card.getAttribute("data-media");
-      const post = postsMap.get(String(code));
-      const thumbBox = card.querySelector(".auto-post-thumb");
-      const captionEl = card.querySelector(".auto-post-caption");
-      if (!thumbBox || !captionEl) return;
-      if (!post) {
-        captionEl.textContent = "Legenda indisponível (post antigo ou removido)";
-        thumbBox.textContent = "📷";
-        return;
-      }
-      captionEl.textContent = post.caption
-        ? truncateUrl(post.caption.replace(/\s+/g, " "), 90)
-        : "(sem legenda)";
-      if (post.thumbnail_url) {
-        thumbBox.innerHTML =
-          '<img src="' + escapeHtml(safeUrl(post.thumbnail_url)) + '" alt="" style="width:100%;height:100%;object-fit:cover;" />';
-      } else {
-        thumbBox.textContent = "📷";
-      }
-    });
-  }));
-}
-function renderAutomations(rows) {
-  const grid = $("#automationsTableBody");
-  if (!rows || rows.length === 0) {
-    grid.innerHTML = '<div class="empty-state">Nenhuma automação encontrada. Cadastre a primeira acima.</div>';
-    return;
-  }
-  grid.innerHTML = rows.map((row) => {
-    const statusClass = row.ativo ? "badge-ativo" : "badge-inativo";
-    const statusText = row.ativo ? "Ativo" : "Inativo";
-    const created = row.created_at ? new Date(row.created_at).toLocaleString("pt-BR") : "—";
-    const acc = resolveAutomationAccount(row);
-    const accountLabel = automationAccountLabel(row);
-    const accountBadgeClass = acc ? "badge-muted" : "badge-danger";
-    const postLink = instagramPostLink(row.instagram_media_id);
-    const postLinkHtml = postLink
-      ? '<a class="automation-card-link" href="' + escapeHtml(postLink) + '" target="_blank" rel="noopener noreferrer">Ver post no Instagram ↗</a>'
-      : "";
-    const productTitle = row.titulo_produto ? escapeHtml(truncateUrl(row.titulo_produto, 40)) : "";
-    return (
-      '<div class="automation-card" data-id="' + escapeHtml(row.id) + '" data-ativo="' + (row.ativo ? "true" : "false") + '"' +
-      ' data-config-id="' + escapeHtml(acc ? acc.id : "") + '" data-media="' + escapeHtml(row.instagram_media_id) + '">' +
-      '<div class="automation-card-top">' +
-      '<span class="badge ' + statusClass + '">' + statusText + "</span>" +
-      '<div class="automation-card-actions">' +
-      '<button class="icon-btn toggle-btn" title="' + (row.ativo ? "Desativar" : "Ativar") + '">' + (row.ativo ? "🔇" : "🔊") + "</button>" +
-      '<button class="icon-btn delete-btn" title="Excluir">🗑️</button>' +
-      "</div></div>" +
-      '<div><span class="badge ' + accountBadgeClass + '" title="Conta do Instagram desta automação">📸 ' + escapeHtml(accountLabel) + "</span></div>" +
-      '<div class="automation-card-postinfo" style="display:flex;gap:0.65rem;align-items:center;">' +
-      '<div class="auto-post-thumb" style="width:56px;height:56px;border-radius:var(--radius-sm);background:var(--surface-2);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--text-faint);">📷</div>' +
-      '<div style="min-width:0;flex:1;">' +
-      '<div class="auto-post-caption" style="font-size:0.8rem;color:var(--text-muted);line-height:1.35;word-break:break-word;">' +
-      (acc ? "Carregando legenda…" : "Conecte a conta para ver o post") + "</div>" +
-      postLinkHtml +
-      "</div></div>" +
-      '<div class="automation-card-keyword"><span class="keyword-chip">' + escapeHtml(row.palavra_chave === "*" ? "Qualquer comentário" : row.palavra_chave) + "</span></div>" +
-      '<div class="automation-card-post">ID do post: ' + escapeHtml(truncateUrl(row.instagram_media_id, 34)) + "</div>" +
-      (productTitle ? '<div class="automation-card-post" style="color:var(--text);font-weight:600;">🛍️ ' + productTitle + "</div>" : "") +
-      '<a class="automation-card-link" href="' + escapeHtml(safeUrl(row.produto_url)) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(truncateUrl(row.produto_url, 40)) + "</a>" +
-      '<div class="automation-card-footer">Criado em ' + created + "</div>" +
-      "</div>"
-    );
-  }).join("");
-  document.querySelectorAll(".toggle-btn").forEach((btn) => btn.addEventListener("click", toggleActive));
-  document.querySelectorAll(".delete-btn").forEach((btn) => btn.addEventListener("click", deleteAutomation));
-  enrichAutomationCards(rows);
-}
-async function loadAutomations() {
-  const loading = $("#loadingAutomations");
-  loading.classList.remove("hidden");
-  $("#automationsTableBody").innerHTML = "";
-  if (!currentUserTable) {
-    $("#automationsTableBody").innerHTML = '<div class="empty-state">Erro: tabela de automações não encontrada para sua conta. Contate o administrador.</div>';
-    loading.classList.add("hidden");
-    return;
-  }
-  try {
-    const { data, error } = await supabase
-      .from(currentUserTable)
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) throw error;
-    allAutomations = data || [];
-    updateAutomationKpis(allAutomations);
-    renderAutomations(allAutomations);
-  } catch (error) {
-    showBanner("statusBanner", "Erro ao carregar automações: " + error.message, "error");
-  } finally {
-    loading.classList.add("hidden");
-  }
-}
-$("#automationSearch").addEventListener("input", (e) => {
-  const term = e.target.value.trim().toLowerCase();
-  if (!term) {
-    renderAutomations(allAutomations);
-    return;
-  }
-  const filtered = allAutomations.filter((r) =>
-    (r.palavra_chave || "").toLowerCase().includes(term) ||
-    (r.palavra_chave === "*" && "qualquer comentário".includes(term)) ||
-    (r.produto_url || "").toLowerCase().includes(term) ||
-    (r.instagram_media_id || "").toLowerCase().includes(term) ||
-    (r.titulo_produto || "").toLowerCase().includes(term) ||
-    automationAccountLabel(r).toLowerCase().includes(term)
-  );
-  renderAutomations(filtered);
-});
-async function toggleActive(event) {
-  const card = event.currentTarget.closest(".automation-card");
-  const id = card.getAttribute("data-id");
-  const currentAtivo = card.getAttribute("data-ativo") === "true";
-  try {
-    const { error } = await supabase.from(currentUserTable).update({ ativo: !currentAtivo }).eq("id", id);
-    if (error) throw error;
-    await loadAutomations();
-  } catch (error) {
-    showBanner("statusBanner", "Erro ao alternar status: " + error.message, "error");
-  }
-}
-async function deleteAutomation(event) {
-  const card = event.currentTarget.closest(".automation-card");
-  const id = card.getAttribute("data-id");
-  if (!confirm("Tem certeza que deseja excluir esta automação?")) return;
-  try {
-    const { error } = await supabase.from(currentUserTable).delete().eq("id", id);
-    if (error) throw error;
-    showBanner("statusBanner", "Automação excluída.", "success");
-    await loadAutomations();
-  } catch (error) {
-    showBanner("statusBanner", "Erro ao excluir: " + error.message, "error");
-  }
-}
-$("#toggleImagemUrlBtn").addEventListener("click", () => {
-  $("#imagemUrlField").classList.toggle("hidden");
-});
-document.querySelectorAll('input[name="triggerMode"]').forEach((radio) => {
-  radio.addEventListener("change", () => {
-    const anyMode = document.querySelector('input[name="triggerMode"]:checked').value === "any";
-    $("#palavraChaveField").classList.toggle("hidden", anyMode);
-  });
-});
-$("#saveAutomationBtn").addEventListener("click", async () => {
-  const mediaIdInput = $("#instagramMediaId");
-  const palavraChaveInput = $("#palavraChave");
-  const produtoUrlInput = $("#produtoUrl");
-  const imagemUrlInput = $("#imagemUrl");
-  const tituloProdutoInput = $("#tituloProduto");
-  const precoProdutoInput = $("#precoProduto");
-  const mediaIdRaw = mediaIdInput.value.trim();
-  const anyMode = document.querySelector('input[name="triggerMode"]:checked').value === "any";
-  const palavraChave = anyMode ? "*" : palavraChaveInput.value.trim();
-  const produtoUrl = produtoUrlInput.value.trim();
-  const imagemUrl = imagemUrlInput.value.trim() || null;
-  const tituloProduto = tituloProdutoInput.value.trim() || null;
-  const precoProduto = precoProdutoInput.value.trim() || null;
-  const igAccountId = $("#automationIgAccount").value || null;
-  if (!mediaIdRaw || !palavraChave || !produtoUrl) {
-    showBanner("statusBanner", "Post, palavra-chave (ou \"qualquer comentário\") e link do produto são obrigatórios.", "error");
-    return;
-  }
-  if (!isValidHttpUrl(produtoUrl)) {
-    showBanner("statusBanner", "O link do produto precisa começar com http:// ou https://", "error");
-    return;
-  }
-  if (imagemUrl && !isValidHttpUrl(imagemUrl)) {
-    showBanner("statusBanner", "A URL da imagem precisa começar com http:// ou https://", "error");
-    return;
-  }
-  if (currentIgAccounts.length === 0) {
-    showBanner("statusBanner", "Conecte uma conta do Instagram antes de criar uma automação.", "error");
-    return;
-  }
-  if (currentIgAccounts.length > 1 && !igAccountId) {
-    showBanner("statusBanner", "Selecione a conta do Instagram desta automação.", "error");
-    return;
-  }
-  const shortcode = extractShortcode(mediaIdRaw);
-  if (anyMode && allAutomations.some((r) => r.instagram_media_id === shortcode && String(r.palavra_chave || "").trim() === "*")) {
-    showBanner("statusBanner", "Esse post já tem uma automação de qualquer comentário. Nele, só é possível criar outras com palavra-chave específica.", "error");
-    return;
-  }
-  try {
-    const { error } = await supabase.from(currentUserTable).insert({
-      instagram_media_id: shortcode,
-      palavra_chave: palavraChave,
-      produto_url: produtoUrl,
-      imagem_url: imagemUrl,
-      titulo_produto: tituloProduto,
-      preco_produto: precoProduto,
-      instagram_config_id: igAccountId,
-      ativo: true,
-    });
-    if (error) throw error;
-    showBanner("statusBanner", "Automação salva com sucesso!", "success");
-    mediaIdInput.value = "";
-    palavraChaveInput.value = "";
-    document.querySelector('input[name="triggerMode"][value="keyword"]').checked = true;
-    $("#palavraChaveField").classList.remove("hidden");
-    produtoUrlInput.value = "";
-    imagemUrlInput.value = "";
-    tituloProdutoInput.value = "";
-    precoProdutoInput.value = "";
-    $("#imagemUrlField").classList.add("hidden");
-    await loadAutomations();
-  } catch (error) {
-    showBanner("statusBanner", "Erro ao salvar automação: " + error.message, "error");
-  }
-});
-$("#inviteUserBtn").addEventListener("click", async () => {
-  const emailInput = $("#inviteEmail");
-  const founderCheckbox = $("#inviteFounderCheckbox");
-  const email = emailInput.value.trim();
-  const isFounder = !!(founderCheckbox && founderCheckbox.checked);
-  if (!email) {
-    showBanner("statusBanner", "Informe o e-mail do novo cliente.", "error");
-    return;
-  }
-  $("#inviteUserBtn").disabled = true;
-  try {
-    const { data, error } = await supabase.functions.invoke("admin-invite-user", {
-      body: { email, is_founder: isFounder },
-    });
-    if (error) throw error;
-    if (data?.error) throw new Error(data.error);
-    showBanner(
-      "statusBanner",
-      "Convite enviado para " + email + (isFounder ? " (membro fundador 🏅)." : "."),
-      "success"
-    );
-    emailInput.value = "";
-    if (founderCheckbox) founderCheckbox.checked = false;
-    await loadUsers();
-  } catch (error) {
-    showBanner("statusBanner", "Erro ao convidar: " + error.message, "error");
-  } finally {
-    $("#inviteUserBtn").disabled = false;
-  }
-});
-function updateAdminKpis(rows) {
-  const total = rows.length;
-  const active = rows.filter((u) => u.is_active).length;
-  const mrr = rows
-    .filter((u) => u.payment_status === "em_dia")
-    .reduce((sum, u) => sum + (Number(u.monthly_plan_value) || 0), 0);
-  const late = rows.filter((u) => u.payment_status === "atrasado").length;
-  $("#kpiUsers").textContent = total;
-  $("#kpiActiveUsers").textContent = active;
-  $("#kpiMrr").textContent = "R$ " + mrr.toFixed(2).replace(".", ",");
-  $("#kpiLate").textContent = late;
-}
-function renderUsers(rows) {
-  const tbody = $("#usersTableBody");
-  if (!rows || rows.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nenhum usuário encontrado.</td></tr>';
-    return;
-  }
-  tbody.innerHTML = rows.map((u) => {
-    const statusClass = u.is_active ? "badge-ativo" : "badge-inativo";
-    const statusText = u.is_active ? "Ativo" : "Inativo";
-    const created = u.created_at ? new Date(u.created_at).toLocaleString("pt-BR") : "—";
-    let paymentBadge = "";
-    const ps = u.payment_status;
-    if (ps === "em_dia") {
-      paymentBadge = '<span class="badge badge-ativo">Em dia</span>';
-    } else if (ps === "atrasado") {
-      paymentBadge = '<span class="badge badge-danger">Atrasado</span>';
-    } else if (ps === "cancelado") {
-      paymentBadge = '<span class="badge badge-muted">Cancelado</span>';
-    } else {
-      paymentBadge = '<span class="badge badge-muted">—</span>';
-    }
-    const dueDateStr = u.payment_due_date
-      ? new Date(u.payment_due_date + (String(u.payment_due_date).length === 10 ? "T00:00:00" : "")).toLocaleDateString("pt-BR")
-      : "—";
-    const planValueStr = u.monthly_plan_value
-      ? "R$ " + Number(u.monthly_plan_value).toFixed(2).replace(".", ",")
-      : "—";
-    const disableSelfToggle = u.id === currentUser.id
-      ? "disabled title='Você não pode desativar a própria conta'"
-      : "";
-    return (
-      '<tr data-id="' + escapeHtml(u.id) + '">' +
-      "<td>" + escapeHtml(u.email) +
-      (u.is_admin ? ' <span class="badge badge-ativo">admin</span>' : "") +
-      (u.is_founder ? ' <span class="badge badge-founder">🏅 fundador</span>' : "") + "</td>" +
-      "<td>" + created + "</td>" +
-      '<td><span class="badge ' + statusClass + '">' + statusText + "</span></td>" +
-      "<td>" + paymentBadge + "</td>" +
-      "<td>" + escapeHtml(dueDateStr) + "</td>" +
-      "<td>" + escapeHtml(planValueStr) + "</td>" +
-      "<td>" + (u.ig_account_limit || 1) + "</td>" +
-      '<td class="table-actions">' +
-      '<button class="btn btn-outline btn-sm user-toggle-btn" ' + disableSelfToggle +
-      ' data-active="' + u.is_active + '">' +
-      (u.is_active ? "Desativar" : "Ativar") + "</button> " +
-      '<button class="btn btn-outline btn-sm edit-payment-btn" data-user-id="' + escapeHtml(u.id) + '">' +
-      "Editar cobrança</button> " +
-      '<button class="btn btn-outline btn-sm view-autos-btn" data-user-id="' + escapeHtml(u.id) + '">' +
-      "Ver automações</button>" +
-      "</td></tr>"
-    );
-  }).join("");
-  document.querySelectorAll(".user-toggle-btn").forEach((btn) => btn.addEventListener("click", toggleUserActive));
-  document.querySelectorAll(".edit-payment-btn").forEach((btn) => btn.addEventListener("click", openEditPaymentModal));
-  document.querySelectorAll(".view-autos-btn").forEach((btn) => btn.addEventListener("click", openViewAutosModal));
-}
-async function loadUsers() {
-  const loading = $("#loadingUsers");
-  loading.classList.remove("hidden");
-  $("#usersTableBody").innerHTML = "";
-  try {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) throw error;
-    allUsers = data || [];
-    updateAdminKpis(allUsers);
-    renderUsers(allUsers);
-  } catch (error) {
-    showBanner("statusBanner", "Erro ao carregar usuários: " + error.message, "error");
-  } finally {
-    loading.classList.add("hidden");
-  }
-}
-$("#userSearch").addEventListener("input", (e) => {
-  const term = e.target.value.trim().toLowerCase();
-  if (!term) {
-    renderUsers(allUsers);
-    return;
-  }
-  renderUsers(allUsers.filter((u) => (u.email || "").toLowerCase().includes(term)));
-});
-async function toggleUserActive(event) {
-  const row = event.currentTarget.closest("tr");
-  const id = row.getAttribute("data-id");
-  const currentActive = event.currentTarget.getAttribute("data-active") === "true";
-  try {
-    const { error } = await supabase.from("profiles").update({ is_active: !currentActive }).eq("id", id);
-    if (error) throw error;
-    await loadUsers();
-  } catch (error) {
-    showBanner("statusBanner", "Erro ao alternar status do usuário: " + error.message, "error");
-  }
-}
-function userLabel(userId) {
-  const u = allUsers.find((x) => x.id === userId);
-  return (u && u.email) || userId;
-}
-function closeModal() {
-  document.querySelectorAll(".modal-overlay").forEach((overlay) => overlay.remove());
-}
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") closeModal();
-});
-async function openEditPaymentModal(event) {
-  const userId = event.currentTarget.getAttribute("data-user-id");
-  closeModal();
-  const overlay = document.createElement("div");
-  overlay.className = "modal-overlay";
-  overlay.id = "editPaymentModal";
-  overlay.innerHTML = `
-    <div class="modal-box">
-      <div class="modal-header">
-        <h2>Editar cobrança</h2>
-        <button class="modal-close" id="closeEditPaymentModal" aria-label="Fechar">&times;</button>
-      </div>
-      <div class="modal-body">
-        <p class="modal-sub">Alterando os dados abaixo para <strong>${escapeHtml(userLabel(userId))}</strong>.</p>
-        <div class="field">
-          <label>Status de pagamento</label>
-          <select id="editPaymentStatus">
-            <option value="em_dia">Em dia</option>
-            <option value="atrasado">Atrasado</option>
-            <option value="cancelado">Cancelado</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="editPaymentDue">Vencimento</label>
-          <input type="date" id="editPaymentDue" />
-        </div>
-        <div class="field">
-          <label for="editPaymentValue">Valor do plano (R$)</label>
-          <input type="number" id="editPaymentValue" step="0.01" min="0" placeholder="0,00" />
-        </div>
-        <div class="field">
-          <label for="editIgLimit">Limite de contas do Instagram</label>
-          <input type="number" id="editIgLimit" step="1" min="1" placeholder="1" />
-          <p class="field-hint">1 conta = R$49,90 · até 3 contas = R$89,90 · cada conta extra = +R$29,90</p>
-        </div>
-        <button type="button" class="btn btn-outline btn-sm" id="suggestPlanValueBtn">Sugerir valor do plano com base no limite</button>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" id="cancelEditPayment">Cancelar</button>
-        <button class="btn btn-primary" id="saveEditPayment">Salvar</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-  overlay.addEventListener("click", (e) => { if (e.target === overlay) closeModal(); });
-  try {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("payment_status, payment_due_date, monthly_plan_value, ig_account_limit")
-      .eq("id", userId)
-      .single();
-    if (error) throw error;
-    $("#editPaymentStatus").value = data.payment_status || "em_dia";
-    $("#editPaymentDue").value = data.payment_due_date || "";
-    $("#editPaymentValue").value = data.monthly_plan_value || "";
-    $("#editIgLimit").value = data.ig_account_limit || 1;
-  } catch (err) {
-    showBanner("statusBanner", "Erro ao carregar dados de cobrança: " + err.message, "error");
-    closeModal();
-    return;
-  }
-  $("#closeEditPaymentModal").addEventListener("click", closeModal);
-  $("#cancelEditPayment").addEventListener("click", closeModal);
-  $("#suggestPlanValueBtn").addEventListener("click", () => {
-    const limit = parseInt($("#editIgLimit").value, 10) || 1;
-    $("#editPaymentValue").value = suggestPlanValue(limit).toFixed(2);
-  });
-  $("#saveEditPayment").addEventListener("click", async () => {
-    const status = $("#editPaymentStatus").value;
-    const dueRaw = $("#editPaymentDue").value;
-    const valueRaw = $("#editPaymentValue").value;
-    const igLimitRaw = $("#editIgLimit").value;
-    const dueDate = dueRaw ? dueRaw : null;
-    const parsedValue = valueRaw ? parseFloat(valueRaw) : null;
-    const monthlyPlanValue = Number.isFinite(parsedValue) ? parsedValue : null;
-    const parsedLimit = igLimitRaw ? parseInt(igLimitRaw, 10) : 1;
-    const igAccountLimit = Number.isFinite(parsedLimit) ? Math.max(1, parsedLimit) : 1;
-    try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          payment_status: status,
-          payment_due_date: dueDate,
-          monthly_plan_value: monthlyPlanValue,
-          ig_account_limit: igAccountLimit,
-        })
-        .eq("id", userId);
-      if (error) throw error;
-      showBanner("statusBanner", "Cobrança atualizada com sucesso.", "success");
-      closeModal();
-      await loadUsers();
-    } catch (err) {
-      showBanner("statusBanner", "Erro ao atualizar cobrança: " + err.message, "error");
-    }
-  });
-}
-async function openViewAutosModal(event) {
-  const userId = event.currentTarget.getAttribute("data-user-id");
-  closeModal();
-  const overlay = document.createElement("div");
-  overlay.className = "modal-overlay";
-  overlay.id = "viewAutosModal";
-  overlay.innerHTML = `
-    <div class="modal-box modal-box-lg">
-      <div class="modal-header">
-        <h2>Automações — ${escapeHtml(userLabel(userId))}</h2>
-        <button class="modal-close" id="closeViewAutosModal" aria-label="Fechar">&times;</button>
-      </div>
-      <div class="modal-body" style="max-height:60vh; overflow:auto;">
-        <div id="viewAutosLoading" class="loading-row">Carregando automações…</div>
-        <div id="viewAutosError" class="banner error hidden"></div>
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Post / Media ID</th>
-                <th>Palavra-chave</th>
-                <th>Link do produto</th>
-                <th>Status</th>
-                <th>Criado em</th>
-              </tr>
-            </thead>
-            <tbody id="viewAutosBody"></tbody>
-          </table>
-        </div>
-        <div id="viewAutosEmpty" class="empty-state hidden">Nenhuma automação encontrada.</div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-primary btn-full" id="closeViewAutos">Fechar</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-  overlay.addEventListener("click", (e) => { if (e.target === overlay) closeModal(); });
-  $("#closeViewAutosModal").addEventListener("click", closeModal);
-  $("#closeViewAutos").addEventListener("click", closeModal);
-  $("#viewAutosLoading").classList.remove("hidden");
-  $("#viewAutosBody").innerHTML = "";
-  $("#viewAutosEmpty").classList.add("hidden");
-  $("#viewAutosError").classList.add("hidden");
-  try {
-    const { data, error } = await supabase.rpc("admin_get_user_automacoes", {
-      target_user_id: userId,
-    });
-    const loadingEl = $("#viewAutosLoading");
-    if (!loadingEl) return; // modal foi fechado enquanto carregava
-    loadingEl.classList.add("hidden");
-    if (error) {
-      $("#viewAutosError").textContent = "Erro ao carregar automações: " + error.message;
-      $("#viewAutosError").classList.remove("hidden");
-      return;
-    }
-    const rows = data || [];
-    if (rows.length === 0) {
-      $("#viewAutosEmpty").classList.remove("hidden");
-      return;
-    }
-    $("#viewAutosBody").innerHTML = rows.map((r) => {
-      const row = typeof r === "string" ? JSON.parse(r) : r;
-      const statusClass = row.ativo ? "badge-ativo" : "badge-inativo";
-      const statusText = row.ativo ? "Ativo" : "Inativo";
-      const created = row.created_at
-        ? new Date(row.created_at).toLocaleString("pt-BR")
-        : "—";
-      return (
-        "<tr>" +
-        "<td>" + escapeHtml(row.instagram_media_id) + "</td>" +
-        "<td>" + escapeHtml(row.palavra_chave === "*" ? "Qualquer comentário" : row.palavra_chave) + "</td>" +
-        '<td><a href="' + escapeHtml(safeUrl(row.produto_url)) + '" target="_blank" rel="noopener noreferrer">' +
-        escapeHtml(truncateUrl(row.produto_url, 40)) + "</a></td>" +
-        '<td><span class="badge ' + statusClass + '">' + statusText + "</span></td>" +
-        "<td>" + created + "</td>" +
-        "</tr>"
-      );
-    }).join("");
-  } catch (err) {
-    const loadingEl = $("#viewAutosLoading");
-    if (!loadingEl) return;
-    loadingEl.classList.add("hidden");
-    $("#viewAutosError").textContent = "Erro inesperado: " + err.message;
-    $("#viewAutosError").classList.remove("hidden");
-  }
-}
-supabase.auth.onAuthStateChange((_event, _session) => {});
+let currentUser=null,currentProfile=null,currentUserTable=null,currentIgAccounts=[],allAutomations=[],allUsers=[],productsCache=null,currentRange=30,currentTab="overview",currentSubtab="list",produtoPickerCallback=null,busy=false,loaded={overview:false,ig:false,autos:false,products:false,latest:false,admin:false,trial:false},deferredInstallPrompt=null,trialTimer=null,realtimeChannels=[];
+
+/* =========================================================
+   UTILITÁRIOS
+   ========================================================= */
+const $=(s,root=document)=>root.querySelector(s);
+const $$=(s,root=document)=>Array.from(root.querySelectorAll(s));
+const escapeHtml=(v)=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const safeUrl=(v)=>{try{const u=new URL(String(v||"").trim());return ["http:","https:"].includes(u.protocol)?u.href:"#"}catch{return "#"}};
+const validUrl=v=>{try{return ["http:","https:"].includes(new URL(String(v||"").trim()).protocol)}catch{return false}};
+const fmtDate=v=>v?new Date(v).toLocaleDateString("pt-BR"):"—";
+const fmtDateTime=v=>v?new Date(v).toLocaleString("pt-BR"):"—";
+const fmtBRL=v=>v==null||v===""?"—":Number(v).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const trunc=(v,n=90)=>{const s=String(v||"").replace(/\s+/g," ").trim();return s.length>n?s.slice(0,n)+"…":s};
+const haptic=()=>{try{if(navigator.vibrate)navigator.vibrate(10)}catch{}};
+function banner(id,msg,type="error",timeout=6000){const el=$(id.startsWith("#")?id:"#"+id);if(!el)return;el.textContent=msg||"";el.className="banner"+(msg?" "+type:" hidden");if(msg)setTimeout(()=>{if(el.textContent===msg)el.className="banner hidden"},timeout)}
+function whatsappLink(message){return `https://wa.me/${SUPPORT_WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`}
+function extractShortcode(v){const s=String(v||"").trim();if(!s.includes("instagram.com"))return s;const m=s.split("?")[0].match(/\/(?:p|reel|reels|tv)\/([A-Za-z0-9_-]+)/);return m?m[1]:s}
+function icon(name){const p={grid:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',zap:'<path d="M13 2 3 14h9l-1 8 10-12h-9Z"/>',instagram:'<rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".8" fill="currentColor" stroke="none"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',shield:'<path d="M12 3 20 6v5c0 5-3.4 8.7-8 10-4.6-1.3-8-5-8-10V6Z"/><path d="m9 12 2 2 4-4"/>',refresh:'<path d="M20 11a8 8 0 0 0-14.9-3L3 11"/><path d="M3 5v6h6"/><path d="M4 13a8 8 0 0 0 14.9 3L21 13"/><path d="M21 19v-6h-6"/>',plus:'<path d="M12 5v14M5 12h14"/>',x:'<path d="m6 6 12 12M18 6 6 18"/>',package:'<path d="m7.5 4.3 9 5.1M21 8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',chevron:'<path d="m9 18 6-6-6-6"/>',check:'<path d="m5 12 4 4L19 6"/>',trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7l1-3h4l1 3"/>',edit:'<path d="m4 20 4.5-1 10-10a2.8 2.8 0 0 0-4-4l-10 10Z"/>',pause:'<path d="M8 5v14M16 5v14"/>',play:'<path d="m8 5 11 7-11 7Z"/>'};return `<svg viewBox="0 0 24 24" aria-hidden="true">${p[name]||""}</svg>`}
+function injectIcons(){document.querySelectorAll("[data-icon]").forEach(el=>{const n=el.dataset.icon;if(!el.querySelector("svg"))el.innerHTML=icon(n)})}
+
+/* =========================================================
+   TEMA
+   ========================================================= */
+function applyTheme(theme){document.documentElement.dataset.theme=theme;try{localStorage.setItem("ap-theme",theme)}catch{} }
+function initTheme(){$$('[data-theme-toggle]').forEach(b=>b.addEventListener("click",()=>{haptic();applyTheme(document.documentElement.dataset.theme==="dark"?"light":"dark")}))}
+
+/* =========================================================
+   DETECÇÃO MOBILE
+   ========================================================= */
+const mobileMQ=window.matchMedia("(max-width:900px)");
+const isMobileViewport=()=>mobileMQ.matches;
+
+/* =========================================================
+   ROTEADOR DE ABAS E SUB-ABAS
+   ========================================================= */
+const tabTitles={overview:["Visão geral","Seu desempenho"],dashboard:["Automações","Operação"],instagram:["Instagram","Contas conectadas"],conta:["Conta","Preferências"],admin:["Admin","Gestão da plataforma"]};
+function showTab(tab){if(tab==="admin"&&!currentProfile?.is_admin)tab="overview";currentTab=tab;$$('.tab-panel').forEach(p=>p.classList.toggle("hidden",p.id!==`tab-${tab}`));$$('.app-nav .nav-item,.bottom-tabs .nav-item').forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));const [t,s]=tabTitles[tab]||tabTitles.overview;const tt=$("#mobileScreenTitle"),st=$("#mobileScreenSubtitle");if(tt)tt.textContent=t;if(st)st.textContent=s;haptic();if(tab==="overview")loadOverview();if(tab==="dashboard")loadAutomations();if(tab==="instagram")loadIgConfig();if(tab==="admin")loadAdmin();}
+function showSubtab(name){currentSubtab=name;$$('.subtab-btn').forEach(b=>b.classList.toggle("active",b.dataset.subtab===name));$$('.subtab-panel').forEach(p=>p.classList.toggle("hidden",p.id!==`subtab-${name}`));if(name==="latest")loadLatestPosts();if(name==="list")loadAutomations();if(name==="products")loadProducts();if(name==="new")focusAutomationFirst()}
+function focusAutomationFirst(){setTimeout(()=>$("#palavraChave")?.focus(),120)}
+function bindRouter(){$$('[data-tab]').forEach(b=>b.addEventListener("click",()=>{showTab(b.dataset.tab);if(b.dataset.tab==="admin"&&isMobileViewport()){} }));$$('.subtab-btn').forEach(b=>b.addEventListener("click",()=>{showSubtab(b.dataset.subtab);haptic()}));$$('[data-open-new-automation]').forEach(b=>b.addEventListener("click",()=>{showTab("dashboard");showSubtab("new")}));$$('[data-close-sheet]').forEach(b=>b.addEventListener("click",()=>showSubtab("list")));$("#mobileTopAction")?.addEventListener("click",()=>{haptic();if(currentTab==="overview")loadOverview(true);else if(currentTab==="instagram")loadIgConfig();else if(currentTab==="dashboard")currentSubtab==="latest"?loadLatestPosts(true):loadAutomations(true);else if(currentTab==="admin")loadAdmin(true)});$("#mobileAccountBtn")?.addEventListener("click",()=>showTab("conta"));$("[data-refresh-overview]")?.addEventListener("click",()=>loadOverview(true));$("[data-nav-collapse]")?.addEventListener("click",toggleNavCollapse);restoreNavCollapse()}
+function toggleNavCollapse(){const app=$("#appScreen");app.classList.toggle("nav-collapsed");try{localStorage.setItem("respondi-nav-collapsed",app.classList.contains("nav-collapsed")?"1":"0")}catch{}}
+function restoreNavCollapse(){const apply=()=>{try{$("#appScreen")?.classList.toggle("nav-collapsed",localStorage.getItem("respondi-nav-collapsed")==="1")}catch{}};apply();setTimeout(apply,1500)}
+
+/* =========================================================
+   AUTH
+   ========================================================= */
+function showScreen(name){["authScreen","blockedScreen","appScreen"].forEach(id=>$("#"+id)?.classList.add("hidden"));$(name==="auth"?"#authScreen":name==="blocked"?"#blockedScreen":"#appScreen")?.classList.remove("hidden")}
+function inviteOrRecovery(){return /type=(invite|recovery)/.test(location.hash)}
+async function login(e){e?.preventDefault();const email=$("#authEmail").value.trim(),password=$("#authPassword").value;if(!email||!password)return banner("authBanner","Preencha e-mail e senha.");try{$("#authSubmitBtn").disabled=true;const {error}=await supabase.auth.signInWithPassword({email,password});if(error)throw error}catch(err){banner("authBanner",err.message)}finally{$("#authSubmitBtn").disabled=false}}
+async function recover(){const email=$("#authEmail").value.trim();if(!email)return banner("authBanner","Informe seu e-mail para receber o link de recuperação.");try{const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});if(error)throw error;banner("authBanner","Enviamos um link de recuperação para seu e-mail.","success",8000)}catch(e){banner("authBanner",e.message)}}
+async function setNewPassword(e){e?.preventDefault();const p=$("#newPassword").value;if(p.length<6)return banner("setPasswordBanner","A senha precisa ter pelo menos 6 caracteres.");try{const {error}=await supabase.auth.updateUser({password:p});if(error)throw error;history.replaceState(null,"",location.pathname);await bootstrapSession()}catch(err){banner("setPasswordBanner",err.message)}}
+function renderAccount(){if(!currentUser)return;$("#userEmailLabel").textContent=currentUser.email||"—";$("#userAvatar").textContent=(currentUser.email||"A").charAt(0).toUpperCase();$("#mobileAccountBtn").textContent=(currentUser.email||"A").charAt(0).toUpperCase();$("#planNameLabel").textContent=currentProfile?.plan_name||currentProfile?.plan||"Plano atual";$("#planStatusLabel").textContent=currentProfile?.payment_status==="em_dia"?"Em dia":currentProfile?.payment_status||"Ativo";$("#supportWhatsapp").href=whatsappLink(`Olá! Preciso de suporte no ${APP_NAME}. Meu e-mail: ${currentUser.email||""}`);$("#blockedSupportBtn").href=whatsappLink(`Olá! Preciso reativar meu acesso ao ${APP_NAME}. Meu e-mail: ${currentUser.email||""}`)}
+async function bootstrapSession(){if(inviteOrRecovery()){showScreen("auth");$("#loginForm").classList.add("hidden");$("#setPasswordForm").classList.remove("hidden");$("#authTitle").textContent="Defina sua senha";$("#authSubtitle").textContent="Crie a senha para concluir seu acesso.";return}const {data:{session}}=await supabase.auth.getSession();if(!session){showScreen("auth");return}currentUser=session.user;const {data:profile,error}=await supabase.from("profiles").select("*").eq("id",currentUser.id).maybeSingle();if(error||!profile){showScreen("auth");return}currentProfile=profile;currentUserTable=profile.automacoes_table_name;if(profile.is_active===false){showScreen("blocked");return}showScreen("app");renderAccount();$("#adminTabBtn").classList.toggle("hidden",!profile.is_admin);$("#mobileAdminTabBtn").classList.toggle("hidden",!profile.is_admin);await loadIgConfig();await loadAutomations();await loadProducts();await loadTrial();setupRealtime();handleOauthReturn();showTab("overview")}
+function handleOauthReturn(){const p=new URLSearchParams(location.search);if(p.get("ig_connected"))banner("statusBanner","Instagram conectado com sucesso!","success");if(p.get("ig_error"))banner("statusBanner","Erro ao conectar Instagram: "+p.get("ig_error"));if(p.has("ig_connected")||p.has("ig_error")){history.replaceState(null,"",location.pathname)}}
+function bindAuth(){$("#loginForm")?.addEventListener("submit",login);$("#forgotPasswordBtn")?.addEventListener("click",recover);$("#setPasswordForm")?.addEventListener("submit",setNewPassword);$("#logoutBtn")?.addEventListener("click",()=>supabase.auth.signOut());$("#blockedLogoutBtn")?.addEventListener("click",()=>supabase.auth.signOut());$("#trialLogoutBtn")?.addEventListener("click",()=>supabase.auth.signOut())}
+
+/* =========================================================
+   VISÃO GERAL
+   ========================================================= */
+function dateKeys(days){const out=[],d=new Date();d.setHours(0,0,0,0);for(let i=days-1;i>=0;i--){const x=new Date(d);x.setDate(d.getDate()-i);out.push(x.toISOString().slice(0,10))}return out}
+function renderDaily(data,days){const el=$("#ovDaily");if(!el)return;const rows=Array.isArray(data)?data:[];const map=new Map(rows.map(r=>[String(r.data||r.date||r.day||"").slice(0,10),{ok:Number(r.enviadas??r.sent??r.sucesso??0)||0,bad:Number(r.falhas??r.failed??0)||0}]));const keys=dateKeys(days);const vals=keys.map(k=>({k,...(map.get(k)||{ok:0,bad:0})}));const max=Math.max(1,...vals.map(x=>x.ok+x.bad));const w=900,h=240,pad=24,bw=Math.max(3,(w-pad*2)/vals.length-2);let svg=`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Envios por dia"><line x1="24" y1="210" x2="876" y2="210" stroke="var(--border)"/>`;vals.forEach((v,i)=>{const x=pad+i*((w-pad*2)/vals.length)+1;const okH=v.ok/max*175,badH=v.bad/max*175;svg+=`<rect class="ov-bar-ok" x="${x}" y="${210-okH}" width="${bw}" height="${okH}" rx="2"><title>${fmtDate(v.k)} · ${v.ok} enviadas</title></rect>`;if(v.bad)svg+=`<rect class="ov-bar-bad" x="${x}" y="${210-okH-badH}" width="${bw}" height="${badH}" rx="2"><title>${fmtDate(v.k)} · ${v.bad} falhas</title></rect>`});svg+=`</svg>`;el.innerHTML=svg;const peak=vals.reduce((a,b)=>(b.ok+b.bad)>(a.ok+a.bad)?b:a,{k:"",ok:0,bad:0});$("#ovPeak").textContent=`Pico: ${peak.ok+peak.bad}/dia · ${peak.k?fmtDate(peak.k):"—"}`}
+function renderHours(rows){const el=$("#ovHours");if(!el)return;const map=Array.from({length:24},(_,i)=>Number(rows?.[i]?.enviadas??rows?.[i]?.sent??rows?.[i]??0)||0),max=Math.max(1,...map);el.innerHTML=map.map((v,i)=>`<div class="hour-bar" style="height:${Math.max(3,v/max*100)}%"><span>${i%6===0?String(i).padStart(2,"0"):""}</span></div>`).join("")}
+function renderRank(id,rows,labelKey="label",valueKey="value",prefix=""){const el=$(id);if(!el)return;if(!rows?.length){el.innerHTML='<div class="empty-state">Nenhum dado no período.</div>';return}el.innerHTML=rows.slice(0,6).map((r,i)=>`<div class="rank-row"><span class="rank-num">${i+1}</span><span class="rank-name">${escapeHtml(r[labelKey]??"—")}</span><strong class="rank-value">${escapeHtml(prefix+String(r[valueKey]??0))}</strong></div>`).join("")}
+function renderFormats(rows){const el=$("#ovFormats");if(!el)return;const names={REELS:"Reels",FEED:"Feed",STORY:"Story",CAROUSEL_ALBUM:"Carrossel",VIDEO:"Vídeo",IMAGE:"Imagem"};const vals=(rows||[]).map(r=>({name:names[r.formato||r.type]||r.formato||r.type||"Outro",value:Number(r.valor??r.count??r.total??0)||0}));const total=vals.reduce((a,b)=>a+b.value,0);if(!total){el.innerHTML='<div class="empty-state">Sem dados de formato.</div>';return}let start=0,stops=[];vals.forEach(v=>{const pct=v.value/total*100;stops.push(`${start}% ${start+pct}%`);start+=pct});const grad=vals.map((v,i)=>{const a=vals.slice(0,i).reduce((s,x)=>s+x.value,0)/total*100;const b=(a+v.value/total*100);return `color-mix(in srgb,var(--accent-2) ${55+i*7}%,var(--accent-1)) ${a}% ${b}%`}).join(",");el.innerHTML=`<div class="donut" style="background:conic-gradient(${grad})"></div><div class="legend">${vals.map(v=>`<div class="legend-row"><span>${escapeHtml(v.name)}</span><b>${Math.round(v.value/total*100)}%</b></div>`).join("")}</div>`}
+function renderKpis(data){const vals=[data?.dms_enviadas??data?.enviadas??data?.sent??0,data?.pessoas_alcancadas??data?.alcancadas??data?.reached??0,data?.taxa_sucesso??null,data?.falhas??data?.failed??0,data?.automacoes_ativas??allAutomations.filter(x=>x.ativo).length,currentIgAccounts.length];const nodes=$$("#ovKpis .kpi-item strong");nodes.forEach((n,i)=>n.textContent=i===2?(vals[i]==null?"—":`${Number(vals[i]).toLocaleString("pt-BR",{maximumFractionDigits:1})}%`):Number(vals[i]||0).toLocaleString("pt-BR"))}
+async function loadOverview(force=false){if(!currentUser)return;if(loaded.overview&&!force)return;try{const [ov,cons]=await Promise.all([supabase.rpc("get_dashboard_overview",{p_dias:currentRange}),supabase.rpc("get_consumo_mensagens")]);if(ov.error)throw ov.error;const d=Array.isArray(ov.data)?(ov.data[0]||{}):ov.data||{};const c=Array.isArray(cons.data)?(cons.data[0]||{}):cons.data||{};const sent=Number(d.enviadas??d.dms_enviadas??d.sent??c.enviadas??0)||0,fail=Number(d.falhas??d.failed??c.falhas??0)||0;renderKpis({...d,enviadas:sent,falhas:fail,taxa_sucesso:(sent+fail)?sent/(sent+fail)*100:null});renderDaily(d.daily||d.por_dia||d.daily_stats||[],currentRange);renderRank("#ovPosts",d.posts||d.ranking_posts||[]);renderFormats(d.formatos||d.formats||[]);renderHours(d.horas||d.hourly||[]);renderRank("#ovAccounts",d.contas||d.accounts||[]);renderRank("#ovErrors",d.erros||d.errors||[],"label","value");loaded.overview=true}catch(e){banner("statusBanner","Não foi possível carregar a visão geral: "+e.message)}}
+
+/* =========================================================
+   AUTOMAÇÕES
+   ========================================================= */
+function resolveAccount(row){if(row.instagram_config_id)return currentIgAccounts.find(a=>String(a.id)===String(row.instagram_config_id))||null;return currentIgAccounts.length===1?currentIgAccounts[0]:null}
+function accountLabel(row){const a=resolveAccount(row);return a?(a.instagram_username?"@"+a.instagram_username:"Conta conectada"):row.instagram_config_id?"Conta desconectada":"Conta não identificada"}
+function updateAutomationSelector(){const f=$("#automationIgAccountField"),s=$("#automationIgAccount");if(!f||!s)return;if(currentIgAccounts.length<=1){f.classList.add("hidden");s.innerHTML=currentIgAccounts[0]?`<option value="${escapeHtml(currentIgAccounts[0].id)}">${escapeHtml("@"+(currentIgAccounts[0].instagram_username||"conta"))}</option>`:""}else{f.classList.remove("hidden");s.innerHTML=currentIgAccounts.map(a=>`<option value="${escapeHtml(a.id)}">@${escapeHtml(a.instagram_username||"conta")}</option>`).join("")}}
+function renderAutomations(rows){const grid=$("#automationsTableBody"),load=$("#loadingAutomations");if(!grid)return;load?.classList.add("hidden");$("#automationKpiText").textContent=`${rows?.length||0} automações · ${(rows||[]).filter(r=>r.ativo).length} ativas`;if(!rows?.length){grid.innerHTML='<div class="empty-state">Nenhuma automação encontrada. Cadastre a primeira.</div>';return}grid.innerHTML=rows.map(r=>{const acc=resolveAccount(r),postLink=/^[A-Za-z0-9_-]+$/.test(String(r.instagram_media_id||""))&&!/^\d{12,}$/.test(String(r.instagram_media_id||""))?`https://www.instagram.com/p/${encodeURIComponent(r.instagram_media_id)}/`:null;return `<article class="automation-card" data-id="${escapeHtml(r.id)}" data-ativo="${r.ativo?"true":"false"}" data-config-id="${escapeHtml(acc?.id||"")}" data-media="${escapeHtml(r.instagram_media_id||"")}"><div class="automation-card-top"><span class="badge ${r.ativo?"badge-ativo":"badge-danger"}">${r.ativo?"Ativo":"Inativo"}</span><div class="automation-card-actions"><button class="icon-btn toggle-btn" title="${r.ativo?"Desativar":"Ativar"}">${icon(r.ativo?"pause":"play")}</button><button class="icon-btn delete-btn" title="Excluir">${icon("trash")}</button></div></div><span class="badge ${acc?"badge-muted":"badge-danger"}">${icon("instagram")} ${escapeHtml(accountLabel(r))}</span><div class="auto-post-row"><div class="auto-post-thumb">${icon("instagram")}</div><div style="min-width:0"><div class="auto-post-caption">${acc?"Carregando legenda…":"Conecte a conta para ver o post"}</div>${postLink?`<a class="automation-card-link" href="${escapeHtml(postLink)}" target="_blank" rel="noopener">Ver post no Instagram</a>`:""}</div></div><div><span class="keyword-chip">${escapeHtml(r.palavra_chave==="*"?"Qualquer comentário":r.palavra_chave||"Sem palavra-chave")}</span></div>${r.titulo_produto?`<strong>${escapeHtml(trunc(r.titulo_produto,45))}</strong>`:""}<a class="automation-card-link" href="${escapeHtml(safeUrl(r.produto_url))}" target="_blank" rel="noopener">${escapeHtml(trunc(r.produto_url,60))}</a><div class="automation-card-footer">Criado em ${fmtDateTime(r.created_at)}</div></article>`}).join("");$$('.toggle-btn',grid).forEach(b=>b.addEventListener("click",toggleAutomation));$$('.delete-btn',grid).forEach(b=>b.addEventListener("click",deleteAutomation));enrichAutomationCards(rows)}
+async function enrichAutomationCards(rows){const ids=[...new Set(rows.map(r=>resolveAccount(r)?.id).filter(Boolean))];await Promise.all(ids.map(async id=>{try{const {data,error}=await supabase.functions.invoke("list-instagram-posts",{body:{mode:"all",instagram_config_id:id}});if(error)throw error;const map=new Map();(data?.posts||[]).forEach(p=>{if(p.shortcode)map.set(String(p.shortcode),p);if(p.media_id)map.set(String(p.media_id),p)});$$(`.automation-card[data-config-id="${CSS.escape(String(id))}"]`).forEach(card=>{const p=map.get(card.dataset.media);const cap=$(".auto-post-caption",card),thumb=$(".auto-post-thumb",card);if(p){cap.textContent=trunc(p.caption||"(sem legenda)");if(p.thumbnail_url)thumb.innerHTML=`<img src="${escapeHtml(safeUrl(p.thumbnail_url))}" alt="" loading="lazy">`}else cap.textContent="Legenda indisponível (post antigo ou removido)"})}catch{}}))}
+async function loadAutomations(force=false){if(!currentUserTable)return;if(loaded.autos&&!force&&currentTab!=="dashboard")return;const l=$("#loadingAutomations");l?.classList.remove("hidden");try{const {data,error}=await supabase.from(currentUserTable).select("*").order("created_at",{ascending:false});if(error)throw error;allAutomations=data||[];loaded.autos=true;renderAutomations(allAutomations)}catch(e){if(l)l.textContent="Erro ao carregar automações: "+e.message}}
+async function toggleAutomation(e){const card=e.currentTarget.closest(".automation-card"),id=card.dataset.id,on=card.dataset.ativo!=="true";try{const {error}=await supabase.from(currentUserTable).update({ativo:on}).eq("id",id);if(error)throw error;await loadAutomations(true)}catch(err){banner("statusBanner","Erro ao atualizar: "+err.message)}}
+async function deleteAutomation(e){const id=e.currentTarget.closest(".automation-card")?.dataset.id;if(!id||!confirm("Tem certeza que deseja excluir esta automação?"))return;try{const {error}=await supabase.from(currentUserTable).delete().eq("id",id);if(error)throw error;await loadAutomations(true);banner("statusBanner","Automação excluída.","success")}catch(err){banner("statusBanner","Erro ao excluir: "+err.message)}}
+function resetAutomationForm(){["instagramMediaId","palavraChave","produtoUrl","tituloProduto","precoProduto","imagemUrl"].forEach(id=>{const e=$("#"+id);if(e)e.value=""});$("#imagemUrlField")?.classList.add("hidden");$("#palavraChaveField")?.classList.remove("hidden");const k=$("input[name=triggerMode][value=keyword]");if(k)k.checked=true;updateAutomationSelector()}
+async function saveAutomation(){if(busy)return;const media=extractShortcode($("#instagramMediaId").value),any=$("input[name=triggerMode]:checked")?.value==="any",kw=any?"*":$("#palavraChave").value.trim(),url=$("#produtoUrl").value.trim(),img=$("#imagemUrl").value.trim()||null,title=$("#tituloProduto").value.trim()||null,price=$("#precoProduto").value.trim()||null,ig=$("#automationIgAccount").value||null;if(!media||!kw||!url)return banner("statusBanner","Post, palavra-chave (ou qualquer comentário) e link do produto são obrigatórios.");if(!validUrl(url)||(img&&!validUrl(img)))return banner("statusBanner","Use URLs começando com http:// ou https://.");if(!currentIgAccounts.length)return banner("statusBanner","Conecte uma conta do Instagram antes de criar uma automação.");if(currentIgAccounts.length>1&&!ig)return banner("statusBanner","Selecione a conta do Instagram.");if(any&&allAutomations.some(r=>r.instagram_media_id===media&&String(r.palavra_chave||"").trim()==="*"))return banner("statusBanner","Esse post já tem uma automação de qualquer comentário.");busy=true;$("#saveAutomationBtn").disabled=true;try{const {error}=await supabase.from(currentUserTable).insert({instagram_media_id:media,palavra_chave:kw,produto_url:url,imagem_url:img,titulo_produto:title,preco_produto:price,instagram_config_id:ig,ativo:true});if(error)throw error;resetAutomationForm();await loadAutomations(true);showSubtab("list");banner("statusBanner","Automação salva com sucesso!","success")}catch(e){banner("statusBanner","Erro ao salvar automação: "+e.message)}finally{busy=false;$("#saveAutomationBtn").disabled=false}}
+
+/* =========================================================
+   ÚLTIMAS PUBLICAÇÕES
+   ========================================================= */
+async function loadLatestPosts(force=false){const grid=$("#latestPostsGrid");if(!grid||!currentUser)return;if(loaded.latest&&!force)return;grid.innerHTML='<div class="loading-row">Carregando publicações…</div>';try{const {data,error}=await supabase.functions.invoke("list-latest-posts",{body:{}});if(error)throw error;const posts=data?.posts||[];if(!posts.length){grid.innerHTML='<div class="empty-state">Nenhuma publicação encontrada nas contas conectadas.</div>';return}grid.innerHTML=posts.map(p=>`<article class="latest-post-card" data-media="${escapeHtml(p.media_id||"")}" data-config="${escapeHtml(p.instagram_config_id||"")}">${p.image?`<img src="${escapeHtml(safeUrl(p.image))}" alt="" loading="lazy">`:'<div class="post-placeholder">Sem prévia</div>'}<div><span class="badge badge-muted">@${escapeHtml(p.username||"")}</span><p class="latest-caption">${escapeHtml(trunc(p.caption,90))}</p></div><div class="latest-actions"><button class="btn btn-primary btn-sm create-auto-post">Criar automação</button><button class="btn btn-outline btn-sm choose-product-post">Escolher produto</button></div></article>`).join("");$$('.create-auto-post',grid).forEach(b=>b.addEventListener("click",e=>fillFromLatest(e.currentTarget.closest(".latest-post-card"),false)));$$('.choose-product-post',grid).forEach(b=>b.addEventListener("click",e=>fillFromLatest(e.currentTarget.closest(".latest-post-card"),true)));loaded.latest=true}catch(e){grid.innerHTML=`<div class="empty-state">Erro ao carregar publicações: ${escapeHtml(e.message)}</div>`}}
+function fillFromLatest(card,openPicker){showSubtab("new");$("#instagramMediaId").value=card.dataset.media;$("#automationIgAccount").value=card.dataset.config||$("#automationIgAccount").value;setTimeout(()=>$("#palavraChave")?.focus(),150);if(openPicker)openProdutoPicker(p=>fillProduct(p))}
+
+/* =========================================================
+   PRODUTOS E SELETOR
+   ========================================================= */
+function productCard(p){return `<article class="product-card" data-id="${escapeHtml(p.id)}"><div class="product-img-placeholder">${p.link_imagem&&validUrl(p.link_imagem)?`<img src="${escapeHtml(safeUrl(p.link_imagem))}" alt="${escapeHtml(p.nome)}" loading="lazy">`:'Sem imagem'}</div><h3>${escapeHtml(p.nome)}</h3><p>${escapeHtml(p.preco?fmtBRL(p.preco):"Preço não informado")}</p><div class="product-actions"><button class="btn btn-outline btn-sm edit-product">Editar</button><button class="btn btn-danger-ghost btn-sm delete-product">Excluir</button></div></article>`}
+async function loadProducts(force=false){if(!currentUser)return;if(productsCache&&!force){renderProducts(productsCache);return}const grid=$("#produtosGrid");if(!grid)return;grid.innerHTML='<div class="loading-row">Carregando produtos…</div>';try{const {data,error}=await supabase.from("produtos").select("*").eq("user_id",currentUser.id).order("created_at",{ascending:false});if(error)throw error;productsCache=data||[];loaded.products=true;renderProducts(productsCache)}catch(e){grid.innerHTML=`<div class="empty-state">Erro ao carregar produtos: ${escapeHtml(e.message)}</div>`}}
+function renderProducts(rows){const grid=$("#produtosGrid");if(!grid)return;if(!rows.length){grid.innerHTML='<div class="empty-state">Nenhum produto cadastrado.</div>';return}grid.innerHTML=rows.map(productCard).join("");$$('.edit-product',grid).forEach(b=>b.addEventListener("click",()=>openProdutoModal(productsCache.find(p=>String(p.id)===String(b.closest(".product-card").dataset.id)))));$$('.delete-product',grid).forEach(b=>b.addEventListener("click",()=>deleteProduct(b.closest(".product-card").dataset.id)))}
+async function deleteProduct(id){const p=productsCache?.find(x=>String(x.id)===String(id));if(!p||!confirm(`Excluir o produto "${p.nome}"? Isso não afeta automações já criadas com ele.`))return;try{const {error}=await supabase.from("produtos").delete().eq("id",id).eq("user_id",currentUser.id);if(error)throw error;productsCache=productsCache.filter(x=>String(x.id)!==String(id));renderProducts(productsCache);banner("statusBanner","Produto excluído.","success")}catch(e){banner("statusBanner","Erro ao excluir produto: "+e.message)}}
+function openProdutoModal(p=null){const m=$("#produtoModal");m.classList.remove("hidden");$("#produtoModalTitle").textContent=p?"Editar produto":"Cadastrar produto";$("#produtoEditId").value=p?.id||"";$("#produtoNomeInput").value=p?.nome||"";$("#produtoLinkInput").value=p?.link_afiliado||"";$("#produtoImgInput").value=p?.link_imagem||"";$("#produtoPrecoInput").value=p?.preco||"";$("#produtoModalError").className="banner error hidden";setTimeout(()=>$("#produtoNomeInput")?.focus(),100)}
+function closeProdutoModal(){$("#produtoModal")?.classList.add("hidden")}
+async function saveProduct(e){e.preventDefault();const id=$("#produtoEditId").value,nome=$("#produtoNomeInput").value.trim(),link=$("#produtoLinkInput").value.trim(),img=$("#produtoImgInput").value.trim()||null,preco=$("#produtoPrecoInput").value.trim()||null;if(!nome||!link)return banner("produtoModalError","Nome e link de afiliado são obrigatórios.");if(!validUrl(link)||(img&&!validUrl(img)))return banner("produtoModalError","Use URLs válidas começando com http:// ou https://.");try{let q;if(id)q=await supabase.from("produtos").update({nome,link_afiliado:link,link_imagem:img,preco}).eq("id",id).eq("user_id",currentUser.id);else q=await supabase.from("produtos").insert({user_id:currentUser.id,nome,link_afiliado:link,link_imagem:img,preco});if(q.error)throw q.error;closeProdutoModal();productsCache=null;await loadProducts(true);banner("statusBanner",id?"Produto atualizado.":"Produto cadastrado.","success")}catch(e){banner("produtoModalError","Erro ao salvar: "+e.message)}}
+function fillProduct(p){$("#produtoUrl").value=p.link_afiliado||"";$("#tituloProduto").value=p.nome||"";$("#imagemUrl").value=p.link_imagem||"";$("#precoProduto").value=p.preco||"";$("#imagemUrlField").classList.toggle("hidden",!p.link_imagem)}
+function openProdutoPicker(cb=fillProduct){produtoPickerCallback=cb;const m=$("#produtoPickerModal");m.classList.remove("hidden");renderPicker(productsCache||[]);$("#produtoPickerSearch").value="";setTimeout(()=>$("#produtoPickerSearch")?.focus(),100)}
+window.openProdutoPicker=openProdutoPicker;
+function renderPicker(rows){const box=$("#produtoPickerList");if(!box)return;if(!rows.length){box.innerHTML='<div class="empty-state">Nenhum produto cadastrado.</div>';return}box.innerHTML=rows.map(p=>`<button class="picker-item" data-id="${escapeHtml(p.id)}"><div>${p.link_imagem&&validUrl(p.link_imagem)?`<img src="${escapeHtml(safeUrl(p.link_imagem))}" alt="">`:''}</div><div><strong>${escapeHtml(p.nome)}</strong><span>${escapeHtml(p.preco?fmtBRL(p.preco):"Preço não informado")}</span></div></button>`).join("");$$('.picker-item',box).forEach(b=>b.addEventListener("click",()=>{const p=productsCache.find(x=>String(x.id)===String(b.dataset.id));produtoPickerCallback?.(p);$("#produtoPickerModal").classList.add("hidden")}))}
+function bindProducts(){$("#newProdutoBtn")?.addEventListener("click",()=>openProdutoModal());$("#produtoForm")?.addEventListener("submit",saveProduct);$("#cancelProdutoModalBtn")?.addEventListener("click",closeProdutoModal);$("#closeProdutoModalBtn")?.addEventListener("click",closeProdutoModal);$("#closeProdutoPickerBtn")?.addEventListener("click",()=>$("#produtoPickerModal").classList.add("hidden"));$("#pickProdutoBtn")?.addEventListener("click",()=>openProdutoPicker(fillProduct));$("#produtoPickerSearch")?.addEventListener("input",e=>renderPicker((productsCache||[]).filter(p=>(p.nome||"").toLowerCase().includes(e.target.value.toLowerCase()))));$("#produtoSearch")?.addEventListener("input",e=>renderProducts((productsCache||[]).filter(p=>(p.nome||"").toLowerCase().includes(e.target.value.toLowerCase()))))}
+
+/* =========================================================
+   INSTAGRAM — ONBOARDING E REALTIME
+   ========================================================= */
+async function startInstagramConnect(configId){try{const payload={user_id:currentUser.id};if(configId)payload.instagram_config_id=configId;const {data,error}=await supabase.from("oauth_states").insert(payload).select("id").single();if(error)throw error;const p=new URLSearchParams({client_id:INSTAGRAM_APP_ID,redirect_uri:INSTAGRAM_REDIRECT_URI,response_type:"code",scope:INSTAGRAM_SCOPES,state:data.id});location.href="https://api.instagram.com/oauth/authorize?"+p.toString()}catch(e){banner("statusBanner","Não foi possível iniciar a conexão: "+e.message)}}
+async function disconnectIg(id){if(!confirm("Tem certeza que deseja desconectar esta conta do Instagram?"))return;try{const {error}=await supabase.from("instagram_config").delete().eq("id",id).eq("user_id",currentUser.id);if(error)throw error;await loadIgConfig(true);banner("statusBanner","Instagram desconectado.","success")}catch(e){banner("statusBanner","Erro ao desconectar: "+e.message)}}
+async function loadIgConfig(force=false){if(!currentUser||(!force&&loaded.ig))return;const box=$("#igAccountsList");$("#igLoadingStatus")?.classList.remove("hidden");try{const {data,error}=await supabase.from("instagram_config").select("id,instagram_business_account_id,instagram_username,created_at").eq("user_id",currentUser.id).order("created_at",{ascending:true});if(error)throw error;currentIgAccounts=data||[];renderIgAccounts();loaded.ig=true;await loadIgTesterRequests()}catch(e){currentIgAccounts=[];renderIgAccounts();banner("statusBanner","Erro ao carregar Instagram: "+e.message)}finally{$("#igLoadingStatus")?.classList.add("hidden")}}
+function renderIgAccounts(){const list=$("#igAccountsList"),limit=Number(currentProfile?.ig_account_limit||1),count=currentIgAccounts.length;list.innerHTML=count?currentIgAccounts.map(a=>`<div class="ig-status-row"><span class="ig-dot ig-dot-on"></span><div class="ig-status-text"><strong>@${escapeHtml(a.instagram_username||"conta")}</strong><p>As automações podem responder comentários e enviar Direct.</p></div><div class="ig-status-actions"><button class="btn btn-outline btn-sm ig-reconnect" data-id="${escapeHtml(a.id)}">Reconectar</button><button class="btn btn-danger-ghost btn-sm ig-disconnect" data-id="${escapeHtml(a.id)}">Desconectar</button></div></div>`).join(""):'<div class="ig-status-row"><span class="ig-dot"></span><div class="ig-status-text"><strong>Instagram não conectado</strong><p>Conecte uma conta profissional para ativar as automações.</p></div></div>';$("#igLimitText").textContent=`${count} de ${limit} conta${limit===1?"":"s"} do plano em uso${count>=limit?" — limite atingido":""}`;$("#igStatusFooter").classList.remove("hidden");const add=$("#addIgAccountBtn");add.disabled=count>=limit;add.title=count>=limit?"Limite de contas do seu plano atingido.":"";add.innerHTML=icon("instagram")+(count?" Adicionar conta":" Conectar Instagram");updateAutomationSelector();$$('.ig-reconnect',list).forEach(b=>b.addEventListener("click",()=>startInstagramConnect(b.dataset.id)));$$('.ig-disconnect',list).forEach(b=>b.addEventListener("click",()=>disconnectIg(b.dataset.id)))}
+async function submitIgTester(e){e.preventDefault();const input=$("#igTesterUsernameInput"),u=input.value.trim().replace(/^@/,"").toLowerCase();if(u.length<2)return banner("igTesterFormError","Informe um @ válido.");$("#igTesterSubmitBtn").disabled=true;$("#igTesterSubmitBtn").textContent="Enviando…";try{const {error}=await supabase.from("instagram_tester_requests").insert({user_id:currentUser.id,instagram_username:u,status:"pendente"});if(error){if(error.code==="23505")throw new Error("Esse @ já está cadastrado e em andamento.");throw error}input.value="";await loadIgTesterRequests(true);banner("statusBanner","Solicitação enviada. Aguarde a aprovação.","success")}catch(e){banner("igTesterFormError",e.message)}finally{$("#igTesterSubmitBtn").disabled=false;$("#igTesterSubmitBtn").textContent="Solicitar aprovação"}}
+async function loadIgTesterRequests(force=false){if(!currentUser)return;const box=$("#igTesterRequestsList");try{const {data,error}=await supabase.from("instagram_tester_requests").select("id,instagram_username,status,created_at").eq("user_id",currentUser.id).order("created_at",{ascending:false});if(error)throw error;const connected=new Set(currentIgAccounts.map(a=>String(a.instagram_username||"").toLowerCase()));const rows=(data||[]).filter(r=>!connected.has(String(r.instagram_username||"").toLowerCase()));box.innerHTML=rows.length?rows.map(r=>`<div class="request-card"><div><strong>@${escapeHtml(r.instagram_username)}</strong><p>${r.status==="pendente"?"Aguarde alguns instantes enquanto fazemos as configurações desta conta…":r.status==="rejeitado"?"Não foi possível aprovar esta conta. Confira o @ ou tente novamente.":"Aprovado. Aceite o convite do tester pelo navegador do celular e depois conecte a conta."}</p></div><span class="badge ${r.status==="aprovado"?"badge-ativo":r.status==="rejeitado"?"badge-danger":"badge-muted"}">${r.status==="pendente"?"Aguardando aprovação":r.status==="aprovado"?"Aprovado":"Rejeitado"}</span>${r.status==="aprovado"?`<button class="btn btn-outline btn-sm connect-now" data-id="${escapeHtml(r.id)}">Já aceitei, conectar agora</button>`:""}</div>`).join(""):'<div class="empty-state">Nenhuma solicitação em andamento.</div>';$$('.connect-now',box).forEach(b=>b.addEventListener("click",()=>{$("#addIgAccountBtn").scrollIntoView({behavior:"smooth",block:"center"});setTimeout(()=>{const add=$("#addIgAccountBtn");if(!add.disabled)startInstagramConnect();else{add.classList.add("ig-tester-pulse");setTimeout(()=>add.classList.remove("ig-tester-pulse"),1600)}},350)}))}catch(e){box.innerHTML=`<div class="empty-state">Não foi possível carregar as solicitações.</div>`}}
+function setupRealtime(){realtimeChannels.forEach(c=>supabase.removeChannel(c));realtimeChannels=[];if(!currentUser)return;["instagram_tester_requests","instagram_config"].forEach(table=>{const ch=supabase.channel(`${table}-${currentUser.id}`).on("postgres_changes",{event:"*",schema:"public",table,filter:`user_id=eq.${currentUser.id}`},()=>loadIgConfig(true)).subscribe();realtimeChannels.push(ch)})}
+
+/* =========================================================
+   ADMIN
+   ========================================================= */
+async function loadAdmin(force=false){if(!currentProfile?.is_admin)return;if(loaded.admin&&!force)return;try{const {data,error}=await supabase.from("profiles").select("*").order("created_at",{ascending:false});if(error)throw error;allUsers=data||[];renderAdminKpis();renderUsers(allUsers);await renderAdminIgRequests();await loadTrials();loaded.admin=true}catch(e){banner("statusBanner","Erro ao carregar admin: "+e.message)}}
+function renderAdminKpis(){const total=allUsers.length,active=allUsers.filter(x=>x.is_active).length,mrr=allUsers.filter(x=>x.payment_status==="em_dia").reduce((s,x)=>s+(Number(x.monthly_plan_value)||0),0),late=allUsers.filter(x=>x.payment_status==="atrasado").length;$("#kpiUsers").textContent=total;$("#kpiActiveUsers").textContent=active;$("#kpiMrr").textContent=fmtBRL(mrr);$("#kpiLate").textContent=late}
+function renderUsers(rows){const body=$("#usersTableBody");if(!body)return;if(!rows.length){body.innerHTML='<tr><td colspan="8">Nenhum cliente encontrado.</td></tr>';return}body.innerHTML=rows.map(u=>`<tr data-id="${escapeHtml(u.id)}"><td>${escapeHtml(u.email||"—")}${u.is_admin?' <span class="badge badge-ativo">admin</span>':''}</td><td>${fmtDateTime(u.created_at)}</td><td><span class="badge ${u.is_active?"badge-ativo":"badge-danger"}">${u.is_active?"Ativo":"Inativo"}</span></td><td>${escapeHtml(u.payment_status||"—")}</td><td>${escapeHtml(fmtDate(u.payment_due_date))}</td><td>${escapeHtml(u.monthly_plan_value?fmtBRL(u.monthly_plan_value):"—")}</td><td>${escapeHtml(u.ig_account_limit||1)}</td><td><button class="btn btn-outline btn-sm edit-payment" data-id="${escapeHtml(u.id)}">Editar cobrança</button> <button class="btn btn-outline btn-sm view-autos" data-id="${escapeHtml(u.id)}">Ver automações</button></td></tr>`).join("");$$('.edit-payment',body).forEach(b=>b.addEventListener("click",()=>openPaymentModal(b.dataset.id)));$$('.view-autos',body).forEach(b=>b.addEventListener("click",()=>openAutosModal(b.dataset.id)))}
+async function renderAdminIgRequests(){const box=$("#igTesterAdminList");if(!box)return;try{const {data,error}=await supabase.from("instagram_tester_requests").select("id,user_id,instagram_username,status,created_at").eq("status","pendente").order("created_at",{ascending:true});if(error)throw error;box.innerHTML=(data||[]).length?data.map(r=>`<div class="admin-row"><div class="admin-row-main"><strong>@${escapeHtml(r.instagram_username)}</strong><div class="muted-label">Solicitado em ${fmtDateTime(r.created_at)}</div></div><div class="admin-row-actions"><button class="btn btn-outline btn-sm copy-ig" data-user="${escapeHtml(r.instagram_username)}">Copiar @</button><a class="btn btn-outline btn-sm" href="${META_APP_URL}" target="_blank" rel="noopener">Abrir Meta</a><button class="btn btn-primary btn-sm approve-ig" data-id="${escapeHtml(r.id)}" data-user="${escapeHtml(r.instagram_username)}">Enviar / Aprovar</button><button class="btn btn-danger-ghost btn-sm reject-ig" data-id="${escapeHtml(r.id)}">Rejeitar</button></div></div>`).join(""):'<div class="empty-state">Nenhuma solicitação pendente.</div>';$$('.copy-ig',box).forEach(b=>b.addEventListener("click",async()=>{try{await navigator.clipboard.writeText("@"+b.dataset.user);b.textContent="Copiado!";setTimeout(()=>b.textContent="Copiar @",1400)}catch{}}));$$('.approve-ig',box).forEach(b=>b.addEventListener("click",()=>approveTester(b.dataset.id,b.dataset.user)));$$('.reject-ig',box).forEach(b=>b.addEventListener("click",()=>rejectTester(b.dataset.id)))}catch(e){box.innerHTML=`<div class="empty-state">Erro: ${escapeHtml(e.message)}</div>`}}
+async function approveTester(id,user){try{await navigator.clipboard.writeText("@"+user).catch(()=>{});window.open(META_APP_URL,"_blank","noopener");const {error}=await supabase.from("instagram_tester_requests").update({status:"aprovado"}).eq("id",id);if(error)throw error;await renderAdminIgRequests();banner("statusBanner","Solicitação marcada como aprovada.","success")}catch(e){banner("statusBanner","Erro ao aprovar: "+e.message)}}
+async function rejectTester(id){if(!confirm("Rejeitar esta solicitação?"))return;const {error}=await supabase.from("instagram_tester_requests").update({status:"rejeitado"}).eq("id",id);if(error)return banner("statusBanner",error.message);renderAdminIgRequests()}
+async function openPaymentModal(id){const u=allUsers.find(x=>x.id===id);if(!u)return;const html=`<div class="modal-overlay" id="dynamicModal"><div class="modal-box"><div class="modal-header"><h2>Editar cobrança</h2><button class="modal-close" data-close-dynamic>${icon("x")}</button></div><p class="panel-lead">${escapeHtml(u.email)}</p><label class="field"><span>Status de pagamento</span><select id="mPayStatus"><option value="em_dia">Em dia</option><option value="atrasado">Atrasado</option><option value="cancelado">Cancelado</option></select></label><label class="field"><span>Vencimento</span><input id="mPayDue" type="date"></label><label class="field"><span>Valor mensal</span><input id="mPayValue" type="number" step="0.01"></label><label class="field"><span>Limite de contas do Instagram</span><input id="mPayLimit" type="number" min="1"></label><div class="modal-footer"><button class="btn btn-outline" data-close-dynamic>Cancelar</button><button class="btn btn-primary" id="mPaySave">Salvar</button></div></div></div>`;document.body.insertAdjacentHTML("beforeend",html);$("#mPayStatus").value=u.payment_status||"em_dia";$("#mPayDue").value=u.payment_due_date||"";$("#mPayValue").value=u.monthly_plan_value||"";$("#mPayLimit").value=u.ig_account_limit||1;$$('[data-close-dynamic]',$("#dynamicModal")).forEach(b=>b.addEventListener("click",()=>$("#dynamicModal").remove()));$("#mPaySave").addEventListener("click",async()=>{const {error}=await supabase.from("profiles").update({payment_status:$("#mPayStatus").value,payment_due_date:$("#mPayDue").value||null,monthly_plan_value:Number($("#mPayValue").value)||null,ig_account_limit:Math.max(1,Number($("#mPayLimit").value)||1)}).eq("id",id);if(error)return banner("statusBanner",error.message);$("#dynamicModal").remove();loadAdmin(true);banner("statusBanner","Cobrança atualizada.","success")})}
+async function openAutosModal(id){const u=allUsers.find(x=>x.id===id);const html=`<div class="modal-overlay" id="dynamicModal"><div class="modal-box modal-box-lg"><div class="modal-header"><h2>Automações — ${escapeHtml(u?.email||id)}</h2><button class="modal-close" data-close-dynamic>${icon("x")}</button></div><div id="autosAdminBody" class="table-scroll"><div class="loading-row">Carregando…</div></div></div></div>`;document.body.insertAdjacentHTML("beforeend",html);$$('[data-close-dynamic]',$("#dynamicModal")).forEach(b=>b.addEventListener("click",()=>$("#dynamicModal").remove()));try{const {data,error}=await supabase.rpc("admin_get_user_automacoes",{target_user_id:id});if(error)throw error;const rows=(data||[]).map(x=>typeof x==="string"?JSON.parse(x):x);$("#autosAdminBody").innerHTML=rows.length?`<table><thead><tr><th>Post</th><th>Palavra-chave</th><th>Produto</th><th>Status</th><th>Criado</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(r.instagram_media_id)}</td><td>${escapeHtml(r.palavra_chave==="*"?"Qualquer comentário":r.palavra_chave)}</td><td>${escapeHtml(trunc(r.produto_url,40))}</td><td>${r.ativo?"Ativo":"Inativo"}</td><td>${fmtDateTime(r.created_at)}</td></tr>`).join("")}</tbody></table>`:'<div class="empty-state">Nenhuma automação encontrada.</div>'}catch(e){$("#autosAdminBody").innerHTML=`<div class="banner error">${escapeHtml(e.message)}</div>`}}
+
+/* =========================================================
+   TESTE GRÁTIS
+   ========================================================= */
+function trialText(end){const ms=Math.max(0,new Date(end).getTime()-Date.now()),hours=Math.ceil(ms/3600000),days=Math.ceil(ms/86400000);return {ms,hours,days,label:hours<=24?`${hours} hora${hours===1?"":"s"}`:`${days} dia${days===1?"":"s"}`}}
+async function loadTrial(){if(!currentUser)return;try{const {data,error}=await supabase.rpc("get_my_trial");if(error)throw error;const t=Array.isArray(data)?data[0]:data;if(!t?.is_trial){$("#trialBanner").classList.add("hidden");loaded.trial=true;return}const end=t.trial_ends_at||t.ends_at||t.expires_at;if(!end)return;renderTrial(end);loaded.trial=true;if(trialTimer)clearInterval(trialTimer);trialTimer=setInterval(()=>renderTrial(end),60000)}catch(e){console.warn("Teste grátis:",e.message)}}
+function renderTrial(end){const t=trialText(end),bannerEl=$("#trialBanner"),overlay=$("#trialOverlay");if(t.ms<=0){bannerEl.classList.add("hidden");overlay.classList.remove("hidden");$("#trialWhatsappBtn").href=whatsappLink(`Olá! Meu teste grátis do ${APP_NAME} terminou. Quero assinar. Meu e-mail: ${currentUser?.email||""}`);return}bannerEl.classList.remove("hidden");bannerEl.classList.toggle("urgent",t.days<=2);bannerEl.innerHTML=`<div><strong>Teste grátis: restam ${t.label}</strong><span>Seu acesso termina em ${fmtDateTime(end)}.</span></div><a class="btn btn-primary btn-sm" href="${escapeHtml(whatsappLink(`Olá! Quero assinar o ${APP_NAME}. Meu e-mail: ${currentUser?.email||""}`))}" target="_blank" rel="noopener">Assinar agora</a>`}
+
+/* =========================================================
+   PWA E INSTALAÇÃO
+   ========================================================= */
+function buildManifest(){const manifest={name:APP_NAME,short_name:"Achei & Postei",start_url:location.href.split("#")[0],display:"standalone",orientation:"portrait",background_color:"#120e1b",theme_color:"#120e1b",icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='42' fill='%23f0a93a'/%3E%3Ctext x='96' y='122' text-anchor='middle' font-family='Arial' font-weight='900' font-size='86' fill='%23120e1b'%3EA%26amp%3BP%3C/text%3E%3C/svg%3E",sizes:"192x192",type:"image/svg+xml",purpose:"any maskable"},{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%23f0a93a'/%3E%3Ctext x='256' y='325' text-anchor='middle' font-family='Arial' font-weight='900' font-size='220' fill='%23120e1b'%3EA%26amp%3BP%3C/text%3E%3C/svg%3E",sizes:"512x512",type:"image/svg+xml",purpose:"any maskable"}]};const url=URL.createObjectURL(new Blob([JSON.stringify(manifest)],{type:"application/manifest+json"}));$("#runtimeManifest").href=url}
+function registerInlineSw(){if(!("serviceWorker"in navigator))return;const sw=`self.addEventListener('fetch',e=>{const r=e.request;if(r.method!=='GET'||new URL(r.url).origin!==self.location.origin)return;e.respondWith(fetch(r).catch(()=>caches.open('ap-shell-v1').then(c=>c.match(r).then(x=>x||new Response('Offline',{status:503})))))});self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));`;try{const blob=new Blob([sw],{type:"text/javascript"});navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{})}catch{}}
+function standalone(){return matchMedia("(display-mode: standalone)").matches||navigator.standalone===true}
+function showInstallBanner(){if(!isMobileViewport()||standalone())return;try{if(localStorage.getItem("install-banner-dismissed")==="1")return}catch{}$("#installBanner")?.classList.remove("hidden")}
+function installDiagnostics(){const secure=location.protocol==="https:"||location.hostname==="localhost";const hasManifest=!!$("#runtimeManifest")?.href;const hasSw="serviceWorker"in navigator;return `Diagnóstico: ${secure?"HTTPS/localhost OK":"abra em HTTPS ou localhost"}; ${hasManifest?"manifest OK":"manifest ausente"}; ${hasSw?"Service Worker disponível":"Service Worker indisponível"}.`}
+async function installPwa(){if(deferredInstallPrompt){deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;return}const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);const msg=ios?"No Safari: toque em Compartilhar → Adicionar à Tela de Início → Adicionar.":/android/i.test(navigator.userAgent)?"No Chrome: abra o menu ⋮ → Instalar app.":installDiagnostics();alert(msg)}
+function bindPwa(){buildManifest();registerInlineSw();window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredInstallPrompt=e;showInstallBanner()});window.addEventListener("appinstalled",()=>$("#installBanner")?.classList.add("hidden"));$$('[data-pwa-install]').forEach(b=>b.addEventListener("click",installPwa));$("[data-install-dismiss]")?.addEventListener("click",()=>{try{localStorage.setItem("install-banner-dismissed","1")}catch{};$("#installBanner").classList.add("hidden")});setTimeout(showInstallBanner,700)}
+
+/* =========================================================
+   ANIMAÇÕES
+   ========================================================= */
+function initAnimations(){if(matchMedia("(prefers-reduced-motion: reduce)").matches||isMobileViewport())return;const phone=$("#demoPhone"),canvas=$("#motionCanvas");if(phone&&matchMedia("(hover:hover)").matches){$(".auth-visual")?.addEventListener("mousemove",e=>{const r=phone.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;phone.style.setProperty("--tiltX",`${-y*14}deg`);phone.style.setProperty("--tiltY",`${x*14}deg`)});$(".auth-visual")?.addEventListener("mouseleave",()=>{phone.style.setProperty("--tiltX","0deg");phone.style.setProperty("--tiltY","0deg")})}if(!canvas)return;const ctx=canvas.getContext("2d"),pts=Array.from({length:45},()=>({x:Math.random(),y:Math.random(),vx:(Math.random()-.5)*.0006,vy:(Math.random()-.5)*.0006}));function resize(){const r=canvas.getBoundingClientRect(),d=devicePixelRatio||1;canvas.width=r.width*d;canvas.height=r.height*d;ctx.setTransform(d,0,0,d,0,0)}resize();window.addEventListener("resize",resize);function draw(){const r=canvas.getBoundingClientRect();ctx.clearRect(0,0,r.width,r.height);pts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>1)p.vx*=-1;if(p.y<0||p.y>1)p.vy*=-1;ctx.fillStyle="rgba(240,169,58,.55)";ctx.beginPath();ctx.arc(p.x*r.width,p.y*r.height,1.5,0,Math.PI*2);ctx.fill()});for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){const a=pts[i],b=pts[j],dx=(a.x-b.x)*r.width,dy=(a.y-b.y)*r.height,dist=Math.hypot(dx,dy);if(dist<110){ctx.strokeStyle=`rgba(23,181,146,${.18*(1-dist/110)})`;ctx.beginPath();ctx.moveTo(a.x*r.width,a.y*r.height);ctx.lineTo(b.x*r.width,b.y*r.height);ctx.stroke()}}requestAnimationFrame(draw)}draw()}
+
+/* =========================================================
+   EVENTOS GERAIS E INICIALIZAÇÃO
+   ========================================================= */
+function bindGeneral(){injectIcons();initTheme();bindAuth();bindRouter();bindProducts();$("#addIgAccountBtn")?.addEventListener("click",()=>startInstagramConnect());$("#igTesterForm")?.addEventListener("submit",submitIgTester);$("#saveAutomationBtn")?.addEventListener("click",saveAutomation);$("#latestPostsRefreshBtn")?.addEventListener("click",()=>loadLatestPosts(true));$("#igTesterAdminRefreshBtn")?.addEventListener("click",()=>loadAdmin(true));$("#trialInviteForm")?.addEventListener("submit",sendTrialInvite);$("#trialRefreshBtn")?.addEventListener("click",loadTrials);$("#userSearch")?.addEventListener("input",e=>renderUsers(allUsers.filter(u=>(u.email||"").toLowerCase().includes(e.target.value.toLowerCase()))));$$('.range-btn').forEach(b=>b.addEventListener("click",()=>{$$('.range-btn').forEach(x=>x.classList.remove("active"));b.classList.add("active");currentRange=Number(b.dataset.dias);loaded.overview=false;loadOverview(true)}));$$('.seg-btn').forEach(b=>b.addEventListener("click",()=>{$$('.seg-btn').forEach(x=>x.classList.toggle("active",x===b));$$('.seg-panel').forEach(p=>p.classList.toggle("hidden",p.id!==`seg-${b.dataset.seg}`))}));$("#automationSearch")?.addEventListener("input",e=>{const q=e.target.value.toLowerCase();renderAutomations(allAutomations.filter(r=>[r.palavra_chave,r.produto_url,r.instagram_media_id,r.titulo_produto,accountLabel(r)].join(" ").toLowerCase().includes(q)))});document.addEventListener("keydown",e=>{if(e.key==="Escape"){$$('.modal-overlay').forEach(m=>m.classList.add("hidden"))}});["#produtoModal","#produtoPickerModal"].forEach(sel=>$(sel)?.addEventListener("click",e=>{if(e.target===e.currentTarget)e.currentTarget.classList.add("hidden")}));window.addEventListener("resize",()=>{if(!isMobileViewport())showInstallBanner()});window.addEventListener("online",()=>banner("statusBanner","Conexão restaurada.","success",2500))}
+async function sendTrialInvite(e){e.preventDefault();if(!currentProfile?.is_admin)return;const email=$("#trialInviteEmail").value.trim();if(!email)return banner("trialAdminMsg","Informe um e-mail válido.");$("#trialInviteBtn").disabled=true;try{const {data,error}=await supabase.functions.invoke("admin-invite-user",{body:{email,is_founder:false}});if(error)throw error;if(data?.error)throw new Error(data.error);let last;for(let i=0;i<6;i++){const r=await supabase.rpc("admin_set_trial",{p_email:email,p_days:7});if(!r.error){last=null;break}last=r.error;if(r.error.message!=="perfil_nao_encontrado")break;await new Promise(r=>setTimeout(r,800))}if(last)throw last;$("#trialInviteEmail").value="";banner("trialAdminMsg","Convite enviado e teste de 7 dias configurado.","success",7000);await loadTrials()}catch(err){banner("trialAdminMsg","Erro ao convidar: "+err.message)}finally{$("#trialInviteBtn").disabled=false}}
+async function loadTrials(){if(!currentProfile?.is_admin)return;const body=$("#trialListBody"),cards=$("#trialListCards");try{const {data,error}=await supabase.rpc("admin_list_trials");if(error)throw error;const rows=data||[];const renderRow=r=>{const end=r.trial_ends_at||r.ends_at||r.expires_at;const st=r.first_access_at?((end&&new Date(end)<new Date())?"Expirado":r.is_active===false?"Desativado":"Ativo"):(end?"Aguardando 1º acesso":"Aguardando 1º acesso");return `<div class="admin-row"><div class="admin-row-main"><strong>${escapeHtml(r.email||"—")}</strong><div class="muted-label">${escapeHtml(st)} · ${escapeHtml(fmtDate(end))}</div></div><div class="admin-row-actions"><button class="btn btn-outline btn-sm trial-plus" data-id="${escapeHtml(r.user_id||r.id)}">+7 dias</button><button class="btn btn-outline btn-sm trial-pay" data-id="${escapeHtml(r.user_id||r.id)}">Tornar pagante</button><button class="btn btn-danger-ghost btn-sm trial-end" data-id="${escapeHtml(r.user_id||r.id)}">Encerrar</button></div></div>`};body.innerHTML=rows.map(r=>`<tr><td>${escapeHtml(r.email||"—")}</td><td>${fmtDateTime(r.created_at)}</td><td>${escapeHtml(stText(r))}</td><td>${fmtDateTime(r.trial_ends_at||r.ends_at||r.expires_at)}</td><td><button class="btn btn-outline btn-sm trial-plus" data-id="${escapeHtml(r.user_id||r.id)}">+7 dias</button> <button class="btn btn-outline btn-sm trial-pay" data-id="${escapeHtml(r.user_id||r.id)}">Tornar pagante</button> <button class="btn btn-danger-ghost btn-sm trial-end" data-id="${escapeHtml(r.user_id||r.id)}">Encerrar</button></td></tr>`).join("");cards.innerHTML=rows.map(renderRow).join("");bindTrialActions(body);bindTrialActions(cards)}catch(e){body.innerHTML=`<tr><td colspan="5">Erro: ${escapeHtml(e.message)}</td></tr>`}}
+function stText(r){const end=r.trial_ends_at||r.ends_at||r.expires_at;if(!r.first_access_at)return"Aguardando 1º acesso";if(end&&new Date(end)<new Date())return"Expirado";if(r.is_active===false)return"Desativado";return"Ativo"}
+function bindTrialActions(root){$$('.trial-plus',root).forEach(b=>b.onclick=async()=>{const {error}=await supabase.rpc("admin_extend_trial",{p_user_id:b.dataset.id,p_days:7});if(error)banner("statusBanner",error.message);else loadTrials()});$$('.trial-pay',root).forEach(b=>b.onclick=async()=>{if(!confirm("Tornar este usuário pagante?"))return;const {error}=await supabase.rpc("admin_end_trial",{p_user_id:b.dataset.id,p_convert:true});if(error)banner("statusBanner",error.message);else loadTrials()});$$('.trial-end',root).forEach(b=>b.onclick=async()=>{if(!confirm("Encerrar este teste?"))return;const {error}=await supabase.rpc("admin_end_trial",{p_user_id:b.dataset.id,p_convert:false});if(error)banner("statusBanner",error.message);else loadTrials()})}
+
+bindGeneral();bindPwa();initAnimations();
+supabase.auth.onAuthStateChange((event,session)=>{if(event==="SIGNED_OUT"){currentUser=null;currentProfile=null;currentUserTable=null;realtimeChannels.forEach(c=>supabase.removeChannel(c));realtimeChannels=[];if(trialTimer)clearInterval(trialTimer);$("#trialOverlay")?.classList.add("hidden");$("#trialBanner")?.classList.add("hidden");showScreen("auth")}else if(session&&["SIGNED_IN","INITIAL_SESSION","PASSWORD_RECOVERY"].includes(event))setTimeout(bootstrapSession,0)});
 bootstrapSession();
