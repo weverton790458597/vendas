@@ -5,7 +5,7 @@ const INSTAGRAM_APP_ID = "1432929018522131";
 const INSTAGRAM_REDIRECT_URI = SUPABASE_URL + "/functions/v1/instagram-oauth-callback";
 const INSTAGRAM_SCOPES = "instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments";
 // WhatsApp de suporte (só dígitos, com DDI 55 + DDD).
-const SUPPORT_WHATSAPP_NUMBER = "5598982672165";
+const SUPPORT_WHATSAPP_NUMBER = "5598981460747";
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: { persistSession: true, autoRefreshToken: true },
   db: { schema: "public" },
@@ -636,7 +636,7 @@ function renderAutomations(rows) {
       (acc ? "Carregando legenda…" : "Conecte a conta para ver o post") + "</div>" +
       postLinkHtml +
       "</div></div>" +
-      '<div class="automation-card-keyword"><span class="keyword-chip">' + escapeHtml(row.palavra_chave) + "</span></div>" +
+      '<div class="automation-card-keyword"><span class="keyword-chip">' + escapeHtml(row.palavra_chave === "*" ? "Qualquer comentário" : row.palavra_chave) + "</span></div>" +
       '<div class="automation-card-post">ID do post: ' + escapeHtml(truncateUrl(row.instagram_media_id, 34)) + "</div>" +
       (productTitle ? '<div class="automation-card-post" style="color:var(--text);font-weight:600;">🛍️ ' + productTitle + "</div>" : "") +
       '<a class="automation-card-link" href="' + escapeHtml(safeUrl(row.produto_url)) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(truncateUrl(row.produto_url, 40)) + "</a>" +
@@ -680,6 +680,7 @@ $("#automationSearch").addEventListener("input", (e) => {
   }
   const filtered = allAutomations.filter((r) =>
     (r.palavra_chave || "").toLowerCase().includes(term) ||
+    (r.palavra_chave === "*" && "qualquer comentário".includes(term)) ||
     (r.produto_url || "").toLowerCase().includes(term) ||
     (r.instagram_media_id || "").toLowerCase().includes(term) ||
     (r.titulo_produto || "").toLowerCase().includes(term) ||
@@ -715,6 +716,12 @@ async function deleteAutomation(event) {
 $("#toggleImagemUrlBtn").addEventListener("click", () => {
   $("#imagemUrlField").classList.toggle("hidden");
 });
+document.querySelectorAll('input[name="triggerMode"]').forEach((radio) => {
+  radio.addEventListener("change", () => {
+    const anyMode = document.querySelector('input[name="triggerMode"]:checked').value === "any";
+    $("#palavraChaveField").classList.toggle("hidden", anyMode);
+  });
+});
 $("#saveAutomationBtn").addEventListener("click", async () => {
   const mediaIdInput = $("#instagramMediaId");
   const palavraChaveInput = $("#palavraChave");
@@ -723,14 +730,15 @@ $("#saveAutomationBtn").addEventListener("click", async () => {
   const tituloProdutoInput = $("#tituloProduto");
   const precoProdutoInput = $("#precoProduto");
   const mediaIdRaw = mediaIdInput.value.trim();
-  const palavraChave = palavraChaveInput.value.trim();
+  const anyMode = document.querySelector('input[name="triggerMode"]:checked').value === "any";
+  const palavraChave = anyMode ? "*" : palavraChaveInput.value.trim();
   const produtoUrl = produtoUrlInput.value.trim();
   const imagemUrl = imagemUrlInput.value.trim() || null;
   const tituloProduto = tituloProdutoInput.value.trim() || null;
   const precoProduto = precoProdutoInput.value.trim() || null;
   const igAccountId = $("#automationIgAccount").value || null;
   if (!mediaIdRaw || !palavraChave || !produtoUrl) {
-    showBanner("statusBanner", "Post, palavra-chave e link do produto são obrigatórios.", "error");
+    showBanner("statusBanner", "Post, palavra-chave (ou \"qualquer comentário\") e link do produto são obrigatórios.", "error");
     return;
   }
   if (!isValidHttpUrl(produtoUrl)) {
@@ -750,6 +758,10 @@ $("#saveAutomationBtn").addEventListener("click", async () => {
     return;
   }
   const shortcode = extractShortcode(mediaIdRaw);
+  if (anyMode && allAutomations.some((r) => r.instagram_media_id === shortcode && String(r.palavra_chave || "").trim() === "*")) {
+    showBanner("statusBanner", "Esse post já tem uma automação de qualquer comentário. Nele, só é possível criar outras com palavra-chave específica.", "error");
+    return;
+  }
   try {
     const { error } = await supabase.from(currentUserTable).insert({
       instagram_media_id: shortcode,
@@ -765,6 +777,8 @@ $("#saveAutomationBtn").addEventListener("click", async () => {
     showBanner("statusBanner", "Automação salva com sucesso!", "success");
     mediaIdInput.value = "";
     palavraChaveInput.value = "";
+    document.querySelector('input[name="triggerMode"][value="keyword"]').checked = true;
+    $("#palavraChaveField").classList.remove("hidden");
     produtoUrlInput.value = "";
     imagemUrlInput.value = "";
     tituloProdutoInput.value = "";
@@ -1089,7 +1103,7 @@ async function openViewAutosModal(event) {
       return (
         "<tr>" +
         "<td>" + escapeHtml(row.instagram_media_id) + "</td>" +
-        "<td>" + escapeHtml(row.palavra_chave) + "</td>" +
+        "<td>" + escapeHtml(row.palavra_chave === "*" ? "Qualquer comentário" : row.palavra_chave) + "</td>" +
         '<td><a href="' + escapeHtml(safeUrl(row.produto_url)) + '" target="_blank" rel="noopener noreferrer">' +
         escapeHtml(truncateUrl(row.produto_url, 40)) + "</a></td>" +
         '<td><span class="badge ' + statusClass + '">' + statusText + "</span></td>" +
