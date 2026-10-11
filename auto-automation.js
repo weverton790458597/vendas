@@ -6,12 +6,15 @@ const sb = createClient(
 );
 const TABLE = "auto_automation_settings";
 const $ = (id) => document.getElementById(id);
+const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const isUrl = (v) => /^https?:\/\/\S+$/i.test(v);
 let userId = null;
 let ready = false;
 let busy = false;
 let accounts = [];
-const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const isUrl = (v) => /^https?:\/\/\S+$/i.test(v);
+let saved = null;
+let editing = false;
+let tableName = null;
 function injectStyles() {
   if ($("autoAutoStyles")) return;
   const st = document.createElement("style");
@@ -34,6 +37,15 @@ function injectStyles() {
     .auto-acc-list { display:flex; flex-direction:column; gap:.5rem; margin-bottom:1rem; }
     .auto-acc-list label { display:flex; align-items:center; gap:.6rem; padding:.6rem .9rem; border:1px solid var(--border); border-radius:12px; cursor:pointer; background:var(--surface); }
     .auto-acc-list input { accent-color:var(--accent-1); }
+    .auto-summary { display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-start; padding:1rem; border:1px solid var(--border); border-radius:14px; background:var(--surface); margin-bottom:1rem; }
+    .auto-summary img { width:84px; height:84px; object-fit:cover; border-radius:12px; background:var(--surface-2); flex-shrink:0; }
+    .auto-summary-body { flex:1; min-width:200px; display:flex; flex-direction:column; gap:.25rem; }
+    .auto-summary-body span { color:var(--text-muted); font-size:.85rem; word-break:break-all; }
+    .auto-pill { display:inline-block; padding:.15rem .6rem; border-radius:999px; font-size:.75rem; font-weight:600; background:var(--surface-2); color:var(--text-muted); }
+    .auto-pill.on { background:var(--success-bg); color:var(--success); }
+    .auto-apply { display:flex; gap:.6rem; align-items:flex-start; margin:0 0 1rem; font-size:.85rem; color:var(--text-muted); cursor:pointer; }
+    .auto-apply input { margin-top:.2rem; accent-color:var(--accent-1); }
+    .auto-actions { display:flex; gap:.5rem; flex-wrap:wrap; }
     .auto-note { font-size:.82rem; color:var(--text-faint); margin:.8rem 0 0; }
   `;
   document.head.appendChild(st);
@@ -45,13 +57,48 @@ function setMsg(text, type) {
   el.className = "banner" + (text ? " " + type : " hidden");
 }
 function syncUi() {
-  const on = $("autoAutoSwitch").checked;
-  $("autoAutoForm").classList.toggle("hidden", !on);
   const kw = document.querySelector('input[name="autoAutoMode"]:checked').value === "keyword";
   $("autoAutoKeywordField").classList.toggle("hidden", !kw);
   const accSel = document.querySelector('input[name="autoAutoAccMode"]:checked').value === "selected";
   $("autoAutoAccountList").classList.toggle("hidden", !accSel);
   document.querySelectorAll(".auto-mode label").forEach((l) => l.classList.toggle("active", l.querySelector("input").checked));
+}
+function accountsLabel(r) {
+  if (!r || r.account_mode !== "selected") return "Todas as contas";
+  const ids = r.instagram_config_ids || [];
+  const names = accounts.filter((a) => ids.indexOf(a.id) !== -1).map((a) => "@" + (a.instagram_username || "conta"));
+  return names.length ? names.join(", ") : "Nenhuma conta selecionada";
+}
+function renderSummary() {
+  const r = saved;
+  const img = r.imagem_url ? '<img src="' + esc(r.imagem_url) + '" alt="" />' : "";
+  $("autoAutoSummary").innerHTML =
+    img +
+    '<div class="auto-summary-body">' +
+    '<div><span class="auto-pill' + (r.enabled ? " on" : "") + '">' + (r.enabled ? "Ativa" : "Pausada") + "</span></div>" +
+    "<strong>" + esc(r.titulo_produto || "Mensagem sem título") + "</strong>" +
+    (r.preco_produto ? "<span>" + esc(r.preco_produto) + "</span>" : "") +
+    "<span>Destino: " + esc(r.produto_url) + "</span>" +
+    "<span>Envia: " + (r.keyword_mode === "keyword" ? "quando comentarem “" + esc(r.palavra_chave) + "”" : "para qualquer comentário") + "</span>" +
+    "<span>Contas: " + esc(accountsLabel(r)) + "</span>" +
+    "</div>" +
+    '<button type="button" class="btn btn-outline btn-sm" id="autoAutoEditBtn">✏️ Editar mensagem</button>';
+  $("autoAutoEditBtn").addEventListener("click", () => {
+    fill(saved);
+    editing = true;
+    setMsg("");
+    render();
+  });
+}
+function render() {
+  const on = $("autoAutoSwitch").checked;
+  const hasCfg = !!(saved && saved.produto_url);
+  $("autoAutoSummary").classList.toggle("hidden", !(hasCfg && !editing));
+  $("autoAutoForm").classList.toggle("hidden", !(editing || (on && !hasCfg)));
+  $("autoAutoCancelBtn").classList.toggle("hidden", !hasCfg);
+  $("autoAutoApplyRow").classList.toggle("hidden", !hasCfg);
+  if (hasCfg && !editing) renderSummary();
+  syncUi();
 }
 function selectedAccountIds() {
   return Array.from(document.querySelectorAll("#autoAutoAccountList input:checked")).map((i) => i.value);
@@ -75,7 +122,6 @@ function fill(row) {
   $("autoAutoImg").value = (row && row.imagem_url) || "";
   $("autoAutoTitle").value = (row && row.titulo_produto) || "";
   $("autoAutoPrice").value = (row && row.preco_produto) || "";
-  syncUi();
 }
 async function loadSettings() {
   const { data, error } = await sb.from(TABLE).select("*").eq("user_id", userId).maybeSingle();
@@ -83,23 +129,71 @@ async function loadSettings() {
     setMsg("Erro ao carregar: " + error.message, "error");
     return;
   }
+  saved = data;
+  editing = false;
   fill(data);
+  render();
 }
-async function save(enabledOverride) {
+async function getTableName() {
+  if (tableName) return tableName;
+  const { data } = await sb.from("profiles").select("automacoes_table_name").eq("id", userId).maybeSingle();
+  tableName = (data && data.automacoes_table_name) || null;
+  return tableName;
+}
+async function applyToExisting(payload) {
+  try {
+    const table = await getTableName();
+    if (!table || accounts.length === 0) return 0;
+    const { data: seen, error: seenError } = await sb
+      .from("auto_automation_seen")
+      .select("shortcode")
+      .eq("automation_created", true)
+      .in("instagram_config_id", accounts.map((a) => a.id));
+    if (seenError) throw seenError;
+    const shortcodes = (seen || []).map((s) => s.shortcode);
+    if (shortcodes.length === 0) return 0;
+    const { data, error } = await sb
+      .from(table)
+      .update({
+        palavra_chave: payload.keyword_mode === "keyword" ? payload.palavra_chave : "*",
+        produto_url: payload.produto_url,
+        imagem_url: payload.imagem_url,
+        titulo_produto: payload.titulo_produto,
+        preco_produto: payload.preco_produto,
+      })
+      .in("instagram_media_id", shortcodes)
+      .select("id");
+    if (error) throw error;
+    return (data || []).length;
+  } catch (e) {
+    console.error("Automação automática:", e);
+    return -1;
+  }
+}
+async function toggleEnabled(on) {
+  const { error } = await sb.from(TABLE).update({ enabled: on }).eq("user_id", userId);
+  if (error) {
+    $("autoAutoSwitch").checked = !on;
+    setMsg("Erro ao atualizar: " + error.message, "error");
+    return;
+  }
+  saved = Object.assign({}, saved, { enabled: on });
+  setMsg(on ? "Automação automática ativada! Os próximos posts e Reels terão a automação criada sozinha." : "Automação automática pausada. Sua mensagem continua salva.", "success");
+}
+async function save() {
   if (busy || !userId) return;
-  const enabled = typeof enabledOverride === "boolean" ? enabledOverride : $("autoAutoSwitch").checked;
+  const enabled = $("autoAutoSwitch").checked;
   const mode = document.querySelector('input[name="autoAutoMode"]:checked').value;
   const palavra = $("autoAutoKeyword").value.trim();
   const url = $("autoAutoUrl").value.trim();
   const img = $("autoAutoImg").value.trim();
   const accMode = accounts.length > 1 ? document.querySelector('input[name="autoAutoAccMode"]:checked').value : "all";
   const accIds = accMode === "selected" ? selectedAccountIds() : [];
-  if (enabled) {
-    if (accMode === "selected" && accIds.length === 0) return setMsg("Escolha pelo menos uma conta do Instagram.", "error");
-    if (!url || !isUrl(url)) return setMsg("Informe o link de destino (começando com http:// ou https://).", "error");
-    if (img && !isUrl(img)) return setMsg("A URL da imagem precisa começar com http:// ou https://", "error");
-    if (mode === "keyword" && !palavra) return setMsg("Informe a palavra-chave ou escolha responder qualquer comentário.", "error");
-  }
+  if (!url || !isUrl(url)) return setMsg("Informe o link de destino (começando com http:// ou https://).", "error");
+  if (img && !isUrl(img)) return setMsg("A URL da imagem precisa começar com http:// ou https://", "error");
+  if (mode === "keyword" && !palavra) return setMsg("Informe a palavra-chave ou escolha responder qualquer comentário.", "error");
+  if (accMode === "selected" && accIds.length === 0) return setMsg("Escolha pelo menos uma conta do Instagram.", "error");
+  const hadCfg = !!(saved && saved.produto_url);
   busy = true;
   $("autoAutoSaveBtn").disabled = true;
   try {
@@ -107,17 +201,25 @@ async function save(enabledOverride) {
       user_id: userId,
       enabled,
       keyword_mode: mode,
+      palavra_chave: palavra || null,
       account_mode: accMode,
       instagram_config_ids: accIds,
-      palavra_chave: palavra || null,
-      produto_url: url || null,
+      produto_url: url,
       imagem_url: img || null,
       titulo_produto: $("autoAutoTitle").value.trim() || null,
       preco_produto: $("autoAutoPrice").value.trim() || null,
     };
     const { error } = await sb.from(TABLE).upsert(payload, { onConflict: "user_id" });
     if (error) throw error;
-    setMsg(enabled ? "Automação automática ativada! Os próximos posts e Reels terão a automação criada sozinha." : "Automação automática desativada.", "success");
+    saved = Object.assign({}, saved || {}, payload);
+    editing = false;
+    let extra = "";
+    if (hadCfg && $("autoAutoApply").checked) {
+      const n = await applyToExisting(payload);
+      extra = n < 0 ? " Não foi possível atualizar as automações já criadas." : n === 0 ? "" : " " + n + (n === 1 ? " automação já criada foi atualizada." : " automações já criadas foram atualizadas.");
+    }
+    setMsg((enabled ? "Salvo! Os próximos posts e Reels usarão esta mensagem." : "Salvo! A automação automática está pausada.") + extra, "success");
+    render();
   } catch (e) {
     setMsg("Erro ao salvar: " + e.message, "error");
   } finally {
@@ -146,6 +248,7 @@ function build() {
     '<p class="panel-lead">Publicou um post ou Reel? A automação é criada sozinha, com a mensagem que você definir aqui.</p>' +
     '<div class="auto-switch-row"><div class="auto-switch-copy"><strong>Criar automação em toda nova publicação</strong><span>Verificamos suas contas a cada poucos minutos.</span></div>' +
     '<label class="auto-switch"><input type="checkbox" id="autoAutoSwitch" aria-label="Ativar automação automática" /><i></i></label></div>' +
+    '<div id="autoAutoSummary" class="auto-summary hidden"></div>' +
     '<div id="autoAutoForm" class="hidden">' +
     '<div id="autoAutoAccountsBlock" class="hidden"><div class="form-step"><b>1</b><span>Em quais contas?</span></div>' +
     '<div class="auto-mode">' +
@@ -166,7 +269,9 @@ function build() {
     '<div class="field"><span>Título — opcional</span><input type="text" id="autoAutoTitle" placeholder="Nome que aparece no Direct" /></div>' +
     '<div class="field"><span>Preço — opcional</span><input type="text" id="autoAutoPrice" placeholder="R$ 0,00" /></div>' +
     '</div>' +
-    '<button type="button" id="autoAutoSaveBtn" class="btn btn-primary">Salvar</button>' +
+    '<label class="auto-apply hidden" id="autoAutoApplyRow"><input type="checkbox" id="autoAutoApply" checked /><span>Aplicar também às automações que já foram criadas automaticamente</span></label>' +
+    '<div class="auto-actions"><button type="button" id="autoAutoSaveBtn" class="btn btn-primary">Salvar</button>' +
+    '<button type="button" id="autoAutoCancelBtn" class="btn btn-outline hidden">Cancelar</button></div>' +
     '<p class="auto-note">Vale só para publicações feitas depois de ativar. As automações criadas aparecem em “Automações cadastradas” e podem ser pausadas ou excluídas normalmente.</p>' +
     '</div>' +
     '<div id="autoAutoMsg" class="banner hidden"></div>' +
@@ -176,13 +281,20 @@ function build() {
     nav.querySelectorAll(".subtab-btn").forEach((b) => b.classList.toggle("active", b === btn));
     document.querySelectorAll(".subtab-panel").forEach((p) => p.classList.toggle("hidden", p.id !== "subtab-auto"));
   });
-  $("autoAutoSwitch").addEventListener("change", () => {
-    syncUi();
+  $("autoAutoSwitch").addEventListener("change", async () => {
     setMsg("");
-    if (!$("autoAutoSwitch").checked) save(false);
+    const on = $("autoAutoSwitch").checked;
+    if (saved && saved.produto_url) await toggleEnabled(on);
+    render();
   });
   document.querySelectorAll('input[name="autoAutoMode"], input[name="autoAutoAccMode"]').forEach((r) => r.addEventListener("change", syncUi));
-  $("autoAutoSaveBtn").addEventListener("click", () => save());
+  $("autoAutoSaveBtn").addEventListener("click", save);
+  $("autoAutoCancelBtn").addEventListener("click", () => {
+    fill(saved);
+    editing = false;
+    setMsg("");
+    render();
+  });
   $("autoAutoPickBtn").addEventListener("click", () => {
     if (typeof window.openProdutoPicker !== "function") return;
     window.openProdutoPicker((p) => {
@@ -211,3 +323,4 @@ document.addEventListener("DOMContentLoaded", () => {
     if (s && !ready) setTimeout(init, 0);
   });
 });
+
