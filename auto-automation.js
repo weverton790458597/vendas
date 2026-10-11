@@ -4,45 +4,60 @@ const sb = createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFiZGxpaW95emt5bGNjZnlsaWxzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNzkxMzIsImV4cCI6MjA4MzY1NTEzMn0.5s0zEdAgxx92pbC9yx75hHMfysHr2Aad86GhC1-tEmU",
   { auth: { persistSession: true, autoRefreshToken: false, detectSessionInUrl: false } }
 );
-const TABLE = "auto_automation_settings";
+const RULES = "auto_automation_rules";
+const SEEN = "auto_automation_seen";
+const MAX_BUTTON = 20;
+const LINK_TYPES = {
+  whatsapp: { label: "WhatsApp", icon: "💬", button: "Ir para WhatsApp", urlLabel: "Link do WhatsApp (ou número com DDD)", placeholder: "https://wa.me/5598999999999 ou 98999999999" },
+  site: { label: "Site", icon: "🌐", button: "Ir para o site", urlLabel: "Link do site", placeholder: "https://seusite.com" },
+  produto: { label: "Produto", icon: "🛍️", button: "Ver produto", urlLabel: "Link do produto", placeholder: "https://" },
+  outro: { label: "Outro", icon: "🔗", button: "", urlLabel: "Link de destino", placeholder: "https://" },
+};
 const $ = (id) => document.getElementById(id);
 const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const isUrl = (v) => /^https?:\/\/\S+$/i.test(v);
+const val = (name) => document.querySelector('input[name="' + name + '"]:checked').value;
 let userId = null;
 let ready = false;
 let busy = false;
 let accounts = [];
-let saved = null;
-let editing = false;
+let rules = [];
+let formOpen = false;
+let editingId = null;
 let tableName = null;
 function injectStyles() {
   if ($("autoAutoStyles")) return;
   const st = document.createElement("style");
   st.id = "autoAutoStyles";
   st.textContent = `
-    .auto-switch-row { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.9rem 1rem; border:1px solid var(--border); border-radius:14px; background:var(--surface); margin-bottom:1rem; }
-    .auto-switch-copy { display:flex; flex-direction:column; gap:.15rem; }
-    .auto-switch-copy span { color:var(--text-muted); font-size:.85rem; }
     .auto-switch { position:relative; width:48px; height:28px; flex-shrink:0; }
     .auto-switch input { position:absolute; inset:0; opacity:0; width:100%; height:100%; margin:0; cursor:pointer; z-index:2; }
     .auto-switch i { position:absolute; inset:0; border-radius:999px; background:var(--surface-2); border:1px solid var(--border); transition:background .2s; }
     .auto-switch i::after { content:""; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; transition:transform .2s; }
     .auto-switch input:checked + i { background:var(--accent-1); border-color:var(--accent-1); }
     .auto-switch input:checked + i::after { transform:translateX(20px); }
-    .auto-mode { display:flex; gap:.6rem; flex-wrap:wrap; margin-bottom:1rem; }
+    .auto-mode, .auto-types { display:flex; gap:.6rem; flex-wrap:wrap; margin-bottom:1rem; }
     .auto-mode label { flex:1; min-width:200px; display:flex; gap:.6rem; align-items:flex-start; padding:.8rem 1rem; border:1px solid var(--border); border-radius:12px; cursor:pointer; background:var(--surface); }
-    .auto-mode label.active { border-color:var(--accent-1); }
-    .auto-mode input { margin-top:.2rem; accent-color:var(--accent-1); }
+    .auto-types label { flex:1; min-width:120px; display:flex; gap:.5rem; align-items:center; justify-content:center; padding:.7rem .9rem; border:1px solid var(--border); border-radius:12px; cursor:pointer; background:var(--surface); font-weight:600; }
+    .auto-mode label.active, .auto-types label.active { border-color:var(--accent-1); }
+    .auto-mode label.disabled, .auto-types label.disabled { opacity:.5; cursor:not-allowed; }
+    .auto-mode input, .auto-types input { accent-color:var(--accent-1); }
+    .auto-mode input { margin-top:.2rem; }
     .auto-mode small { display:block; color:var(--text-muted); font-size:.8rem; }
     .auto-acc-list { display:flex; flex-direction:column; gap:.5rem; margin-bottom:1rem; }
     .auto-acc-list label { display:flex; align-items:center; gap:.6rem; padding:.6rem .9rem; border:1px solid var(--border); border-radius:12px; cursor:pointer; background:var(--surface); }
     .auto-acc-list input { accent-color:var(--accent-1); }
-    .auto-summary { display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-start; padding:1rem; border:1px solid var(--border); border-radius:14px; background:var(--surface); margin-bottom:1rem; }
-    .auto-summary img { width:84px; height:84px; object-fit:cover; border-radius:12px; background:var(--surface-2); flex-shrink:0; }
-    .auto-summary-body { flex:1; min-width:200px; display:flex; flex-direction:column; gap:.25rem; }
-    .auto-summary-body span { color:var(--text-muted); font-size:.85rem; word-break:break-all; }
+    .auto-rule { display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-start; padding:1rem; border:1px solid var(--border); border-radius:14px; background:var(--surface); margin-bottom:.8rem; }
+    .auto-rule img { width:84px; height:84px; object-fit:cover; border-radius:12px; background:var(--surface-2); flex-shrink:0; }
+    .auto-rule-body { flex:1; min-width:200px; display:flex; flex-direction:column; gap:.25rem; }
+    .auto-rule-body span { color:var(--text-muted); font-size:.85rem; word-break:break-all; }
+    .auto-rule-side { display:flex; flex-direction:column; align-items:flex-end; gap:.6rem; }
+    .auto-pill-row { display:flex; gap:.4rem; flex-wrap:wrap; }
     .auto-pill { display:inline-block; padding:.15rem .6rem; border-radius:999px; font-size:.75rem; font-weight:600; background:var(--surface-2); color:var(--text-muted); }
     .auto-pill.on { background:var(--success-bg); color:var(--success); }
+    .auto-btn-preview { font-size:.85rem; color:var(--text-muted); margin:-.3rem 0 1rem; }
+    .auto-btn-chip { display:inline-block; padding:.25rem .8rem; border-radius:8px; background:var(--surface-2); border:1px solid var(--border); color:var(--text); font-weight:600; }
+    .auto-count { color:var(--text-faint); font-size:.75rem; align-self:flex-end; }
     .auto-apply { display:flex; gap:.6rem; align-items:flex-start; margin:0 0 1rem; font-size:.85rem; color:var(--text-muted); cursor:pointer; }
     .auto-apply input { margin-top:.2rem; accent-color:var(--accent-1); }
     .auto-actions { display:flex; gap:.5rem; flex-wrap:wrap; }
@@ -60,50 +75,116 @@ function setMsg(text, type) {
   el.textContent = text || "";
   el.className = "banner" + (text ? " " + type : " hidden");
 }
+function errorText(e) {
+  const m = String((e && e.message) || e || "");
+  if (m.indexOf("conta_ja_tem_qualquer_comentario") !== -1) return "Essa conta já tem uma automação de qualquer comentário. Nela, só é possível criar outras com palavra-chave específica.";
+  if (m.indexOf("palavra_chave_repetida") !== -1) return "Já existe uma automação com essa palavra-chave nessa conta.";
+  return m;
+}
+function normalizeUrl(type, v) {
+  if (type === "whatsapp" && /^\+?[\d\s()-]{8,}$/.test(v)) return "https://wa.me/" + v.replace(/\D/g, "");
+  return v;
+}
+function overlaps(a, b) {
+  if (a.account_mode === "all" || b.account_mode === "all") return true;
+  const ids = b.instagram_config_ids || [];
+  return (a.instagram_config_ids || []).some((i) => ids.indexOf(i) !== -1);
+}
+function conflictMessage(c, exceptId) {
+  const others = rules.filter((r) => r.id !== exceptId && r.enabled);
+  if (c.keyword_mode === "any") {
+    return others.some((r) => r.keyword_mode === "any" && overlaps(c, r))
+      ? "Essa conta já tem uma automação de qualquer comentário. Nela, só é possível criar outras com palavra-chave específica."
+      : "";
+  }
+  const k = String(c.palavra_chave || "").trim().toUpperCase();
+  return others.some((r) => r.keyword_mode === "keyword" && String(r.palavra_chave || "").trim().toUpperCase() === k && overlaps(c, r))
+    ? "Já existe uma automação com essa palavra-chave nessa conta."
+    : "";
+}
+function takenAnyIds() {
+  const taken = new Set();
+  rules.filter((r) => r.id !== editingId && r.enabled && r.keyword_mode === "any").forEach((r) => {
+    if (r.account_mode === "all") accounts.forEach((a) => taken.add(a.id));
+    else (r.instagram_config_ids || []).forEach((i) => taken.add(i));
+  });
+  return taken;
+}
+function refreshAvailability() {
+  const taken = val("autoAutoMode") === "any" ? takenAnyIds() : new Set();
+  const allRadio = document.querySelector('input[name="autoAutoAccMode"][value="all"]');
+  const selRadio = document.querySelector('input[name="autoAutoAccMode"][value="selected"]');
+  allRadio.disabled = taken.size > 0;
+  if (allRadio.disabled && allRadio.checked && accounts.length > 1) selRadio.checked = true;
+  document.querySelectorAll("#autoAutoAccountList input").forEach((i) => {
+    const blocked = taken.has(i.value);
+    i.disabled = blocked;
+    if (blocked) i.checked = false;
+    i.nextElementSibling.textContent = i.getAttribute("data-name") + (blocked ? " — já tem automação de qualquer comentário" : "");
+  });
+}
 function syncUi() {
-  const kw = document.querySelector('input[name="autoAutoMode"]:checked').value === "keyword";
-  $("autoAutoKeywordField").classList.toggle("hidden", !kw);
-  const accSel = document.querySelector('input[name="autoAutoAccMode"]:checked').value === "selected";
-  $("autoAutoAccountList").classList.toggle("hidden", !accSel);
-  document.querySelectorAll(".auto-mode label").forEach((l) => l.classList.toggle("active", l.querySelector("input").checked));
+  $("autoAutoKeywordField").classList.toggle("hidden", val("autoAutoMode") !== "keyword");
+  refreshAvailability();
+  $("autoAutoAccountList").classList.toggle("hidden", val("autoAutoAccMode") !== "selected");
+  const type = val("autoAutoType");
+  const t = LINK_TYPES[type];
+  $("autoAutoUrlLabel").textContent = t.urlLabel;
+  $("autoAutoUrl").placeholder = t.placeholder;
+  $("autoAutoBtnField").classList.toggle("hidden", type !== "outro");
+  $("autoAutoPickBtn").classList.toggle("hidden", type !== "produto");
+  const custom = $("autoAutoBtnLabel").value.trim();
+  $("autoAutoBtnPreview").innerHTML = 'Botão que aparece no Direct: <span class="auto-btn-chip">' + esc(type === "outro" ? custom || "seu texto" : t.button) + "</span>";
+  $("autoAutoBtnCount").textContent = $("autoAutoBtnLabel").value.length + "/" + MAX_BUTTON;
+  document.querySelectorAll(".auto-mode label, .auto-types label").forEach((l) => {
+    const i = l.querySelector("input");
+    l.classList.toggle("active", i.checked);
+    l.classList.toggle("disabled", i.disabled);
+  });
 }
 function accountsLabel(r) {
-  if (!r || r.account_mode !== "selected") return "Todas as contas";
+  if (r.account_mode !== "selected") return "Todas as contas";
   const ids = r.instagram_config_ids || [];
   const names = accounts.filter((a) => ids.indexOf(a.id) !== -1).map((a) => "@" + (a.instagram_username || "conta"));
   return names.length ? names.join(", ") : "Nenhuma conta selecionada";
 }
-function renderSummary() {
-  const r = saved;
-  const img = r.imagem_url ? '<img src="' + esc(r.imagem_url) + '" alt="" />' : "";
-  $("autoAutoSummary").innerHTML =
-    img +
-    '<div class="auto-summary-body">' +
-    '<div><span class="auto-pill' + (r.enabled ? " on" : "") + '">' + (r.enabled ? "Ativa" : "Pausada") + "</span></div>" +
-    "<strong>" + esc(r.titulo_produto || "Mensagem sem título") + "</strong>" +
-    (r.preco_produto ? "<span>" + esc(r.preco_produto) + "</span>" : "") +
-    "<span>Destino: " + esc(r.produto_url) + "</span>" +
-    "<span>Envia: " + (r.keyword_mode === "keyword" ? "quando comentarem “" + esc(r.palavra_chave) + "”" : "para qualquer comentário") + "</span>" +
-    "<span>Contas: " + esc(accountsLabel(r)) + "</span>" +
-    "</div>" +
-    '<div class="auto-actions"><button type="button" class="btn btn-outline btn-sm" id="autoAutoEditBtn">✏️ Editar mensagem</button>' +
-    '<button type="button" class="btn btn-danger-ghost btn-sm" id="autoAutoDeleteBtn">🗑️ Apagar</button></div>';
-  $("autoAutoEditBtn").addEventListener("click", () => {
-    fill(saved);
-    editing = true;
-    setMsg("");
-    render();
-  });
-  $("autoAutoDeleteBtn").addEventListener("click", deleteConfig);
+function buttonLabelOf(r) {
+  const t = LINK_TYPES[r.link_type] || LINK_TYPES.produto;
+  return r.link_type === "outro" ? r.button_label || "" : t.button;
+}
+function renderRules() {
+  const box = $("autoAutoRules");
+  if (rules.length === 0) {
+    box.innerHTML = '<div class="empty-state">Você ainda não tem nenhuma automação automática. Clique em “Nova automação automática” para criar a primeira.</div>';
+    return;
+  }
+  box.innerHTML = rules.map((r) => {
+    const t = LINK_TYPES[r.link_type] || LINK_TYPES.produto;
+    const img = r.imagem_url && isUrl(r.imagem_url) ? '<img src="' + esc(r.imagem_url) + '" alt="" />' : "";
+    return (
+      '<div class="auto-rule" data-id="' + esc(r.id) + '">' + img +
+      '<div class="auto-rule-body">' +
+      '<div class="auto-pill-row"><span class="auto-pill' + (r.enabled ? " on" : "") + '">' + (r.enabled ? "Ativa" : "Pausada") + '</span><span class="auto-pill">' + t.icon + " " + t.label + "</span></div>" +
+      "<strong>" + esc(r.titulo_produto || "Mensagem sem título") + "</strong>" +
+      (r.preco_produto ? "<span>" + esc(r.preco_produto) + "</span>" : "") +
+      "<span>Destino: " + esc(r.produto_url) + "</span>" +
+      "<span>Botão: " + esc(buttonLabelOf(r)) + "</span>" +
+      "<span>Envia: " + (r.keyword_mode === "keyword" ? "quando comentarem “" + esc(r.palavra_chave) + "”" : "para qualquer comentário") + "</span>" +
+      "<span>Contas: " + esc(accountsLabel(r)) + "</span>" +
+      "</div>" +
+      '<div class="auto-rule-side">' +
+      '<label class="auto-switch"><input type="checkbox" class="auto-rule-switch" aria-label="Ativar ou pausar"' + (r.enabled ? " checked" : "") + ' /><i></i></label>' +
+      '<div class="auto-actions"><button type="button" class="btn btn-outline btn-sm auto-rule-edit">✏️ Editar</button>' +
+      '<button type="button" class="btn btn-danger-ghost btn-sm auto-rule-del">🗑️ Apagar</button></div>' +
+      "</div></div>"
+    );
+  }).join("");
 }
 function render() {
-  const on = $("autoAutoSwitch").checked;
-  const hasCfg = !!(saved && saved.produto_url);
-  $("autoAutoSummary").classList.toggle("hidden", !(hasCfg && !editing));
-  $("autoAutoForm").classList.toggle("hidden", !(editing || (on && !hasCfg)));
-  $("autoAutoCancelBtn").classList.toggle("hidden", !hasCfg);
-  $("autoAutoApplyRow").classList.toggle("hidden", !hasCfg);
-  if (hasCfg && !editing) renderSummary();
+  $("autoAutoListView").classList.toggle("hidden", formOpen);
+  $("autoAutoFormView").classList.toggle("hidden", !formOpen);
+  $("autoAutoNewBtn").classList.toggle("hidden", formOpen);
+  if (!formOpen) renderRules();
   syncUi();
 }
 function selectedAccountIds() {
@@ -112,62 +193,127 @@ function selectedAccountIds() {
 async function loadAccounts() {
   const { data, error } = await sb.from("instagram_config").select("id, instagram_username").eq("user_id", userId);
   accounts = error || !data ? [] : data;
-  $("autoAutoAccountList").innerHTML = accounts.map((a) => '<label><input type="checkbox" value="' + esc(a.id) + '" /><span>@' + esc(a.instagram_username || "conta") + "</span></label>").join("");
+  $("autoAutoAccountList").innerHTML = accounts.map((a) => '<label><input type="checkbox" value="' + esc(a.id) + '" data-name="@' + esc(a.instagram_username || "conta") + '" /><span>@' + esc(a.instagram_username || "conta") + "</span></label>").join("");
   $("autoAutoAccountsBlock").classList.toggle("hidden", accounts.length < 2);
-}
-function fill(row) {
-  $("autoAutoSwitch").checked = !!(row && row.enabled);
-  const mode = row && row.keyword_mode === "keyword" ? "keyword" : "any";
-  document.querySelector('input[name="autoAutoMode"][value="' + mode + '"]').checked = true;
-  const accMode = row && row.account_mode === "selected" && accounts.length > 1 ? "selected" : "all";
-  document.querySelector('input[name="autoAutoAccMode"][value="' + accMode + '"]').checked = true;
-  const ids = (row && row.instagram_config_ids) || [];
-  document.querySelectorAll("#autoAutoAccountList input").forEach((i) => { i.checked = ids.indexOf(i.value) !== -1; });
-  $("autoAutoKeyword").value = (row && row.palavra_chave) || "";
-  $("autoAutoUrl").value = (row && row.produto_url) || "";
-  $("autoAutoImg").value = (row && row.imagem_url) || "";
-  $("autoAutoTitle").value = (row && row.titulo_produto) || "";
-  $("autoAutoPrice").value = (row && row.preco_produto) || "";
-}
-async function loadSettings() {
-  const { data, error } = await sb.from(TABLE).select("*").eq("user_id", userId).maybeSingle();
-  if (error) {
-    setMsg("Erro ao carregar: " + error.message, "error");
-    return;
-  }
-  saved = data;
-  editing = false;
-  fill(data);
-  render();
 }
 async function getTableName() {
   if (tableName) return tableName;
   const { data } = await sb.from("profiles").select("automacoes_table_name").eq("id", userId).maybeSingle();
   tableName = (data && data.automacoes_table_name) || null;
+  if (tableName) {
+    const { error } = await sb.rpc("ensure_automacao_columns", { p_table: tableName });
+    if (error) console.error("Automação automática:", error.message);
+  }
   return tableName;
 }
-async function applyToExisting(payload) {
+async function loadRules() {
+  const { data, error } = await sb.from(RULES).select("*").eq("user_id", userId).order("created_at", { ascending: true });
+  if (error) {
+    setMsg("Erro ao carregar: " + error.message, "error");
+    return;
+  }
+  rules = data || [];
+  render();
+}
+function fill(r) {
+  const row = r || {};
+  document.querySelector('input[name="autoAutoType"][value="' + (row.link_type || "produto") + '"]').checked = true;
+  document.querySelector('input[name="autoAutoMode"][value="' + (row.keyword_mode === "keyword" ? "keyword" : "any") + '"]').checked = true;
+  const accMode = row.account_mode === "selected" && accounts.length > 1 ? "selected" : "all";
+  document.querySelector('input[name="autoAutoAccMode"][value="' + accMode + '"]').checked = true;
+  const ids = row.instagram_config_ids || [];
+  document.querySelectorAll("#autoAutoAccountList input").forEach((i) => { i.checked = ids.indexOf(i.value) !== -1; });
+  $("autoAutoKeyword").value = row.palavra_chave || "";
+  $("autoAutoUrl").value = row.produto_url || "";
+  $("autoAutoBtnLabel").value = row.button_label || "";
+  $("autoAutoImg").value = row.imagem_url || "";
+  $("autoAutoTitle").value = row.titulo_produto || "";
+  $("autoAutoPrice").value = row.preco_produto || "";
+}
+function openForm(rule) {
+  editingId = rule ? rule.id : null;
+  fill(rule);
+  $("autoAutoFormTitle").textContent = rule ? "Editar automação automática" : "Nova automação automática";
+  $("autoAutoApplyRow").classList.toggle("hidden", !rule);
+  setMsg("");
+  formOpen = true;
+  render();
+}
+function closeForm() {
+  formOpen = false;
+  editingId = null;
+  render();
+}
+function readForm() {
+  const type = val("autoAutoType");
+  const mode = val("autoAutoMode");
+  const accMode = accounts.length > 1 ? val("autoAutoAccMode") : "all";
+  return {
+    link_type: type,
+    keyword_mode: mode,
+    account_mode: accMode,
+    instagram_config_ids: accMode === "selected" ? selectedAccountIds() : [],
+    palavra_chave: mode === "keyword" ? $("autoAutoKeyword").value.trim() : null,
+    button_label: type === "outro" ? $("autoAutoBtnLabel").value.trim() : null,
+    produto_url: normalizeUrl(type, $("autoAutoUrl").value.trim()),
+    imagem_url: $("autoAutoImg").value.trim() || null,
+    titulo_produto: $("autoAutoTitle").value.trim() || null,
+    preco_produto: $("autoAutoPrice").value.trim() || null,
+  };
+}
+function validate(f) {
+  if (accounts.length === 0) return "Conecte uma conta do Instagram antes de criar uma automação automática.";
+  if (!f.produto_url || !isUrl(f.produto_url)) return "Informe o link de destino (começando com http:// ou https://).";
+  if (f.link_type === "outro" && !f.button_label) return "Escreva o texto do botão (até " + MAX_BUTTON + " caracteres).";
+  if (f.button_label && f.button_label.length > MAX_BUTTON) return "O texto do botão pode ter no máximo " + MAX_BUTTON + " caracteres.";
+  if (f.imagem_url && !isUrl(f.imagem_url)) return "A URL da imagem precisa começar com http:// ou https://";
+  if (f.keyword_mode === "keyword" && !f.palavra_chave) return "Informe a palavra-chave ou escolha responder qualquer comentário.";
+  if (f.keyword_mode === "any") {
+    const taken = takenAnyIds();
+    if (accounts.length > 0 && accounts.every((a) => taken.has(a.id))) return "Todas as suas contas já têm uma automação de qualquer comentário. Crie uma com palavra-chave específica.";
+  }
+  if (f.account_mode === "selected" && f.instagram_config_ids.length === 0) return "Escolha pelo menos uma conta do Instagram.";
+  const current = rules.find((r) => r.id === editingId);
+  if (!current || current.enabled) return conflictMessage(f, editingId);
+  return "";
+}
+async function fetchCreated(ruleId) {
+  const table = await getTableName();
+  if (!table) return [];
+  let q = sb
+    .from(SEEN)
+    .select("rule_id, instagram_config_id, shortcode, automation_id, caption, thumbnail_url, permalink, created_at")
+    .eq("automation_created", true)
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (ruleId) q = q.eq("rule_id", ruleId);
+  const { data: seen, error } = await q;
+  if (error || !seen || seen.length === 0) return [];
+  const ids = seen.map((s) => s.automation_id).filter(Boolean);
+  if (ids.length === 0) return [];
+  const { data: rows } = await sb.from(table).select("*").in("id", ids);
+  const map = new Map();
+  (rows || []).forEach((r) => map.set(String(r.id), r));
+  return seen.filter((s) => s.automation_id && map.has(String(s.automation_id))).map((s) => ({ seen: s, row: map.get(String(s.automation_id)) }));
+}
+async function applyToExisting(ruleId, f) {
   try {
     const table = await getTableName();
-    if (!table || accounts.length === 0) return 0;
-    const { data: seen, error: seenError } = await sb
-      .from("auto_automation_seen")
-      .select("shortcode")
-      .eq("automation_created", true)
-      .in("instagram_config_id", accounts.map((a) => a.id));
-    if (seenError) throw seenError;
-    const shortcodes = (seen || []).map((s) => s.shortcode);
-    if (shortcodes.length === 0) return 0;
+    if (!table) return 0;
+    const created = await fetchCreated(ruleId);
+    if (created.length === 0) return 0;
     const { data, error } = await sb
       .from(table)
       .update({
-        palavra_chave: payload.keyword_mode === "keyword" ? payload.palavra_chave : "*",
-        produto_url: payload.produto_url,
-        imagem_url: payload.imagem_url,
-        titulo_produto: payload.titulo_produto,
-        preco_produto: payload.preco_produto,
+        palavra_chave: f.keyword_mode === "keyword" ? f.palavra_chave : "*",
+        produto_url: f.produto_url,
+        imagem_url: f.imagem_url,
+        titulo_produto: f.titulo_produto,
+        preco_produto: f.preco_produto,
+        botao_texto: f.link_type === "outro" ? f.button_label : (LINK_TYPES[f.link_type] || LINK_TYPES.produto).button,
+        tipo_link: f.link_type,
       })
-      .in("instagram_media_id", shortcodes)
+      .in("id", created.map((c) => c.row.id))
       .select("id");
     if (error) throw error;
     return (data || []).length;
@@ -176,28 +322,86 @@ async function applyToExisting(payload) {
     return -1;
   }
 }
-async function fetchCreated() {
-  const table = await getTableName();
-  if (!table || accounts.length === 0) return [];
-  const { data: seen, error } = await sb
-    .from("auto_automation_seen")
-    .select("instagram_config_id, shortcode, caption, thumbnail_url, permalink, created_at")
-    .eq("automation_created", true)
-    .in("instagram_config_id", accounts.map((a) => a.id))
-    .order("created_at", { ascending: false })
-    .limit(100);
-  if (error || !seen || seen.length === 0) return [];
-  const { data: rows } = await sb.from(table).select("*").in("instagram_media_id", seen.map((s) => s.shortcode));
-  const map = new Map();
-  (rows || []).forEach((r) => { if (!map.has(r.instagram_media_id)) map.set(r.instagram_media_id, r); });
-  return seen.filter((s) => map.has(s.shortcode)).map((s) => ({ seen: s, row: map.get(s.shortcode) }));
+async function save() {
+  if (busy || !userId) return;
+  const f = readForm();
+  const problem = validate(f);
+  if (problem) return setMsg(problem, "error");
+  busy = true;
+  $("autoAutoSaveBtn").disabled = true;
+  try {
+    const wasEditing = editingId;
+    let ruleId = editingId;
+    if (wasEditing) {
+      const { error } = await sb.from(RULES).update(f).eq("id", wasEditing);
+      if (error) throw error;
+    } else {
+      const { data, error } = await sb.from(RULES).insert(Object.assign({ user_id: userId, enabled: true }, f)).select("id");
+      if (error) throw error;
+      ruleId = data && data[0] ? data[0].id : null;
+    }
+    let extra = "";
+    if (wasEditing && $("autoAutoApply").checked) {
+      const n = await applyToExisting(ruleId, f);
+      extra = n < 0 ? " Não foi possível atualizar as automações já criadas." : n === 0 ? "" : " " + n + (n === 1 ? " automação já criada foi atualizada." : " automações já criadas foram atualizadas.");
+    }
+    formOpen = false;
+    editingId = null;
+    await loadRules();
+    setMsg((wasEditing ? "Alterações salvas!" : "Automação automática criada! Os próximos posts e Reels terão a automação criada sozinha.") + extra, "success");
+  } catch (e) {
+    setMsg("Erro ao salvar: " + errorText(e), "error");
+  } finally {
+    busy = false;
+    $("autoAutoSaveBtn").disabled = false;
+  }
+}
+async function toggleRule(id, on, input) {
+  const r = rules.find((x) => x.id === id);
+  if (!r) return;
+  if (on) {
+    const problem = conflictMessage(r, id);
+    if (problem) {
+      input.checked = false;
+      setMsg(problem, "error");
+      return;
+    }
+  }
+  const { error } = await sb.from(RULES).update({ enabled: on }).eq("id", id);
+  if (error) {
+    input.checked = !on;
+    setMsg("Erro ao atualizar: " + errorText(error), "error");
+    return;
+  }
+  await loadRules();
+  setMsg(on ? "Automação automática ativada." : "Automação automática pausada. Ela continua salva.", "success");
+}
+async function deleteRule(id) {
+  if (!confirm("Apagar esta automação automática? Novos posts deixarão de receber automação por ela.")) return;
+  const created = await fetchCreated(id);
+  let removeCreated = false;
+  if (created.length > 0) {
+    removeCreated = confirm("Existem " + created.length + " automações já criadas por ela.\n\nOK = excluir também essas automações\nCancelar = manter elas");
+  }
+  const { error } = await sb.from(RULES).delete().eq("id", id);
+  if (error) {
+    setMsg("Erro ao apagar: " + error.message, "error");
+    return;
+  }
+  if (removeCreated) {
+    const table = await getTableName();
+    if (table) await sb.from(table).delete().in("id", created.map((c) => c.row.id));
+  }
+  await loadRules();
+  await loadPosts();
+  setMsg("Automação automática apagada." + (removeCreated ? " As automações criadas por ela também foram excluídas." : ""), "success");
 }
 function renderPostCard(item) {
   const s = item.seen;
   const row = item.row;
   const acc = accounts.find((a) => a.id === s.instagram_config_id);
-  const rawLink = s.permalink || "https://www.instagram.com/p/" + s.shortcode + "/";
-  const link = isUrl(rawLink) ? rawLink : "https://www.instagram.com/p/" + s.shortcode + "/";
+  const fallback = "https://www.instagram.com/p/" + s.shortcode + "/";
+  const link = s.permalink && isUrl(s.permalink) ? s.permalink : fallback;
   const thumb = s.thumbnail_url && isUrl(s.thumbnail_url) ? '<img src="' + esc(s.thumbnail_url) + '" alt="" loading="lazy" />' : "📷";
   const kw = row.palavra_chave === "*" ? "Qualquer comentário" : row.palavra_chave;
   const created = s.created_at ? new Date(s.created_at).toLocaleString("pt-BR") : "—";
@@ -209,7 +413,7 @@ function renderPostCard(item) {
     '<button type="button" class="icon-btn auto-post-toggle" title="' + (row.ativo ? "Desativar" : "Ativar") + '">' + (row.ativo ? "🔇" : "🔊") + "</button>" +
     '<button type="button" class="icon-btn auto-post-del" title="Excluir">🗑️</button>' +
     "</div></div>" +
-    '<div><span class="badge badge-muted">📸 @' + esc(acc ? acc.instagram_username : "conta") + "</span> <span class=\"badge badge-muted\">⚡ Automático</span></div>" +
+    '<div><span class="badge badge-muted">📸 @' + esc(acc ? acc.instagram_username : "conta") + '</span> <span class="badge badge-muted">⚡ Automático</span></div>' +
     '<div class="auto-post-row"><div class="auto-post-thumb">' + thumb + "</div>" +
     '<div style="min-width:0;flex:1;"><div class="auto-post-caption">' + esc(s.caption || "(sem legenda)") + "</div>" +
     '<a class="automation-card-link" href="' + esc(link) + '" target="_blank" rel="noopener noreferrer">Ver post no Instagram ↗</a></div></div>' +
@@ -245,86 +449,6 @@ async function onPostsClick(e) {
   }
   await loadPosts();
 }
-async function deleteConfig() {
-  if (!confirm("Apagar a automação automática? Novos posts deixarão de receber automação.")) return;
-  const created = await fetchCreated();
-  let removeCreated = false;
-  if (created.length > 0) {
-    removeCreated = confirm("Existem " + created.length + " automações já criadas automaticamente.\n\nOK = excluir também essas automações\nCancelar = manter elas");
-  }
-  const { error } = await sb.from(TABLE).delete().eq("user_id", userId);
-  if (error) {
-    setMsg("Erro ao apagar: " + error.message, "error");
-    return;
-  }
-  if (removeCreated) {
-    const table = await getTableName();
-    if (table) await sb.from(table).delete().in("id", created.map((c) => c.row.id));
-  }
-  saved = null;
-  editing = false;
-  fill(null);
-  render();
-  await loadPosts();
-  setMsg("Automação automática apagada." + (removeCreated ? " As automações criadas por ela também foram excluídas." : ""), "success");
-}
-async function toggleEnabled(on) {
-  const { error } = await sb.from(TABLE).update({ enabled: on }).eq("user_id", userId);
-  if (error) {
-    $("autoAutoSwitch").checked = !on;
-    setMsg("Erro ao atualizar: " + error.message, "error");
-    return;
-  }
-  saved = Object.assign({}, saved, { enabled: on });
-  setMsg(on ? "Automação automática ativada! Os próximos posts e Reels terão a automação criada sozinha." : "Automação automática pausada. Sua mensagem continua salva.", "success");
-}
-async function save() {
-  if (busy || !userId) return;
-  const enabled = $("autoAutoSwitch").checked;
-  const mode = document.querySelector('input[name="autoAutoMode"]:checked').value;
-  const palavra = $("autoAutoKeyword").value.trim();
-  const url = $("autoAutoUrl").value.trim();
-  const img = $("autoAutoImg").value.trim();
-  const accMode = accounts.length > 1 ? document.querySelector('input[name="autoAutoAccMode"]:checked').value : "all";
-  const accIds = accMode === "selected" ? selectedAccountIds() : [];
-  if (!url || !isUrl(url)) return setMsg("Informe o link de destino (começando com http:// ou https://).", "error");
-  if (img && !isUrl(img)) return setMsg("A URL da imagem precisa começar com http:// ou https://", "error");
-  if (mode === "keyword" && !palavra) return setMsg("Informe a palavra-chave ou escolha responder qualquer comentário.", "error");
-  if (accMode === "selected" && accIds.length === 0) return setMsg("Escolha pelo menos uma conta do Instagram.", "error");
-  const hadCfg = !!(saved && saved.produto_url);
-  busy = true;
-  $("autoAutoSaveBtn").disabled = true;
-  try {
-    const payload = {
-      user_id: userId,
-      enabled,
-      keyword_mode: mode,
-      palavra_chave: palavra || null,
-      account_mode: accMode,
-      instagram_config_ids: accIds,
-      produto_url: url,
-      imagem_url: img || null,
-      titulo_produto: $("autoAutoTitle").value.trim() || null,
-      preco_produto: $("autoAutoPrice").value.trim() || null,
-    };
-    const { error } = await sb.from(TABLE).upsert(payload, { onConflict: "user_id" });
-    if (error) throw error;
-    saved = Object.assign({}, saved || {}, payload);
-    editing = false;
-    let extra = "";
-    if (hadCfg && $("autoAutoApply").checked) {
-      const n = await applyToExisting(payload);
-      extra = n < 0 ? " Não foi possível atualizar as automações já criadas." : n === 0 ? "" : " " + n + (n === 1 ? " automação já criada foi atualizada." : " automações já criadas foram atualizadas.");
-    }
-    setMsg((enabled ? "Salvo! Os próximos posts e Reels usarão esta mensagem." : "Salvo! A automação automática está pausada.") + extra, "success");
-    render();
-  } catch (e) {
-    setMsg("Erro ao salvar: " + e.message, "error");
-  } finally {
-    busy = false;
-    $("autoAutoSaveBtn").disabled = false;
-  }
-}
 function ensurePostsSection() {
   const host = $("subtab-list");
   if (!host || $("autoAutoPostsSection")) return;
@@ -354,36 +478,42 @@ function build() {
   const panel = document.createElement("div");
   panel.id = "subtab-auto";
   panel.className = "subtab-panel hidden";
+  const typeChips = Object.keys(LINK_TYPES).map((k) =>
+    '<label class="' + (k === "produto" ? "active" : "") + '"><input type="radio" name="autoAutoType" value="' + k + '"' + (k === "produto" ? " checked" : "") + " /><span>" + LINK_TYPES[k].icon + " " + LINK_TYPES[k].label + "</span></label>"
+  ).join("");
   panel.innerHTML =
     '<section class="panel">' +
-    '<div class="panel-heading-row"><h2>Automação automática</h2></div>' +
-    '<p class="panel-lead">Publicou um post ou Reel? A automação é criada sozinha, com a mensagem que você definir aqui.</p>' +
-    '<div class="auto-switch-row"><div class="auto-switch-copy"><strong>Criar automação em toda nova publicação</strong><span>Verificamos suas contas a cada poucos minutos.</span></div>' +
-    '<label class="auto-switch"><input type="checkbox" id="autoAutoSwitch" aria-label="Ativar automação automática" /><i></i></label></div>' +
-    '<div id="autoAutoSummary" class="auto-summary hidden"></div>' +
-    '<div id="autoAutoForm" class="hidden">' +
+    '<div class="panel-heading-row"><h2>Automações automáticas</h2><button type="button" id="autoAutoNewBtn" class="btn btn-primary btn-sm">＋ Nova automação automática</button></div>' +
+    '<p class="panel-lead">Publicou um post ou Reel? A automação é criada sozinha. Você pode ter várias, cada uma com sua conta, seu link e sua mensagem.</p>' +
+    '<div id="autoAutoListView"><div id="autoAutoRules"></div></div>' +
+    '<div id="autoAutoFormView" class="hidden">' +
+    '<div class="panel-heading-row"><h3 id="autoAutoFormTitle"></h3></div>' +
     '<div id="autoAutoAccountsBlock" class="hidden"><div class="form-step"><b>1</b><span>Em quais contas?</span></div>' +
     '<div class="auto-mode">' +
     '<label class="active"><input type="radio" name="autoAutoAccMode" value="all" checked /><span><strong>Todas as minhas contas</strong><small>Inclusive contas que você conectar depois.</small></span></label>' +
-    '<label><input type="radio" name="autoAutoAccMode" value="selected" /><span><strong>Contas específicas</strong><small>Escolha quais contas terão a criação automática.</small></span></label>' +
+    '<label><input type="radio" name="autoAutoAccMode" value="selected" /><span><strong>Contas específicas</strong><small>Escolha quais contas terão esta automação.</small></span></label>' +
     '</div><div id="autoAutoAccountList" class="auto-acc-list hidden"></div></div>' +
     '<div class="form-step"><b>2</b><span>Quando enviar o Direct?</span></div>' +
     '<div class="auto-mode">' +
-    '<label class="active"><input type="radio" name="autoAutoMode" value="any" checked /><span><strong>Qualquer comentário</strong><small>Todo comentário no post recebe o Direct.</small></span></label>' +
-    '<label><input type="radio" name="autoAutoMode" value="keyword" /><span><strong>Palavra-chave específica</strong><small>Só quem comentar a palavra recebe o Direct.</small></span></label>' +
+    '<label class="active"><input type="radio" name="autoAutoMode" value="any" checked /><span><strong>Qualquer comentário</strong><small>Todo comentário no post recebe o Direct. Só uma por conta.</small></span></label>' +
+    '<label><input type="radio" name="autoAutoMode" value="keyword" /><span><strong>Palavra-chave específica</strong><small>Só quem comentar a palavra recebe o Direct. Pode ter várias por conta.</small></span></label>' +
     '</div>' +
     '<div class="field hidden" id="autoAutoKeywordField"><span>Palavra-chave do comentário</span><input type="text" id="autoAutoKeyword" placeholder="ex: quero" /></div>' +
-    '<div class="form-step"><b>3</b><span>O que enviar?</span></div>' +
-    '<div class="produto-picker-row"><div class="field flush"><span>Link de destino (WhatsApp, loja, produto…)</span><input type="text" id="autoAutoUrl" placeholder="https://" /></div>' +
+    '<div class="form-step"><b>3</b><span>Para onde o link leva?</span></div>' +
+    '<div class="auto-types">' + typeChips + '</div>' +
+    '<div class="produto-picker-row"><div class="field flush"><span id="autoAutoUrlLabel">Link do produto</span><input type="text" id="autoAutoUrl" placeholder="https://" /></div>' +
     '<button type="button" id="autoAutoPickBtn" class="btn btn-outline">📦 Escolher produto cadastrado</button></div>' +
+    '<div class="field hidden" id="autoAutoBtnField"><span>Texto do botão (máx. ' + MAX_BUTTON + " caracteres)</span>" +
+    '<input type="text" id="autoAutoBtnLabel" maxlength="' + MAX_BUTTON + '" placeholder="ex: Quero saber mais" /><small class="auto-count" id="autoAutoBtnCount">0/' + MAX_BUTTON + "</small></div>" +
+    '<div class="auto-btn-preview" id="autoAutoBtnPreview"></div>' +
     '<div class="automation-form-grid">' +
     '<div class="field field-full"><span>Imagem (URL) — opcional</span><input type="text" id="autoAutoImg" placeholder="https://" /></div>' +
     '<div class="field"><span>Título — opcional</span><input type="text" id="autoAutoTitle" placeholder="Nome que aparece no Direct" /></div>' +
     '<div class="field"><span>Preço — opcional</span><input type="text" id="autoAutoPrice" placeholder="R$ 0,00" /></div>' +
     '</div>' +
-    '<label class="auto-apply hidden" id="autoAutoApplyRow"><input type="checkbox" id="autoAutoApply" checked /><span>Aplicar também às automações que já foram criadas automaticamente</span></label>' +
+    '<label class="auto-apply hidden" id="autoAutoApplyRow"><input type="checkbox" id="autoAutoApply" checked /><span>Aplicar também às automações que já foram criadas por esta regra</span></label>' +
     '<div class="auto-actions"><button type="button" id="autoAutoSaveBtn" class="btn btn-primary">Salvar</button>' +
-    '<button type="button" id="autoAutoCancelBtn" class="btn btn-outline hidden">Cancelar</button></div>' +
+    '<button type="button" id="autoAutoCancelBtn" class="btn btn-outline">Cancelar</button></div>' +
     '<p class="auto-note">Vale só para publicações feitas depois de ativar. As automações criadas aparecem em “Automações cadastradas” e podem ser pausadas ou excluídas normalmente.</p>' +
     '</div>' +
     '<div id="autoAutoMsg" class="banner hidden"></div>' +
@@ -393,20 +523,26 @@ function build() {
     nav.querySelectorAll(".subtab-btn").forEach((b) => b.classList.toggle("active", b === btn));
     document.querySelectorAll(".subtab-panel").forEach((p) => p.classList.toggle("hidden", p.id !== "subtab-auto"));
   });
-  $("autoAutoSwitch").addEventListener("change", async () => {
-    setMsg("");
-    const on = $("autoAutoSwitch").checked;
-    if (saved && saved.produto_url) await toggleEnabled(on);
-    render();
-  });
-  document.querySelectorAll('input[name="autoAutoMode"], input[name="autoAutoAccMode"]').forEach((r) => r.addEventListener("change", syncUi));
-  $("autoAutoSaveBtn").addEventListener("click", save);
+  $("autoAutoNewBtn").addEventListener("click", () => openForm(null));
   $("autoAutoCancelBtn").addEventListener("click", () => {
-    fill(saved);
-    editing = false;
     setMsg("");
-    render();
+    closeForm();
   });
+  $("autoAutoSaveBtn").addEventListener("click", save);
+  $("autoAutoRules").addEventListener("click", (e) => {
+    const card = e.target.closest(".auto-rule");
+    if (!card) return;
+    const id = card.getAttribute("data-id");
+    if (e.target.closest(".auto-rule-edit")) openForm(rules.find((r) => r.id === id));
+    else if (e.target.closest(".auto-rule-del")) deleteRule(id);
+  });
+  $("autoAutoRules").addEventListener("change", (e) => {
+    const input = e.target.closest(".auto-rule-switch");
+    if (!input) return;
+    toggleRule(input.closest(".auto-rule").getAttribute("data-id"), input.checked, input);
+  });
+  document.querySelectorAll('input[name="autoAutoMode"], input[name="autoAutoAccMode"], input[name="autoAutoType"]').forEach((r) => r.addEventListener("change", syncUi));
+  $("autoAutoBtnLabel").addEventListener("input", syncUi);
   $("autoAutoPickBtn").addEventListener("click", () => {
     if (typeof window.openProdutoPicker !== "function") return;
     window.openProdutoPicker((p) => {
@@ -426,7 +562,8 @@ async function init() {
   ready = true;
   userId = session.user.id;
   await loadAccounts();
-  await loadSettings();
+  await getTableName();
+  await loadRules();
   await loadPosts();
 }
 document.addEventListener("DOMContentLoaded", () => {
