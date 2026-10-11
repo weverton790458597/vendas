@@ -5,7 +5,7 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
    ========================================================= */
 const APP_NAME = "Achei & Postei";
 const SUPABASE_URL = "https://abdliioyzkylccfylils.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFiZGxpaW95emt5bGNjZnlsaWxzIiwicm9sIjoiYW5vbiIsImlhdCI6MTc2ODA3OTEzMiwiZXhwIjoyMDgzNjUxMzIyfQ.5s0zEdAgxx92pbC9yx75hHMfysHr2Aad86GhC1-tEmU";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFiZGxpaW95emt5bGNjZnlsaWxzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNzkxMzIsImV4cCI6MjA4MzY1NTEzMn0.5s0zEdAgxx92pbC9yx75hHMfysHr2Aad86GhC1-tEmU";
 const SUPPORT_WHATSAPP_NUMBER = "5598982672165";
 const INSTAGRAM_APP_ID = "1432929018522131";
 const INSTAGRAM_REDIRECT_URI = SUPABASE_URL + "/functions/v1/instagram-oauth-callback";
