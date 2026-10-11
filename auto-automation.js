@@ -46,6 +46,10 @@ function injectStyles() {
     .auto-apply { display:flex; gap:.6rem; align-items:flex-start; margin:0 0 1rem; font-size:.85rem; color:var(--text-muted); cursor:pointer; }
     .auto-apply input { margin-top:.2rem; accent-color:var(--accent-1); }
     .auto-actions { display:flex; gap:.5rem; flex-wrap:wrap; }
+    .auto-post-row { display:flex; gap:.65rem; align-items:center; }
+    .auto-post-thumb { width:56px; height:56px; border-radius:10px; background:var(--surface-2); overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--text-faint); }
+    .auto-post-thumb img { width:100%; height:100%; object-fit:cover; }
+    .auto-post-caption { font-size:.8rem; color:var(--text-muted); line-height:1.35; word-break:break-word; }
     .auto-note { font-size:.82rem; color:var(--text-faint); margin:.8rem 0 0; }
   `;
   document.head.appendChild(st);
@@ -82,13 +86,15 @@ function renderSummary() {
     "<span>Envia: " + (r.keyword_mode === "keyword" ? "quando comentarem “" + esc(r.palavra_chave) + "”" : "para qualquer comentário") + "</span>" +
     "<span>Contas: " + esc(accountsLabel(r)) + "</span>" +
     "</div>" +
-    '<button type="button" class="btn btn-outline btn-sm" id="autoAutoEditBtn">✏️ Editar mensagem</button>';
+    '<div class="auto-actions"><button type="button" class="btn btn-outline btn-sm" id="autoAutoEditBtn">✏️ Editar mensagem</button>' +
+    '<button type="button" class="btn btn-danger-ghost btn-sm" id="autoAutoDeleteBtn">🗑️ Apagar</button></div>';
   $("autoAutoEditBtn").addEventListener("click", () => {
     fill(saved);
     editing = true;
     setMsg("");
     render();
   });
+  $("autoAutoDeleteBtn").addEventListener("click", deleteConfig);
 }
 function render() {
   const on = $("autoAutoSwitch").checked;
@@ -170,6 +176,98 @@ async function applyToExisting(payload) {
     return -1;
   }
 }
+async function fetchCreated() {
+  const table = await getTableName();
+  if (!table || accounts.length === 0) return [];
+  const { data: seen, error } = await sb
+    .from("auto_automation_seen")
+    .select("instagram_config_id, shortcode, caption, thumbnail_url, permalink, created_at")
+    .eq("automation_created", true)
+    .in("instagram_config_id", accounts.map((a) => a.id))
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error || !seen || seen.length === 0) return [];
+  const { data: rows } = await sb.from(table).select("*").in("instagram_media_id", seen.map((s) => s.shortcode));
+  const map = new Map();
+  (rows || []).forEach((r) => { if (!map.has(r.instagram_media_id)) map.set(r.instagram_media_id, r); });
+  return seen.filter((s) => map.has(s.shortcode)).map((s) => ({ seen: s, row: map.get(s.shortcode) }));
+}
+function renderPostCard(item) {
+  const s = item.seen;
+  const row = item.row;
+  const acc = accounts.find((a) => a.id === s.instagram_config_id);
+  const rawLink = s.permalink || "https://www.instagram.com/p/" + s.shortcode + "/";
+  const link = isUrl(rawLink) ? rawLink : "https://www.instagram.com/p/" + s.shortcode + "/";
+  const thumb = s.thumbnail_url && isUrl(s.thumbnail_url) ? '<img src="' + esc(s.thumbnail_url) + '" alt="" loading="lazy" />' : "📷";
+  const kw = row.palavra_chave === "*" ? "Qualquer comentário" : row.palavra_chave;
+  const created = s.created_at ? new Date(s.created_at).toLocaleString("pt-BR") : "—";
+  return (
+    '<div class="automation-card" data-id="' + esc(row.id) + '" data-ativo="' + (row.ativo ? "true" : "false") + '">' +
+    '<div class="automation-card-top">' +
+    '<span class="badge ' + (row.ativo ? "badge-ativo" : "badge-inativo") + '">' + (row.ativo ? "Ativo" : "Inativo") + "</span>" +
+    '<div class="automation-card-actions">' +
+    '<button type="button" class="icon-btn auto-post-toggle" title="' + (row.ativo ? "Desativar" : "Ativar") + '">' + (row.ativo ? "🔇" : "🔊") + "</button>" +
+    '<button type="button" class="icon-btn auto-post-del" title="Excluir">🗑️</button>' +
+    "</div></div>" +
+    '<div><span class="badge badge-muted">📸 @' + esc(acc ? acc.instagram_username : "conta") + "</span> <span class=\"badge badge-muted\">⚡ Automático</span></div>" +
+    '<div class="auto-post-row"><div class="auto-post-thumb">' + thumb + "</div>" +
+    '<div style="min-width:0;flex:1;"><div class="auto-post-caption">' + esc(s.caption || "(sem legenda)") + "</div>" +
+    '<a class="automation-card-link" href="' + esc(link) + '" target="_blank" rel="noopener noreferrer">Ver post no Instagram ↗</a></div></div>' +
+    '<div class="automation-card-keyword"><span class="keyword-chip">' + esc(kw) + "</span></div>" +
+    (row.titulo_produto ? '<div class="automation-card-post" style="color:var(--text);font-weight:600;">🛍️ ' + esc(row.titulo_produto) + "</div>" : "") +
+    '<a class="automation-card-link" href="' + esc(isUrl(row.produto_url || "") ? row.produto_url : "#") + '" target="_blank" rel="noopener noreferrer">' + esc(row.produto_url) + "</a>" +
+    '<div class="automation-card-footer">Criado automaticamente em ' + created + "</div>" +
+    "</div>"
+  );
+}
+async function loadPosts() {
+  const sec = $("autoAutoPostsSection");
+  if (!sec || !userId) return;
+  const items = await fetchCreated();
+  sec.classList.toggle("hidden", items.length === 0);
+  $("autoAutoPostsGrid").innerHTML = items.map(renderPostCard).join("");
+}
+async function onPostsClick(e) {
+  const tg = e.target.closest(".auto-post-toggle");
+  const dl = e.target.closest(".auto-post-del");
+  if (!tg && !dl) return;
+  const card = e.target.closest(".automation-card");
+  const id = card.getAttribute("data-id");
+  const table = await getTableName();
+  if (!table) return;
+  if (tg) {
+    const { error } = await sb.from(table).update({ ativo: card.getAttribute("data-ativo") !== "true" }).eq("id", id);
+    if (error) return setMsg("Erro ao alternar status: " + error.message, "error");
+  } else {
+    if (!confirm("Tem certeza que deseja excluir esta automação?")) return;
+    const { error } = await sb.from(table).delete().eq("id", id);
+    if (error) return setMsg("Erro ao excluir: " + error.message, "error");
+  }
+  await loadPosts();
+}
+async function deleteConfig() {
+  if (!confirm("Apagar a automação automática? Novos posts deixarão de receber automação.")) return;
+  const created = await fetchCreated();
+  let removeCreated = false;
+  if (created.length > 0) {
+    removeCreated = confirm("Existem " + created.length + " automações já criadas automaticamente.\n\nOK = excluir também essas automações\nCancelar = manter elas");
+  }
+  const { error } = await sb.from(TABLE).delete().eq("user_id", userId);
+  if (error) {
+    setMsg("Erro ao apagar: " + error.message, "error");
+    return;
+  }
+  if (removeCreated) {
+    const table = await getTableName();
+    if (table) await sb.from(table).delete().in("id", created.map((c) => c.row.id));
+  }
+  saved = null;
+  editing = false;
+  fill(null);
+  render();
+  await loadPosts();
+  setMsg("Automação automática apagada." + (removeCreated ? " As automações criadas por ela também foram excluídas." : ""), "success");
+}
 async function toggleEnabled(on) {
   const { error } = await sb.from(TABLE).update({ enabled: on }).eq("user_id", userId);
   if (error) {
@@ -227,11 +325,25 @@ async function save() {
     $("autoAutoSaveBtn").disabled = false;
   }
 }
+function ensurePostsSection() {
+  const host = $("subtab-list");
+  if (!host || $("autoAutoPostsSection")) return;
+  const sec = document.createElement("section");
+  sec.id = "autoAutoPostsSection";
+  sec.className = "panel panel-plain hidden";
+  sec.innerHTML = '<div class="panel-heading-row"><h2>⚡ Posts cadastrados automaticamente</h2><button type="button" id="autoAutoPostsRefresh" class="btn btn-outline btn-sm">Atualizar</button></div><div id="autoAutoPostsGrid" class="automation-grid"></div>';
+  host.insertBefore(sec, host.firstChild);
+  $("autoAutoPostsRefresh").addEventListener("click", loadPosts);
+  $("autoAutoPostsGrid").addEventListener("click", onPostsClick);
+}
 function build() {
   const nav = $("automationsSubtabNav");
   const firstPanel = document.querySelector(".subtab-panel");
   if (!nav || !firstPanel || $("subtab-auto")) return false;
   injectStyles();
+  ensurePostsSection();
+  const listBtn = nav.querySelector('.subtab-btn[data-subtab="list"]');
+  if (listBtn) listBtn.addEventListener("click", loadPosts);
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = "subtab-btn";
@@ -315,12 +427,13 @@ async function init() {
   userId = session.user.id;
   await loadAccounts();
   await loadSettings();
+  await loadPosts();
 }
 document.addEventListener("DOMContentLoaded", () => {
   init();
+  document.addEventListener("visibilitychange", () => { if (ready && !document.hidden) loadPosts(); });
   sb.auth.onAuthStateChange((ev, s) => {
     if (ev === "SIGNED_OUT") { userId = null; return; }
     if (s && !ready) setTimeout(init, 0);
   });
 });
-
