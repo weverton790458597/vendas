@@ -245,7 +245,20 @@
               <button type="button" id="pickProdutoBtn" class="btn btn-outline">📦 Escolher produto cadastrado</button>
             </div>
             <div class="form-step"><b>2</b><span>Defina o gatilho e o destino</span></div><div class="automation-form-grid">
-              <div class="field">
+              <div class="field field-full">
+                <span>Quando enviar o Direct?</span>
+                <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
+                  <label style="flex:1;min-width:200px;display:flex;gap:0.6rem;align-items:flex-start;padding:0.7rem 1rem;border:1px solid var(--border);border-radius:12px;cursor:pointer;background:var(--surface);">
+                    <input type="radio" name="triggerMode" value="keyword" checked />
+                    <span><strong>Palavra-chave específica</strong><br /><small style="color:var(--text-muted);">Só quem comentar a palavra recebe o Direct.</small></span>
+                  </label>
+                  <label style="flex:1;min-width:200px;display:flex;gap:0.6rem;align-items:flex-start;padding:0.7rem 1rem;border:1px solid var(--border);border-radius:12px;cursor:pointer;background:var(--surface);">
+                    <input type="radio" name="triggerMode" value="any" />
+                    <span><strong>Qualquer comentário</strong><br /><small style="color:var(--text-muted);">Todo comentário no post recebe o Direct.</small></span>
+                  </label>
+                </div>
+              </div>
+              <div class="field" id="palavraChaveField">
                 <span>Palavra-chave do comentário</span>
                 <input type="text" id="palavraChave" placeholder="ex: quero" />
               </div>
