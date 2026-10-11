@@ -7,11 +7,34 @@ const sb = createClient(
 const RULES = "auto_automation_rules";
 const SEEN = "auto_automation_seen";
 const MAX_BUTTON = 20;
+
+/* ---------- Ícones SVG (traço limpo, herdam a cor do texto) ---------- */
+const ICON_PATHS = {
+  whatsapp: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+  site: '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
+  produto: '<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>',
+  outro: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  edit: '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>',
+  trash: '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+  volumeOff: '<path d="M11 5 6 9H2v6h4l5 4Z"/><line x1="22" x2="16" y1="9" y2="15"/><line x1="16" x2="22" y1="9" y2="15"/>',
+  volume: '<path d="M11 5 6 9H2v6h4l5 4Z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>',
+  instagram: '<rect width="20" height="20" x="2" y="2" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37Z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>',
+  zap: '<path d="M13 2 3 14h9l-1 8 10-12h-9Z"/>',
+  camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3Z"/><circle cx="12" cy="13" r="3"/>',
+  package: '<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+  plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+  external: '<path d="M7 17 17 7"/><path d="M7 7h10v10"/>',
+};
+const ico = (name) =>
+  '<svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  (ICON_PATHS[name] || "") +
+  "</svg>";
+
 const LINK_TYPES = {
-  whatsapp: { label: "WhatsApp", icon: "💬", button: "Ir para WhatsApp", urlLabel: "Link do WhatsApp (ou número com DDD)", placeholder: "https://wa.me/5598999999999 ou 98999999999" },
-  site: { label: "Site", icon: "🌐", button: "Ir para o site", urlLabel: "Link do site", placeholder: "https://seusite.com" },
-  produto: { label: "Produto", icon: "🛍️", button: "Ver produto", urlLabel: "Link do produto", placeholder: "https://" },
-  outro: { label: "Outro", icon: "🔗", button: "", urlLabel: "Link de destino", placeholder: "https://" },
+  whatsapp: { label: "WhatsApp", icon: "whatsapp", button: "Ir para WhatsApp", urlLabel: "Link do WhatsApp (ou número com DDD)", placeholder: "https://wa.me/5598999999999 ou 98999999999" },
+  site: { label: "Site", icon: "site", button: "Ir para o site", urlLabel: "Link do site", placeholder: "https://seusite.com" },
+  produto: { label: "Produto", icon: "produto", button: "Ver produto", urlLabel: "Link do produto", placeholder: "https://" },
+  outro: { label: "Outro", icon: "outro", button: "", urlLabel: "Link de destino", placeholder: "https://" },
 };
 const $ = (id) => document.getElementById(id);
 const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -30,6 +53,9 @@ function injectStyles() {
   const st = document.createElement("style");
   st.id = "autoAutoStyles";
   st.textContent = `
+    .ico { display:inline-block; width:1.15em; height:1.15em; vertical-align:-.2em; margin-right:.4em; flex-shrink:0; }
+    .icon-btn .ico { margin:0; width:18px; height:18px; vertical-align:middle; }
+    .auto-post-thumb .ico { margin:0; width:24px; height:24px; }
     .auto-switch { position:relative; width:48px; height:28px; flex-shrink:0; }
     .auto-switch input { position:absolute; inset:0; opacity:0; width:100%; height:100%; margin:0; cursor:pointer; z-index:2; }
     .auto-switch i { position:absolute; inset:0; border-radius:999px; background:var(--surface-2); border:1px solid var(--border); transition:background .2s; }
@@ -53,7 +79,8 @@ function injectStyles() {
     .auto-rule-body span { color:var(--text-muted); font-size:.85rem; word-break:break-all; }
     .auto-rule-side { display:flex; flex-direction:column; align-items:flex-end; gap:.6rem; }
     .auto-pill-row { display:flex; gap:.4rem; flex-wrap:wrap; }
-    .auto-pill { display:inline-block; padding:.15rem .6rem; border-radius:999px; font-size:.75rem; font-weight:600; background:var(--surface-2); color:var(--text-muted); }
+    .auto-pill { display:inline-flex; align-items:center; padding:.15rem .6rem; border-radius:999px; font-size:.75rem; font-weight:600; background:var(--surface-2); color:var(--text-muted); }
+    .auto-pill .ico { width:13px; height:13px; margin-right:.35em; vertical-align:middle; }
     .auto-pill.on { background:var(--success-bg); color:var(--success); }
     .auto-btn-preview { font-size:.85rem; color:var(--text-muted); margin:-.3rem 0 1rem; }
     .auto-btn-chip { display:inline-block; padding:.25rem .8rem; border-radius:8px; background:var(--surface-2); border:1px solid var(--border); color:var(--text); font-weight:600; }
@@ -61,11 +88,16 @@ function injectStyles() {
     .auto-apply { display:flex; gap:.6rem; align-items:flex-start; margin:0 0 1rem; font-size:.85rem; color:var(--text-muted); cursor:pointer; }
     .auto-apply input { margin-top:.2rem; accent-color:var(--accent-1); }
     .auto-actions { display:flex; gap:.5rem; flex-wrap:wrap; }
+    .auto-actions .btn, .panel-heading-row .btn { display:inline-flex; align-items:center; }
     .auto-post-row { display:flex; gap:.65rem; align-items:center; }
     .auto-post-thumb { width:56px; height:56px; border-radius:10px; background:var(--surface-2); overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--text-faint); }
     .auto-post-thumb img { width:100%; height:100%; object-fit:cover; }
     .auto-post-caption { font-size:.8rem; color:var(--text-muted); line-height:1.35; word-break:break-word; }
     .auto-note { font-size:.82rem; color:var(--text-faint); margin:.8rem 0 0; }
+    .automation-card .badge .ico, .automation-card-link .ico { width:13px; height:13px; margin-right:.3em; vertical-align:-.15em; }
+    .automation-card-link .ico { margin:0 0 0 .3em; }
+    .auto-card-title { display:flex; align-items:center; color:var(--text); font-weight:600; }
+    .auto-card-title .ico { color:var(--text-muted); }
   `;
   document.head.appendChild(st);
 }
@@ -164,7 +196,7 @@ function renderRules() {
     return (
       '<div class="auto-rule" data-id="' + esc(r.id) + '">' + img +
       '<div class="auto-rule-body">' +
-      '<div class="auto-pill-row"><span class="auto-pill' + (r.enabled ? " on" : "") + '">' + (r.enabled ? "Ativa" : "Pausada") + '</span><span class="auto-pill">' + t.icon + " " + t.label + "</span></div>" +
+      '<div class="auto-pill-row"><span class="auto-pill' + (r.enabled ? " on" : "") + '">' + (r.enabled ? "Ativa" : "Pausada") + '</span><span class="auto-pill">' + ico(t.icon) + t.label + "</span></div>" +
       "<strong>" + esc(r.titulo_produto || "Mensagem sem título") + "</strong>" +
       (r.preco_produto ? "<span>" + esc(r.preco_produto) + "</span>" : "") +
       "<span>Destino: " + esc(r.produto_url) + "</span>" +
@@ -174,8 +206,8 @@ function renderRules() {
       "</div>" +
       '<div class="auto-rule-side">' +
       '<label class="auto-switch"><input type="checkbox" class="auto-rule-switch" aria-label="Ativar ou pausar"' + (r.enabled ? " checked" : "") + ' /><i></i></label>' +
-      '<div class="auto-actions"><button type="button" class="btn btn-outline btn-sm auto-rule-edit">✏️ Editar</button>' +
-      '<button type="button" class="btn btn-danger-ghost btn-sm auto-rule-del">🗑️ Apagar</button></div>' +
+      '<div class="auto-actions"><button type="button" class="btn btn-outline btn-sm auto-rule-edit">' + ico("edit") + 'Editar</button>' +
+      '<button type="button" class="btn btn-danger-ghost btn-sm auto-rule-del">' + ico("trash") + 'Apagar</button></div>' +
       "</div></div>"
     );
   }).join("");
@@ -402,7 +434,7 @@ function renderPostCard(item) {
   const acc = accounts.find((a) => a.id === s.instagram_config_id);
   const fallback = "https://www.instagram.com/p/" + s.shortcode + "/";
   const link = s.permalink && isUrl(s.permalink) ? s.permalink : fallback;
-  const thumb = s.thumbnail_url && isUrl(s.thumbnail_url) ? '<img src="' + esc(s.thumbnail_url) + '" alt="" loading="lazy" />' : "📷";
+  const thumb = s.thumbnail_url && isUrl(s.thumbnail_url) ? '<img src="' + esc(s.thumbnail_url) + '" alt="" loading="lazy" />' : ico("camera");
   const kw = row.palavra_chave === "*" ? "Qualquer comentário" : row.palavra_chave;
   const created = s.created_at ? new Date(s.created_at).toLocaleString("pt-BR") : "—";
   return (
@@ -410,15 +442,15 @@ function renderPostCard(item) {
     '<div class="automation-card-top">' +
     '<span class="badge ' + (row.ativo ? "badge-ativo" : "badge-inativo") + '">' + (row.ativo ? "Ativo" : "Inativo") + "</span>" +
     '<div class="automation-card-actions">' +
-    '<button type="button" class="icon-btn auto-post-toggle" title="' + (row.ativo ? "Desativar" : "Ativar") + '">' + (row.ativo ? "🔇" : "🔊") + "</button>" +
-    '<button type="button" class="icon-btn auto-post-del" title="Excluir">🗑️</button>' +
+    '<button type="button" class="icon-btn auto-post-toggle" title="' + (row.ativo ? "Desativar" : "Ativar") + '">' + ico(row.ativo ? "volumeOff" : "volume") + "</button>" +
+    '<button type="button" class="icon-btn auto-post-del" title="Excluir">' + ico("trash") + "</button>" +
     "</div></div>" +
-    '<div><span class="badge badge-muted">📸 @' + esc(acc ? acc.instagram_username : "conta") + '</span> <span class="badge badge-muted">⚡ Automático</span></div>' +
+    '<div><span class="badge badge-muted">' + ico("instagram") + "@" + esc(acc ? acc.instagram_username : "conta") + '</span> <span class="badge badge-muted">' + ico("zap") + "Automático</span></div>" +
     '<div class="auto-post-row"><div class="auto-post-thumb">' + thumb + "</div>" +
     '<div style="min-width:0;flex:1;"><div class="auto-post-caption">' + esc(s.caption || "(sem legenda)") + "</div>" +
-    '<a class="automation-card-link" href="' + esc(link) + '" target="_blank" rel="noopener noreferrer">Ver post no Instagram ↗</a></div></div>' +
+    '<a class="automation-card-link" href="' + esc(link) + '" target="_blank" rel="noopener noreferrer">Ver post no Instagram' + ico("external") + "</a></div></div>" +
     '<div class="automation-card-keyword"><span class="keyword-chip">' + esc(kw) + "</span></div>" +
-    (row.titulo_produto ? '<div class="automation-card-post" style="color:var(--text);font-weight:600;">🛍️ ' + esc(row.titulo_produto) + "</div>" : "") +
+    (row.titulo_produto ? '<div class="automation-card-post auto-card-title">' + ico("produto") + esc(row.titulo_produto) + "</div>" : "") +
     '<a class="automation-card-link" href="' + esc(isUrl(row.produto_url || "") ? row.produto_url : "#") + '" target="_blank" rel="noopener noreferrer">' + esc(row.produto_url) + "</a>" +
     '<div class="automation-card-footer">Criado automaticamente em ' + created + "</div>" +
     "</div>"
@@ -455,7 +487,7 @@ function ensurePostsSection() {
   const sec = document.createElement("section");
   sec.id = "autoAutoPostsSection";
   sec.className = "panel panel-plain hidden";
-  sec.innerHTML = '<div class="panel-heading-row"><h2>⚡ Posts cadastrados automaticamente</h2><button type="button" id="autoAutoPostsRefresh" class="btn btn-outline btn-sm">Atualizar</button></div><div id="autoAutoPostsGrid" class="automation-grid"></div>';
+  sec.innerHTML = '<div class="panel-heading-row"><h2 style="display:flex;align-items:center;">' + ico("zap") + 'Posts cadastrados automaticamente</h2><button type="button" id="autoAutoPostsRefresh" class="btn btn-outline btn-sm">Atualizar</button></div><div id="autoAutoPostsGrid" class="automation-grid"></div>';
   host.insertBefore(sec, host.firstChild);
   $("autoAutoPostsRefresh").addEventListener("click", loadPosts);
   $("autoAutoPostsGrid").addEventListener("click", onPostsClick);
@@ -473,17 +505,19 @@ function build() {
   btn.className = "subtab-btn";
   btn.id = "autoAutoTabBtn";
   btn.setAttribute("data-subtab", "auto");
-  btn.textContent = "⚡ Automático";
+  btn.style.display = "inline-flex";
+  btn.style.alignItems = "center";
+  btn.innerHTML = ico("zap") + "Automático";
   nav.appendChild(btn);
   const panel = document.createElement("div");
   panel.id = "subtab-auto";
   panel.className = "subtab-panel hidden";
   const typeChips = Object.keys(LINK_TYPES).map((k) =>
-    '<label class="' + (k === "produto" ? "active" : "") + '"><input type="radio" name="autoAutoType" value="' + k + '"' + (k === "produto" ? " checked" : "") + " /><span>" + LINK_TYPES[k].icon + " " + LINK_TYPES[k].label + "</span></label>"
+    '<label class="' + (k === "produto" ? "active" : "") + '"><input type="radio" name="autoAutoType" value="' + k + '"' + (k === "produto" ? " checked" : "") + " /><span>" + ico(LINK_TYPES[k].icon) + LINK_TYPES[k].label + "</span></label>"
   ).join("");
   panel.innerHTML =
     '<section class="panel">' +
-    '<div class="panel-heading-row"><h2>Automações automáticas</h2><button type="button" id="autoAutoNewBtn" class="btn btn-primary btn-sm">＋ Nova automação automática</button></div>' +
+    '<div class="panel-heading-row"><h2>Automações automáticas</h2><button type="button" id="autoAutoNewBtn" class="btn btn-primary btn-sm">' + ico("plus") + 'Nova automação automática</button></div>' +
     '<p class="panel-lead">Publicou um post ou Reel? A automação é criada sozinha. Você pode ter várias, cada uma com sua conta, seu link e sua mensagem.</p>' +
     '<div id="autoAutoListView"><div id="autoAutoRules"></div></div>' +
     '<div id="autoAutoFormView" class="hidden">' +
@@ -502,7 +536,7 @@ function build() {
     '<div class="form-step"><b>3</b><span>Para onde o link leva?</span></div>' +
     '<div class="auto-types">' + typeChips + '</div>' +
     '<div class="produto-picker-row"><div class="field flush"><span id="autoAutoUrlLabel">Link do produto</span><input type="text" id="autoAutoUrl" placeholder="https://" /></div>' +
-    '<button type="button" id="autoAutoPickBtn" class="btn btn-outline">📦 Escolher produto cadastrado</button></div>' +
+    '<button type="button" id="autoAutoPickBtn" class="btn btn-outline" style="display:inline-flex;align-items:center;">' + ico("package") + 'Escolher produto cadastrado</button></div>' +
     '<div class="field hidden" id="autoAutoBtnField"><span>Texto do botão (máx. ' + MAX_BUTTON + " caracteres)</span>" +
     '<input type="text" id="autoAutoBtnLabel" maxlength="' + MAX_BUTTON + '" placeholder="ex: Quero saber mais" /><small class="auto-count" id="autoAutoBtnCount">0/' + MAX_BUTTON + "</small></div>" +
     '<div class="auto-btn-preview" id="autoAutoBtnPreview"></div>' +
