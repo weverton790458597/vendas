@@ -2,667 +2,489 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
-<title>Achei &amp; Postei — automação de comentários e DM do Instagram</title>
-<meta name="description" content="Responda comentários do Instagram no automático e envie o link do produto certo por DM, sem perder venda." />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Achei &amp; Postei</title>
+<meta name="description" content="Automação de comentários e DM do Instagram." />
+<meta name="theme-color" content="#120e1b" />
 <link rel="manifest" href="manifest.json" />
-<meta name="theme-color" content="#0f0b17" media="(prefers-color-scheme: dark)" />
-<meta name="theme-color" content="#f7f3fa" media="(prefers-color-scheme: light)" />
-<meta name="mobile-web-app-capable" content="yes" />
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Achei &amp; Postei" />
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
-<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png" />
+<meta name="mobile-web-app-capable" content="yes" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="styles.css" />
 <script>
+  // Aplica o tema salvo antes de pintar a tela (evita flash). Padrão: escuro.
   (function () {
     try {
       var saved = localStorage.getItem('ap-theme');
-      if (saved) document.documentElement.setAttribute('data-theme', saved);
+      if (saved === 'dark' || saved === 'light') document.documentElement.setAttribute('data-theme', saved);
     } catch (e) {}
   })();
 </script>
 </head>
 <body>
 
-<!-- =====================================================================
-     TELA 1 — LOGIN
-     ===================================================================== -->
-<section id="authScreen" class="auth-screen">
-  <div class="auth-brand">
+<div class="boot-splash" aria-hidden="true"><span></span></div>
+
+<!-- ============================ LOGIN ============================ -->
+<div id="authScreen" class="screen auth-screen hidden">
+  <button type="button" class="icon-btn auth-theme" data-theme-toggle aria-label="Alternar tema">
+    <svg class="theme-ico-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+    <svg class="theme-ico-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+  </button>
+
+  <section class="auth-brand">
     <canvas id="motionCanvas" aria-hidden="true"></canvas>
-    <div class="auth-brand-content">
-      <div class="brand-mark">
-        <span class="brand-glyph">
-          <img src="apple-touch-icon.png" alt="Achei &amp; Postei" />
-        </span>
-        <span>Achei &amp; Postei</span>
-      </div>
-      <h1 class="brand-headline">Cada comentário do Instagram vira uma <em>venda no automático</em>.</h1>
-      <p class="brand-copy">Alguém comenta a palavra-chave no seu post e o Achei &amp; Postei envia o produto certo por Direct na hora, sem você tocar no celular. Feito para quem vende com link de afiliado ou loja própria.</p>
-      <div class="brand-stats">
-        <div class="stat"><b>24/7</b><span>respondendo por você</span></div>
-        <div class="stat"><b>1 palavra</b><span>ativa a automação</span></div>
-        <div class="stat"><b>Sem código</b><span>conecte e use</span></div>
-      </div>
-
-      <div class="auth-showcase">
-        <div class="auth-showcase-text">
-          <h2>Como funciona</h2>
-          <ol class="auth-steps">
-            <li><strong>Conecte seu Instagram</strong><span>Entre pelo login do próprio Instagram e escolha o post ou reel.</span></li>
-            <li><strong>Defina palavra-chave e produto</strong><span>Ex.: quem comentar “quero” recebe o link, a foto e o preço do produto.</span></li>
-            <li><strong>Pronto, o resto é automático</strong><span>O Direct sai em segundos e você acompanha os resultados no painel.</span></li>
-          </ol>
-        </div>
-        <div id="demoPhone" aria-hidden="true">
-          <div class="phone-frame">
-            <div class="phone-screen">
-              <div class="phone-label">Comentou no seu post</div>
-              <div class="phone-chat-bubble">"quero" 💬</div>
-              <div class="phone-label right">Resposta automática</div>
-              <div class="phone-chat-bubble reply">Chegou no seu Direct! 🎁</div>
-              <div class="phone-product-card">
-                <div class="pp-img"></div>
-                <div class="pp-info"><b>Tênis Runner Pro</b><span>R$ 189,90</span></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="auth-section">
-        <h2>O que você tem no painel</h2>
-        <ul class="auth-features">
-          <li>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-            <div><strong>Produto completo no Direct</strong><span>Link, imagem, título e preço na mensagem.</span></div>
-          </li>
-          <li>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="9" r="1.5"/><path d="M21 16l-5-5-8 8"/></svg>
-            <div><strong>Várias automações por post</strong><span>Cada post ou reel pode ter várias palavras-chave e seus produtos.</span></div>
-          </li>
-          <li>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12l-8 8-9-9V3h8l9 9z"/><circle cx="7.5" cy="7.5" r="1"/></svg>
-            <div><strong>Catálogo de produtos</strong><span>Cadastre uma vez e reaproveite em várias automações.</span></div>
-          </li>
-          <li>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7"/><path d="M18 14.5c2.4.7 4 2.6 4 5.5"/></svg>
-            <div><strong>Várias contas no mesmo painel</strong><span>Gerencie todas as suas contas do Instagram em um lugar.</span></div>
-          </li>
-          <li>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg>
-            <div><strong>Resultados em números</strong><span>DMs enviadas, taxa de sucesso, posts e horários que mais vendem.</span></div>
-          </li>
-          <li>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/></svg>
-            <div><strong>Instale como app</strong><span>Use direto da tela inicial do celular.</span></div>
-          </li>
-        </ul>
-      </div>
-
-      <div class="auth-section">
-        <h2>Planos simples, sem surpresa</h2>
-        <div class="auth-plans">
-          <div><b>R$ 49,90<small>/mês</small></b><span>1 conta do Instagram</span></div>
-          <div><b>R$ 89,90<small>/mês</small></b><span>Até 3 contas</span></div>
-          <div><b>+ R$ 29,90<small>/mês</small></b><span>por conta extra</span></div>
-        </div>
-      </div>
-
-      <p class="auth-trust">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
-        <span>Você conecta pelo login oficial do Instagram. O Achei &amp; Postei nunca pede a senha da sua conta.</span>
-      </p>
+    <div class="brand-mark">
+      <span class="brand-logo"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 20.5l1.5-5A8 8 0 1 1 21 12Z"/><path d="M8.5 12h7M13 9l3 3-3 3"/></svg></span>
+      <span>Achei &amp; Postei</span>
     </div>
-  </div>
+    <h1 class="brand-headline">Comentou, recebeu o link no Direct.</h1>
+    <p class="brand-copy">Quem comenta no seu post ou Reel recebe o produto na hora, com título, preço e botão. Você só publica.</p>
+    <ul class="brand-stats">
+      <li><b>7 dias</b>de teste grátis</li>
+      <li><b>300</b>mensagens por conta/mês</li>
+      <li><b>R$ 49,90</b>por mês, 1 conta</li>
+    </ul>
 
-  <div class="auth-form-side">
-    <div class="auth-form-card">
-      <div class="auth-form-mobile-brand">
-        <span class="brand-glyph">
-          <img src="apple-touch-icon.png" alt="Achei &amp; Postei" />
-        </span>
-        <span>Achei &amp; Postei</span>
+    <div id="demoPhone" aria-hidden="true">
+      <div class="phone-body">
+        <div class="phone-screen">
+          <span class="phone-label">Comentário no seu post</span>
+          <div class="bubble in"><b>@ana.compras</b><br />quero!</div>
+          <span class="phone-label" style="align-self:flex-end">Direct enviado sozinho</span>
+          <div class="bubble out">Oi, Ana! Aqui está o link 👇</div>
+          <div class="bubble card"><i></i><div><b>Fone Bluetooth</b><br />R$ 89,90<em>Ver produto</em></div></div>
+        </div>
       </div>
-      <h1>Entrar no painel</h1>
-      <p class="auth-sub">Use o e-mail e a senha do seu acesso ao Achei &amp; Postei.</p>
-      <div id="authBanner" class="banner"></div>
+    </div>
+  </section>
+
+  <section class="auth-form-wrap">
+    <div class="auth-form-card">
+      <h1>Entrar</h1>
+      <p class="lead">Acesse o painel das suas automações.</p>
+      <div id="authBanner" class="banner" role="alert"></div>
       <div class="field">
         <label for="authEmail">E-mail</label>
-        <input type="email" id="authEmail" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="voce@empresa.com" />
+        <input type="email" id="authEmail" autocomplete="email" placeholder="voce@email.com" />
       </div>
       <div class="field">
         <label for="authPassword">Senha</label>
-        <div class="pw-wrap">
-          <input type="password" id="authPassword" autocomplete="current-password" placeholder="••••••••" />
-          <button type="button" class="pw-toggle" data-pw-toggle="authPassword" aria-label="Mostrar senha" title="Mostrar senha">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+        <div class="input-wrap">
+          <input type="password" id="authPassword" autocomplete="current-password" placeholder="Sua senha" />
+          <button type="button" class="pw-toggle" data-toggle-password="authPassword" aria-label="Mostrar ou ocultar senha">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
         </div>
       </div>
-      <button type="button" id="authSubmitBtn" class="btn btn-primary btn-full">Entrar</button>
-
-      <button type="button" class="auth-theme-btn" data-theme-toggle>
-        <span class="icon-sun">☀️ Tema claro</span><span class="icon-moon">🌙 Tema escuro</span>
-      </button>
+      <button type="button" id="authSubmitBtn" class="btn btn-primary btn-full btn-lg">Entrar</button>
+      <p class="auth-foot">O acesso é por convite. Ainda não tem o seu? <a href="https://wa.me/5598981460747?text=Ol%C3%A1!%20Quero%20testar%20o%20Achei%20%26%20Postei." target="_blank" rel="noopener">Fale com o suporte no WhatsApp</a>.</p>
     </div>
-  </div>
-</section>
+  </section>
+</div>
 
-<!-- =====================================================================
-     TELA 2 — CRIAR SENHA (convite / recuperação)
-     ===================================================================== -->
-<section id="setPasswordScreen" class="center-screen hidden">
-  <div class="center-card is-setpass">
-    <div class="center-ico">🔑</div>
+<!-- ============================ DEFINIR SENHA (convite / recuperação) ============================ -->
+<div id="setPasswordScreen" class="screen center-screen hidden">
+  <div class="center-card">
     <h1>Crie sua senha</h1>
-    <p>Defina uma senha de acesso para começar a usar o Achei &amp; Postei.</p>
-    <div id="setPasswordBanner" class="banner"></div>
+    <p class="panel-lead">Defina uma senha para acessar o painel. Use pelo menos 6 caracteres.</p>
+    <div id="setPasswordBanner" class="banner" role="alert"></div>
     <div class="field">
       <label for="newPassword">Nova senha</label>
-      <div class="pw-wrap">
-        <input type="password" id="newPassword" autocomplete="new-password" placeholder="Mínimo 6 caracteres" />
-        <button type="button" class="pw-toggle" data-pw-toggle="newPassword" aria-label="Mostrar senha" title="Mostrar senha">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+      <div class="input-wrap">
+        <input type="password" id="newPassword" autocomplete="new-password" placeholder="Mínimo de 6 caracteres" />
+        <button type="button" class="pw-toggle" data-toggle-password="newPassword" aria-label="Mostrar ou ocultar senha">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
         </button>
       </div>
     </div>
-    <button type="button" id="setPasswordBtn" class="btn btn-primary btn-full">Salvar senha e entrar</button>
+    <button type="button" id="setPasswordBtn" class="btn btn-primary btn-full btn-lg">Salvar senha e entrar</button>
   </div>
-</section>
+</div>
 
-<!-- =====================================================================
-     TELA 3 — CONTA PAUSADA
-     ===================================================================== -->
-<section id="blockedScreen" class="center-screen hidden">
-  <div class="center-card is-blocked">
-    <div class="center-ico">⏸️</div>
-    <h1>Sua conta está pausada</h1>
-    <p>Fale com o suporte para reativar o acesso ao seu painel de automações.</p>
-    <button type="button" id="blockedLogoutBtn" class="btn btn-outline btn-full">Sair</button>
+<!-- ============================ CONTA DESATIVADA ============================ -->
+<div id="blockedScreen" class="screen center-screen hidden">
+  <div class="center-card" style="text-align:center">
+    <div class="big">🔒</div>
+    <h1>Acesso desativado</h1>
+    <p class="panel-lead" style="margin-inline:auto">Sua conta está desativada no momento. Fale com o suporte para reativar.</p>
+    <a class="btn btn-primary btn-full" href="https://wa.me/5598981460747?text=Ol%C3%A1!%20Minha%20conta%20do%20Achei%20%26%20Postei%20est%C3%A1%20desativada." target="_blank" rel="noopener">Falar com o suporte</a>
+    <button type="button" id="blockedLogoutBtn" class="btn btn-outline btn-full" style="margin-top:.6rem">Sair</button>
   </div>
-</section>
+</div>
 
-<!-- =====================================================================
-     TELA 4 — APLICATIVO
-     ===================================================================== -->
-<section id="appScreen" class="app-screen hidden">
-  <header class="app-topbar">
-    <div class="topbar-left">
-      <div class="topbar-brand">
-        <span class="brand-glyph">
-          <img src="apple-touch-icon.png" alt="Achei &amp; Postei" />
-        </span>
-        <span class="topbar-brand-name">Achei &amp; Postei</span>
+<!-- ============================ APP ============================ -->
+<div id="appScreen" class="screen app-screen hidden">
+
+  <aside class="app-sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark">
+        <span class="brand-logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 20.5l1.5-5A8 8 0 1 1 21 12Z"/><path d="M8.5 12h7M13 9l3 3-3 3"/></svg></span>
+        <span class="brand-name">Achei &amp; Postei</span>
       </div>
-      <div class="topbar-crumb" aria-live="polite">
-        <span class="crumb-sep">/</span>
-        <span id="pageCrumb">Início</span>
-      </div>
-    </div>
-    <div class="topbar-actions">
-      <button type="button" class="theme-toggle" data-theme-toggle title="Alternar tema" aria-label="Alternar tema">
-        <span class="icon-sun">☀️</span><span class="icon-moon">🌙</span>
+      <button type="button" class="icon-btn nav-collapse-btn" data-nav-collapse aria-label="Recolher menu">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
       </button>
-      <div class="user-chip">
-        <span class="user-avatar-wrap">
-          <span id="userAvatar" class="user-avatar"></span>
-          <span id="founderBadgeIco" class="founder-badge-ico hidden" title="Membro fundador">🏅</span>
-        </span>
-        <span id="userEmailLabel" class="user-email"></span>
-        <button type="button" id="logoutBtn" class="icon-btn" title="Sair" aria-label="Sair">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
-        </button>
-      </div>
     </div>
-  </header>
 
-  <div class="app-body">
     <nav class="app-nav" aria-label="Menu principal">
-      <button type="button" class="nav-item active" data-tab="overview">
-        <span class="nav-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg></span>
-        <span>Início</span>
+      <button type="button" class="nav-item" data-tab="overview">
+        <span class="nav-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></span><span>Visão geral</span>
       </button>
-      <button type="button" class="nav-item" data-tab="dashboard">
-        <span class="nav-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg></span>
-        <span>Painel</span>
+      <button type="button" class="nav-item active" data-tab="dashboard">
+        <span class="nav-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9Z"/></svg></span><span>Automações</span>
       </button>
       <button type="button" class="nav-item" data-tab="accounts">
-        <span class="nav-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M8 6l1.6-2.4A2 2 0 0 1 11.2 3h1.6a2 2 0 0 1 1.6.8L16 6"/><circle cx="12" cy="13" r="3.4"/></svg></span>
-        <span>Contas</span>
+        <span class="nav-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="5"/><circle cx="12" cy="12" r="4"/><path d="M17.5 6.5h.01"/></svg></span><span>Contas</span>
       </button>
-      <!-- pagamentos.js insere o item "Pagamentos" logo antes do Admin -->
-      <button type="button" id="adminTabBtn" class="nav-item hidden" data-tab="admin">
-        <span class="nav-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6l7-3Z"/><path d="M9.5 12l1.8 1.8L14.8 10"/></svg></span>
-        <span>Admin</span>
-      </button>
-      <button type="button" class="nav-collapse" data-nav-collapse aria-label="Recolher menu" title="Recolher menu">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
-        <span class="nav-collapse-label">Recolher menu</span>
+      <!-- A aba "Pagamentos" é inserida aqui por pagamentos.js -->
+      <button type="button" class="nav-item hidden" id="adminTabBtn" data-tab="admin">
+        <span class="nav-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 5 3.4 8.4 8 9 4.6-.6 8-4 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg></span><span>Admin</span>
       </button>
     </nav>
 
-    <main class="app-main">
-      <div id="statusBanner" class="banner"></div>
+    <div class="sidebar-foot">
+      <button type="button" class="btn btn-outline btn-sm install-side" data-pwa-install>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><span class="foot-label">Instalar app</span>
+      </button>
+      <div class="user-chip">
+        <span class="avatar"><span id="userAvatar">?</span><span id="founderBadgeIco" class="hidden" title="Membro fundador">🏅</span></span>
+        <span class="user-chip-text"><span id="userEmailLabel"></span></span>
+      </div>
+      <button type="button" class="btn btn-outline btn-sm" data-theme-toggle aria-label="Alternar tema">
+        <svg class="theme-ico-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+        <svg class="theme-ico-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        <span class="foot-label">Tema</span>
+      </button>
+      <button type="button" id="logoutBtn" class="btn btn-outline btn-sm" aria-label="Sair">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg><span class="foot-label">Sair</span>
+      </button>
+    </div>
+  </aside>
 
-      <!-- ================= INÍCIO / VISÃO GERAL ================= -->
-      <div id="tab-overview" class="tab-panel">
-        <div class="page-head panel-heading-row">
-          <div><h1>Visão geral</h1><p>Resumo do desempenho das suas automações.</p></div>
-          <div class="range-nav">
-            <button type="button" class="range-btn" data-dias="7">7 dias</button>
-            <button type="button" class="range-btn active" data-dias="30">30 dias</button>
-            <button type="button" class="range-btn" data-dias="90">90 dias</button>
-          </div>
-        </div>
-        <div id="ovKpis" class="kpi-strip"></div>
-        <div class="ov-grid">
-          <section class="panel ov-wide"><div class="panel-heading-row"><h2>DMs enviadas por dia</h2></div><div id="ovDaily"></div></section>
-          <section class="panel"><div class="panel-heading-row"><h2>Posts que mais geram DMs</h2></div><div id="ovPosts"></div></section>
-          <section class="panel"><div class="panel-heading-row"><h2>Formato dos posts</h2></div><div id="ovFormats"></div></section>
-          <section class="panel"><div class="panel-heading-row"><h2>Horários de pico</h2></div><div id="ovHours"></div></section>
-          <section class="panel"><div class="panel-heading-row"><h2>Envios por conta</h2></div><div id="ovAccounts"></div></section>
-          <section class="panel ov-wide"><div class="panel-heading-row"><h2>Erros de envio</h2></div><div id="ovErrors"></div></section>
+  <main class="app-main">
+    <div id="statusBanner" class="banner" role="status"></div>
+
+    <!-- ===================== VISÃO GERAL ===================== -->
+    <div id="tab-overview" class="tab-panel hidden">
+      <div class="page-head panel-heading-row">
+        <div><h1>Visão geral</h1><p>Como suas automações estão performando.</p></div>
+        <div class="range-switch" role="group" aria-label="Período">
+          <button type="button" class="range-btn" data-dias="7">7 dias</button>
+          <button type="button" class="range-btn active" data-dias="30">30 dias</button>
+          <button type="button" class="range-btn" data-dias="90">90 dias</button>
         </div>
       </div>
+      <div id="ovKpis" class="kpi-strip"><div class="loading-row" style="grid-column:1/-1">Carregando…</div></div>
+      <div class="ov-grid">
+        <section class="panel ov-wide"><div class="panel-heading-row"><h2>Envios por dia</h2></div><div id="ovDaily"></div></section>
+        <section class="panel"><div class="panel-heading-row"><h2>Posts que mais geram Direct</h2></div><div id="ovPosts"></div></section>
+        <section class="panel"><div class="panel-heading-row"><h2>Formatos</h2></div><div id="ovFormats"></div></section>
+        <section class="panel"><div class="panel-heading-row"><h2>Horários dos envios</h2></div><div id="ovHours"></div></section>
+        <section class="panel"><div class="panel-heading-row"><h2>Por conta</h2></div><div id="ovAccounts"></div></section>
+        <section class="panel ov-wide"><div class="panel-heading-row"><h2>Erros de envio</h2></div><div id="ovErrors"></div></section>
+      </div>
+    </div>
 
-      <!-- ================= PAINEL DE AUTOMAÇÕES ================= -->
-      <div id="tab-dashboard" class="tab-panel hidden">
-        <div class="page-head panel-heading-row">
-          <div><h1>Painel de automações</h1><p>Acompanhe e gerencie suas automações de comentário e DM.</p></div>
-        </div>
+    <!-- ===================== AUTOMAÇÕES ===================== -->
+    <div id="tab-dashboard" class="tab-panel">
+      <div class="page-head panel-heading-row">
+        <div><h1>Automações</h1><p>Quem comenta recebe o link do produto no Direct.</p></div>
+      </div>
 
-        <div class="kpi-strip">
-          <div class="kpi-item accent">
-            <svg class="kpi-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-            <span id="kpiTotal" class="kpi-value">0</span><span class="kpi-label">Automações no total</span>
+      <div class="kpi-strip">
+        <div class="kpi-item accent"><span class="kpi-value" id="kpiTotal">0</span><span class="kpi-label">Automações</span></div>
+        <div class="kpi-item"><span class="kpi-value" id="kpiAtivas">0</span><span class="kpi-label">Ativas</span></div>
+        <div class="kpi-item"><span class="kpi-value" id="kpiPausadas">0</span><span class="kpi-label">Pausadas</span></div>
+      </div>
+
+      <nav class="subtab-nav" id="automationsSubtabNav" aria-label="Seções de automações">
+        <button type="button" class="subtab-btn active" data-subtab="new">Nova automação</button>
+        <button type="button" class="subtab-btn" data-subtab="posts">Últimas publicações</button>
+        <button type="button" class="subtab-btn" data-subtab="list">Automações cadastradas</button>
+        <button type="button" class="subtab-btn" data-subtab="produtos">Produtos</button>
+        <!-- A sub-aba "Automático" é inserida por auto-automation.js -->
+      </nav>
+
+      <!-- Nova automação (no celular vira uma folha que sobe de baixo) -->
+      <div id="subtab-new" class="subtab-panel">
+        <div class="sheet-head"><h2>Nova automação</h2><button type="button" class="modal-close" data-close-sheet aria-label="Fechar">&times;</button></div>
+        <section class="panel">
+          <div class="panel-heading-row desktop-only"><h2>Nova automação</h2></div>
+          <p class="panel-lead">Escolha o post, defina quando enviar e para onde o link leva.</p>
+
+          <div class="field">
+            <label for="instagramMediaId">Post ou Reel</label>
+            <input type="text" id="instagramMediaId" placeholder="Cole o link do post ou escolha em “Últimas publicações”" autocomplete="off" />
           </div>
-          <div class="kpi-item">
-            <svg class="kpi-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.3 2.3L16 10"/></svg>
-            <span id="kpiAtivas" class="kpi-value">0</span><span class="kpi-label">Ativas agora</span>
+
+          <div class="field hidden" id="automationIgAccountField">
+            <label for="automationIgAccount">Conta do Instagram</label>
+            <select id="automationIgAccount"></select>
           </div>
-          <div class="kpi-item is-danger">
-            <svg class="kpi-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 9v6M14 9v6"/></svg>
-            <span id="kpiPausadas" class="kpi-value">0</span><span class="kpi-label">Pausadas</span>
+
+          <div class="form-step"><b>1</b><span>Quando enviar o Direct?</span></div>
+          <div class="choice-row">
+            <label class="choice"><input type="radio" name="triggerMode" value="keyword" checked /><span><strong>Palavra-chave</strong><small>Só quem comentar a palavra recebe.</small></span></label>
+            <label class="choice"><input type="radio" name="triggerMode" value="any" /><span><strong>Qualquer comentário</strong><small>Todo comentário no post recebe.</small></span></label>
           </div>
-        </div>
+          <div class="field" id="palavraChaveField">
+            <label for="palavraChave">Palavra-chave do comentário</label>
+            <input type="text" id="palavraChave" placeholder="ex: quero" autocomplete="off" />
+          </div>
 
-        <nav id="automationsSubtabNav" class="subtab-nav" aria-label="Seções do painel">
-          <button type="button" class="subtab-btn" data-subtab="new">+ Nova automação</button>
-          <button type="button" class="subtab-btn" data-subtab="posts">Últimas publicações</button>
-          <button type="button" class="subtab-btn active" data-subtab="list">Automações cadastradas</button>
-          <button type="button" class="subtab-btn" data-subtab="produtos">Produtos</button>
-          <!-- auto-automation.js acrescenta aqui a aba "Automático" -->
-        </nav>
-
-        <!-- Nova automação (no celular abre como folha em tela cheia) -->
-        <div id="subtab-new" class="subtab-panel hidden">
-          <button type="button" class="sheet-close-btn" data-close-sheet aria-label="Fechar">✕</button>
-          <section class="panel">
-            <div class="panel-heading-row"><h2>Nova automação</h2></div>
-            <p class="panel-lead">Escolha o post, defina a palavra-chave do comentário e o produto que deve ser enviado por DM.</p>
-
-            <div class="form-step"><b>1</b><span>Escolha o post</span></div>
-            <div class="produto-picker-row">
-              <div class="field flush">
-                <span>Post ou reel</span>
-                <input type="text" id="instagramMediaId" placeholder="Cole o link do post ou o media ID" />
-              </div>
-              <button type="button" class="btn btn-outline" data-goto-subtab="posts">🖼️ Escolher nas últimas publicações</button>
+          <div class="form-step"><b>2</b><span>Qual produto enviar?</span></div>
+          <div class="produto-picker-row">
+            <div class="field flush">
+              <label for="produtoUrl">Link do produto</label>
+              <input type="text" id="produtoUrl" placeholder="https://" autocomplete="off" />
             </div>
-
-            <div class="form-step"><b>2</b><span>Defina o gatilho</span></div>
-            <div class="field">
-              <span>Quando enviar o Direct?</span>
-              <div class="choice-grid">
-                <label class="choice-card">
-                  <input type="radio" name="triggerMode" value="keyword" checked />
-                  <span class="choice-body"><strong>Palavra-chave específica</strong><small>Só quem comentar a palavra recebe o Direct.</small></span>
-                </label>
-                <label class="choice-card">
-                  <input type="radio" name="triggerMode" value="any" />
-                  <span class="choice-body"><strong>Qualquer comentário</strong><small>Todo comentário no post recebe o Direct.</small></span>
-                </label>
-              </div>
-            </div>
+            <button type="button" id="pickProdutoBtn" class="btn btn-outline">📦 Escolher produto cadastrado</button>
+          </div>
+          <button type="button" id="toggleImagemUrlBtn" class="btn btn-outline btn-sm mb-sm">Personalizar mensagem (imagem, título e preço)</button>
+          <div id="imagemUrlField" class="hidden">
             <div class="automation-form-grid">
-              <div class="field" id="palavraChaveField">
-                <span>Palavra-chave do comentário</span>
-                <input type="text" id="palavraChave" placeholder="ex: quero" />
-              </div>
-              <div class="field" id="automationIgAccountField">
-                <span>Conta do Instagram</span>
-                <select id="automationIgAccount"></select>
-              </div>
+              <div class="field field-full"><label for="imagemUrl">Imagem (URL) — opcional</label><input type="text" id="imagemUrl" placeholder="https://" /></div>
+              <div class="field"><label for="tituloProduto">Título — opcional</label><input type="text" id="tituloProduto" placeholder="Nome que aparece no Direct" /></div>
+              <div class="field"><label for="precoProduto">Preço — opcional</label><input type="text" id="precoProduto" placeholder="R$ 0,00" /></div>
             </div>
+          </div>
 
-            <div class="form-step"><b>3</b><span>Defina o produto e a mensagem</span></div>
-            <div class="produto-picker-row">
-              <div class="field flush">
-                <span>Link do produto</span>
-                <input type="text" id="produtoUrl" placeholder="https://" />
-              </div>
-              <button type="button" id="pickProdutoBtn" class="btn btn-outline">📦 Escolher produto cadastrado</button>
-            </div>
-            <button type="button" id="toggleImagemUrlBtn" class="btn btn-outline btn-sm mb-md">✏️ Personalizar imagem, título e preço</button>
-            <div id="imagemUrlField" class="automation-form-grid hidden">
-              <div class="field field-full">
-                <span>Imagem do produto (URL)</span>
-                <input type="text" id="imagemUrl" placeholder="https://" />
-              </div>
-              <div class="field">
-                <span>Título do produto</span>
-                <input type="text" id="tituloProduto" placeholder="Nome que aparece no Direct" />
-              </div>
-              <div class="field">
-                <span>Preço</span>
-                <input type="text" id="precoProduto" placeholder="R$ 0,00" />
-              </div>
-            </div>
-
-            <div class="form-actions">
-              <button type="button" id="saveAutomationBtn" class="btn btn-primary">Salvar automação</button>
-            </div>
-          </section>
-        </div>
-
-        <!-- Últimas publicações -->
-        <div id="subtab-posts" class="subtab-panel hidden">
-          <section class="panel panel-plain">
-            <div class="panel-heading-row">
-              <h2>Últimas publicações</h2>
-              <button type="button" id="latestPostsRefreshBtn" class="btn btn-outline btn-sm">Atualizar</button>
-            </div>
-            <div id="latestPostsGrid" class="latest-posts-grid"></div>
-          </section>
-        </div>
-
-        <!-- Automações cadastradas -->
-        <div id="subtab-list" class="subtab-panel">
-          <section class="panel panel-plain">
-            <div class="panel-heading-row">
-              <h2>Automações cadastradas</h2>
-              <div class="search-input-wrap">
-                <input type="search" id="automationSearch" placeholder="Buscar por palavra, link ou post" />
-              </div>
-            </div>
-            <div id="loadingAutomations" class="loading-row hidden">Carregando automações…</div>
-            <div id="automationsTableBody" class="automation-grid"></div>
-          </section>
-        </div>
-
-        <!-- Produtos -->
-        <div id="subtab-produtos" class="subtab-panel hidden">
-          <section class="panel panel-plain">
-            <div class="panel-heading-row">
-              <h2>Produtos</h2>
-              <button type="button" id="newProdutoBtn" class="btn btn-primary btn-sm">+ Novo produto</button>
-            </div>
-            <div class="search-input-wrap mb-md">
-              <input type="search" id="produtoSearch" placeholder="Buscar produto" />
-            </div>
-            <div id="produtosGrid" class="produtos-grid"></div>
-          </section>
-        </div>
-
-        <button type="button" class="fab-new-automation" data-open-new-automation aria-label="Nova automação">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-        </button>
+          <button type="button" id="saveAutomationBtn" class="btn btn-primary btn-lg btn-full">Salvar automação</button>
+        </section>
       </div>
 
-      <!-- ================= CONTAS ================= -->
-      <div id="tab-accounts" class="tab-panel hidden">
-        <div class="page-head panel-heading-row">
-          <div><h1>Contas do Instagram</h1><p>Conecte suas contas e gerencie o seu plano.</p></div>
-        </div>
-        <nav class="seg-nav">
-          <button type="button" class="seg-btn active" data-seg="seg-ig">Instagram</button>
-          <button type="button" class="seg-btn" data-seg="seg-plan">Plano e benefícios</button>
-        </nav>
-
-        <div id="seg-ig" class="seg-panel">
-          <section class="panel panel-plain">
-            <div class="panel-heading-row"><h2>Contas conectadas</h2></div>
-            <div id="igLoadingStatus" class="loading-row">Verificando status da conexão…</div>
-            <div id="igAccountsList" class="hidden"></div>
-            <div id="igStatusFooter" class="hidden">
-              <span id="igLimitText"></span>
-              <button type="button" id="addIgAccountBtn" class="btn btn-primary btn-sm">Conectar Instagram</button>
-            </div>
-          </section>
-
-          <section class="panel panel-plain ig-tester-onboarding" id="igTesterOnboarding">
-            <h2>Solicitar acesso de testador</h2>
-            <p class="panel-lead">Primeiro, peça acesso de testador com o seu @. Depois de aprovado, você conecta a conta acima.</p>
-            <form id="igTesterForm">
-              <div class="field">
-                <label for="igTesterUsernameInput">@ do Instagram</label>
-                <input type="text" id="igTesterUsernameInput" placeholder="@sua.loja" autocomplete="off" />
-              </div>
-              <div id="igTesterFormError" class="banner error hidden"></div>
-              <button type="submit" id="igTesterSubmitBtn" class="btn btn-primary btn-full">Conectar Instagram</button>
-            </form>
-            <div id="igTesterRequestsList" class="ig-tester-list"></div>
-          </section>
-        </div>
-
-        <div id="seg-plan" class="seg-panel hidden">
-          <section class="panel panel-founder hidden" id="founderPanel">
-            <div class="panel-heading-row">
-              <h2>🏅 Benefícios de Membro Fundador</h2>
-            </div>
-            <p class="panel-lead">Você é um dos nossos primeiros clientes — muito obrigado por confiar na plataforma desde o início. Isso te dá alguns benefícios exclusivos:</p>
-            <ul class="founder-benefits-list">
-              <li><strong>Preço travado para sempre.</strong> O valor do seu plano nunca aumenta — só muda se você mesmo decidir adicionar mais contas do Instagram.</li>
-              <li><strong>Contato direto comigo pelo WhatsApp.</strong> Sem fila de suporte, é direto comigo.</li>
-              <li><strong>Você pode sugerir novas funções para a plataforma.</strong> Ideias de membros fundadores têm prioridade.</li>
-            </ul>
-            <div class="founder-idea-box">
-              <div id="founderIdeaAccepted" class="hidden">
-                <p class="founder-idea-note">✅ Termo de uso de ideias aceito. Pode chamar no WhatsApp com sua sugestão quando quiser.</p>
-                <a href="#" id="founderSuggestBtn" class="btn btn-primary btn-sm" target="_blank" rel="noopener">💬 Sugerir função no WhatsApp</a>
-              </div>
-              <div id="founderIdeaPending">
-                <label class="founder-idea-check">
-                  <input type="checkbox" id="founderIdeaTermsCheckbox" />
-                  <span>Li e aceito os <a href="ideias-termos.html" target="_blank" rel="noopener">Termos de Uso de Ideias e Sugestões</a> antes de sugerir uma função.</span>
-                </label>
-                <button type="button" id="founderIdeaAcceptBtn" class="btn btn-outline btn-sm" disabled>Aceitar e sugerir função no WhatsApp</button>
-              </div>
-            </div>
-          </section>
-
-          <section class="panel panel-plain">
-            <div class="panel-heading-row"><h2>Planos e mais contas</h2></div>
-            <p class="panel-lead">Precisa conectar mais contas do Instagram? Veja os valores abaixo e chame no WhatsApp pra gente atualizar seu plano.</p>
-            <div class="plans-grid">
-              <div class="plan-card">
-                <span class="plan-card-tag">Plano mais simples</span>
-                <h3>1 conta</h3>
-                <div class="plan-card-price"><b>R$ 49,90</b><span>/mês</span></div>
-                <p class="plan-card-desc">Ideal pra quem tem uma única conta comercial do Instagram.</p>
-                <a href="#" id="planOneAccountBtn" class="btn btn-outline btn-full" target="_blank" rel="noopener">Quero esse plano</a>
-              </div>
-              <div class="plan-card plan-card-highlight">
-                <span class="plan-card-tag">Mais popular</span>
-                <h3>Até 3 contas</h3>
-                <div class="plan-card-price"><b>R$ 89,90</b><span>/mês</span></div>
-                <p class="plan-card-desc">Conecte até 3 contas do Instagram pelo mesmo valor fixo.</p>
-                <a href="#" id="planThreeAccountsBtn" class="btn btn-primary btn-full" target="_blank" rel="noopener">Quero esse plano</a>
-              </div>
-              <div class="plan-card plan-card-slider">
-                <span class="plan-card-tag">Mais de 3 contas</span>
-                <h3>Personalize a quantidade</h3>
-                <div class="plan-slider-row">
-                  <input type="range" id="planAccountsSlider" min="3" max="20" step="1" value="4" />
-                  <div class="plan-slider-value"><span id="planAccountsCount">4</span> contas</div>
-                </div>
-                <div class="plan-card-price"><b id="planSliderPrice">R$ 119,80</b><span>/mês</span></div>
-                <p class="plan-card-desc">R$ 89,90 (até 3 contas) + R$ 29,90 por cada conta extra.</p>
-                <a href="#" id="planSliderBtn" class="btn btn-outline btn-full" target="_blank" rel="noopener">Quero esse plano</a>
-              </div>
-            </div>
-            <p class="field-hint">O aumento de plano é feito manualmente: você me chama no WhatsApp informando quantas contas quer, eu atualizo seu painel e você paga só a diferença da mensalidade pra já poder conectar as novas contas.</p>
-          </section>
-        </div>
+      <!-- Últimas publicações -->
+      <div id="subtab-posts" class="subtab-panel hidden">
+        <section class="panel panel-plain">
+          <div class="panel-heading-row">
+            <h2>Últimas publicações</h2>
+            <button type="button" id="latestPostsRefreshBtn" class="btn btn-outline btn-sm">Atualizar</button>
+          </div>
+          <div id="latestPostsGrid" class="latest-posts-grid"></div>
+        </section>
       </div>
 
-      <!-- pagamentos.js acrescenta aqui o painel #tab-payments -->
-
-      <!-- ================= ADMIN ================= -->
-      <div id="tab-admin" class="tab-panel hidden">
-        <div class="page-head panel-heading-row">
-          <div><h1>Administração</h1><p>Clientes, convites e receita da plataforma.</p></div>
-        </div>
-        <div class="kpi-strip">
-          <div class="kpi-item accent">
-            <svg class="kpi-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c0-3.3 2.5-5.5 5.5-5.5s5.5 2.2 5.5 5.5"/><path d="M16 8.2c1.3.3 2.2 1.4 2.2 2.8 0 1.2-.7 2.2-1.7 2.7"/><path d="M17 14.7c2 .4 3.5 2 3.5 4.3"/></svg>
-            <span id="kpiUsers" class="kpi-value">0</span><span class="kpi-label">Clientes</span>
-          </div>
-          <div class="kpi-item">
-            <svg class="kpi-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.3 2.3L16 10"/></svg>
-            <span id="kpiActiveUsers" class="kpi-value">0</span><span class="kpi-label">Ativos</span>
-          </div>
-          <div class="kpi-item">
-            <svg class="kpi-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 6.5c0-1.9-2.2-3.5-5-3.5s-5 1.4-5 3.4c0 4.2 10 2 10 6.2 0 2-2.2 3.4-5 3.4s-5-1.6-5-3.5"/></svg>
-            <span id="kpiMrr" class="kpi-value">R$ 0,00</span><span class="kpi-label">Receita mensal</span>
-          </div>
-          <div class="kpi-item is-danger">
-            <svg class="kpi-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l9 16H3L12 4Z"/><path d="M12 10v4"/><path d="M12 17.2v.1"/></svg>
-            <span id="kpiLate" class="kpi-value">0</span><span class="kpi-label">Pagamentos atrasados</span>
-          </div>
-        </div>
-
-        <nav class="seg-nav">
-          <button type="button" class="seg-btn active" data-seg="seg-clients">Clientes</button>
-          <button type="button" class="seg-btn" data-seg="seg-invites">Convites e solicitações</button>
-        </nav>
-
-        <div id="seg-clients" class="seg-panel">
-          <section class="panel panel-plain">
-            <div class="panel-heading-row">
-              <h2>Clientes</h2>
-              <div class="search-input-wrap">
-                <input type="search" id="userSearch" placeholder="Buscar por e-mail" />
-              </div>
-            </div>
-            <div id="loadingUsers" class="loading-row hidden">Carregando clientes…</div>
-            <div class="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>E-mail</th>
-                    <th>Criado em</th>
-                    <th>Status</th>
-                    <th>Pagamento</th>
-                    <th>Vencimento</th>
-                    <th>Valor do plano</th>
-                    <th>Limite IG</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody id="usersTableBody"></tbody>
-              </table>
-            </div>
-          </section>
-        </div>
-
-        <!-- teste-gratis.js injeta painéis logo após a 1ª <section> filha direta daqui -->
-        <div id="seg-invites" class="seg-panel hidden">
-          <section class="panel">
-            <div class="panel-heading-row"><h2>Convidar cliente</h2></div>
-            <div class="produto-picker-row mb-sm">
-              <div class="field flush">
-                <span>E-mail do novo cliente</span>
-                <input type="email" id="inviteEmail" placeholder="cliente@email.com" />
-              </div>
-              <button type="button" id="inviteUserBtn" class="btn btn-primary">Enviar convite</button>
-            </div>
-            <label class="founder-idea-check flush">
-              <input type="checkbox" id="inviteFounderCheckbox" />
-              <span>🏅 Convidar como <strong>Membro Fundador</strong> (selo, preço travado pra sempre)</span>
-            </label>
-          </section>
-          <section class="panel panel-plain">
-            <div class="panel-heading-row">
-              <h2>Solicitações de conexão do Instagram</h2>
-              <button type="button" id="igTesterAdminRefreshBtn" class="btn btn-outline btn-sm">Atualizar</button>
-            </div>
-            <div id="igTesterAdminList"></div>
-          </section>
-        </div>
+      <!-- Automações cadastradas -->
+      <div id="subtab-list" class="subtab-panel hidden">
+        <section class="panel panel-plain">
+          <div class="panel-heading-row"><h2>Automações cadastradas</h2></div>
+          <div class="search-row"><input type="search" id="automationSearch" placeholder="Buscar por palavra-chave, produto, conta ou link" /></div>
+          <div id="loadingAutomations" class="loading-row hidden">Carregando automações…</div>
+          <div id="automationsTableBody" class="automation-grid"></div>
+        </section>
       </div>
-    </main>
-  </div>
-</section>
 
-<!-- =====================================================================
-     MODAIS
-     ===================================================================== -->
-<div id="produtoModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="produtoModalTitle">
+      <!-- (subtab-auto é inserido aqui por auto-automation.js) -->
+
+      <!-- Produtos -->
+      <div id="subtab-produtos" class="subtab-panel hidden">
+        <section class="panel panel-plain">
+          <div class="panel-heading-row">
+            <h2>Produtos</h2>
+            <button type="button" id="newProdutoBtn" class="btn btn-primary btn-sm">+ Cadastrar produto</button>
+          </div>
+          <div class="search-row"><input type="search" id="produtoSearch" placeholder="Buscar produto pelo nome" /></div>
+          <div id="produtosGrid" class="produto-grid"></div>
+        </section>
+      </div>
+
+      <div class="sheet-backdrop" data-close-sheet></div>
+      <button type="button" class="btn btn-primary fab" data-open-new-automation>＋ Nova automação</button>
+    </div>
+
+    <!-- ===================== CONTAS ===================== -->
+    <div id="tab-accounts" class="tab-panel hidden">
+      <div class="page-head"><h1>Contas e plano</h1><p>Conecte seu Instagram e acompanhe o limite do seu plano.</p></div>
+
+      <section class="panel">
+        <div class="panel-heading-row"><h2>Instagram conectado</h2></div>
+        <div id="igLoadingStatus" class="loading-row">Carregando contas…</div>
+        <div id="igAccountsList" class="hidden"></div>
+        <div id="igStatusFooter" class="hidden">
+          <span id="igLimitText"></span>
+          <button type="button" id="addIgAccountBtn" class="btn btn-primary">Conectar Instagram</button>
+        </div>
+      </section>
+
+      <section class="panel ig-tester-onboarding" id="igTesterOnboarding">
+        <div class="panel-heading-row"><h2>Liberar uma conta nova</h2></div>
+        <p class="panel-lead">Informe o @ da conta. Nós liberamos o acesso e avisamos aqui quando for a hora de aceitar o convite no Instagram.</p>
+        <form id="igTesterForm" novalidate>
+          <div class="field">
+            <label for="igTesterUsernameInput">@ do Instagram</label>
+            <input type="text" id="igTesterUsernameInput" placeholder="@sua.loja" autocomplete="off" />
+          </div>
+          <div id="igTesterFormError" class="banner error hidden"></div>
+          <button type="submit" id="igTesterSubmitBtn" class="btn btn-primary">Conectar Instagram</button>
+        </form>
+        <div id="igTesterRequestsList" class="ig-tester-list"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading-row"><h2>Planos</h2></div>
+        <div class="plans-grid">
+          <div class="plan-card">
+            <h3>1 conta</h3>
+            <div class="price">R$ 49,90 <small>/mês</small></div>
+            <p>Para quem tem um perfil. Inclui 300 mensagens por mês.</p>
+            <a id="planOneAccountBtn" class="btn btn-outline" target="_blank" rel="noopener">Contratar</a>
+          </div>
+          <div class="plan-card">
+            <h3>Até 3 contas</h3>
+            <div class="price">R$ 89,90 <small>/mês</small></div>
+            <p>Para quem gerencia mais de um perfil. 300 mensagens por conta.</p>
+            <a id="planThreeAccountsBtn" class="btn btn-outline" target="_blank" rel="noopener">Contratar</a>
+          </div>
+          <div class="plan-card custom">
+            <h3>Mais contas</h3>
+            <p style="flex:none">Cada conta além de 3 custa R$ 29,90 por mês.</p>
+            <div class="slider-row">
+              <input type="range" id="planAccountsSlider" min="4" max="30" step="1" value="5" aria-label="Quantidade de contas" style="flex:1;min-width:180px" />
+              <div class="slider-info"><b id="planAccountsCount">5</b> contas · <b id="planSliderPrice">R$ 0,00</b>/mês</div>
+              <a id="planSliderBtn" class="btn btn-primary" target="_blank" rel="noopener">Atualizar plano</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="founderPanel" class="panel founder-panel hidden">
+        <div class="panel-heading-row"><h2>🏅 Membro fundador</h2></div>
+        <div id="founderIdeaPending">
+          <p class="panel-lead">Você tem preço travado e pode sugerir novas funções. Antes, leia e aceite o <a class="terms-link" href="ideias-termos.html" target="_blank" rel="noopener">Termo de Uso de Ideias e Sugestões</a>.</p>
+          <label class="founder-idea-check mb-sm"><input type="checkbox" id="founderIdeaTermsCheckbox" /><span>Li e aceito o termo de uso de ideias e sugestões.</span></label>
+          <button type="button" id="founderIdeaAcceptBtn" class="btn btn-primary" disabled>Aceitar e sugerir função no WhatsApp</button>
+        </div>
+        <div id="founderIdeaAccepted" class="hidden">
+          <p class="panel-lead">Termo aceito. Conte para a gente o que falta na plataforma.</p>
+          <a id="founderSuggestBtn" class="btn btn-primary" target="_blank" rel="noopener">Sugerir uma função no WhatsApp</a>
+        </div>
+      </section>
+    </div>
+
+    <!-- ===================== ADMIN ===================== -->
+    <div id="tab-admin" class="tab-panel hidden">
+      <div class="page-head"><h1>Admin</h1><p>Clientes, convites e liberações de Instagram.</p></div>
+
+      <div class="kpi-strip">
+        <div class="kpi-item accent"><span class="kpi-value" id="kpiUsers">0</span><span class="kpi-label">Usuários</span></div>
+        <div class="kpi-item"><span class="kpi-value" id="kpiActiveUsers">0</span><span class="kpi-label">Ativos</span></div>
+        <div class="kpi-item"><span class="kpi-value" id="kpiMrr">R$ 0,00</span><span class="kpi-label">Receita mensal em dia</span></div>
+        <div class="kpi-item is-danger"><span class="kpi-value" id="kpiLate">0</span><span class="kpi-label">Atrasados</span></div>
+      </div>
+
+      <nav class="seg-nav" aria-label="Seções do admin">
+        <button type="button" class="seg-btn active" data-seg="seg-users">Clientes</button>
+        <button type="button" class="seg-btn" data-seg="seg-invites">Convites</button>
+        <button type="button" class="seg-btn" data-seg="seg-ig">Instagram</button>
+      </nav>
+
+      <div id="seg-users" class="seg-panel">
+        <section class="panel panel-plain">
+          <div class="panel-heading-row"><h2>Clientes</h2></div>
+          <div class="search-row"><input type="search" id="userSearch" placeholder="Buscar cliente por e-mail" /></div>
+          <div id="loadingUsers" class="loading-row hidden">Carregando usuários…</div>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>E-mail</th><th>Criado em</th><th>Status</th><th>Pagamento</th><th>Vencimento</th><th>Plano</th><th>Contas</th><th>Ações</th></tr></thead>
+              <tbody id="usersTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <!-- A seção de teste grátis é inserida logo após o primeiro <section> daqui por teste-gratis.js -->
+      <div id="seg-invites" class="seg-panel hidden">
+        <section class="panel">
+          <div class="panel-heading-row"><h2>Convidar novo cliente</h2></div>
+          <div class="produto-picker-row mb-sm">
+            <div class="field flush"><label for="inviteEmail">E-mail do cliente</label><input type="email" id="inviteEmail" placeholder="cliente@email.com" /></div>
+            <button type="button" id="inviteUserBtn" class="btn btn-primary">Enviar convite</button>
+          </div>
+          <label class="founder-idea-check"><input type="checkbox" id="inviteFounderCheckbox" /><span>Convidar como membro fundador 🏅</span></label>
+        </section>
+      </div>
+
+      <div id="seg-ig" class="seg-panel hidden">
+        <section class="panel panel-plain">
+          <div class="panel-heading-row">
+            <h2>Solicitações de conexão do Instagram</h2>
+            <button type="button" id="igTesterAdminRefreshBtn" class="btn btn-outline btn-sm">Atualizar</button>
+          </div>
+          <div id="igTesterAdminList"></div>
+        </section>
+      </div>
+    </div>
+
+    <!-- A aba "Pagamentos" (#tab-payments) é inserida aqui por pagamentos.js -->
+  </main>
+</div>
+
+<!-- ============================ DIÁLOGOS ============================ -->
+<!-- Atenção: usam .dialog-overlay (e não .modal-overlay) de propósito. O app.js remove
+     do DOM todo .modal-overlay quando a tecla Esc é pressionada, o que destruiria
+     estes diálogos fixos. -->
+<div id="produtoModal" class="dialog-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="produtoModalTitle">
   <div class="modal-box">
     <div class="modal-header">
       <h2 id="produtoModalTitle">Cadastrar produto</h2>
-      <button type="button" class="modal-close" id="closeProdutoModalBtn" aria-label="Fechar">&times;</button>
+      <button type="button" class="modal-close" id="closeProdutoModalBtn" data-dialog-close aria-label="Fechar">&times;</button>
     </div>
     <div class="modal-body">
-      <input type="hidden" id="produtoEditId" value="" />
+      <input type="hidden" id="produtoEditId" />
+      <div class="field"><label for="produtoNomeInput">Nome do produto</label><input type="text" id="produtoNomeInput" placeholder="ex: Fone Bluetooth" /></div>
+      <div class="field"><label for="produtoLinkInput">Link de afiliado</label><input type="text" id="produtoLinkInput" placeholder="https://" /></div>
+      <div class="field"><label for="produtoImgInput">Imagem (URL) — opcional</label><input type="text" id="produtoImgInput" placeholder="https://" /></div>
+      <div class="field"><label for="produtoPrecoInput">Preço — opcional</label><input type="text" id="produtoPrecoInput" placeholder="R$ 0,00" /></div>
       <div id="produtoModalError" class="banner error hidden"></div>
-      <div class="field">
-        <label for="produtoNomeInput">Nome do produto</label>
-        <input type="text" id="produtoNomeInput" placeholder="ex: Tênis Runner Pro" />
-      </div>
-      <div class="field">
-        <label for="produtoLinkInput">Link de afiliado</label>
-        <input type="text" id="produtoLinkInput" placeholder="https://" />
-      </div>
-      <div class="field">
-        <label for="produtoImgInput">Imagem (URL)</label>
-        <input type="text" id="produtoImgInput" placeholder="https://" />
-      </div>
-      <div class="field">
-        <label for="produtoPrecoInput">Preço</label>
-        <input type="text" id="produtoPrecoInput" placeholder="R$ 0,00" />
-      </div>
     </div>
     <div class="modal-footer">
-      <button type="button" class="btn btn-outline" id="cancelProdutoModalBtn">Cancelar</button>
+      <button type="button" class="btn btn-outline" id="cancelProdutoModalBtn" data-dialog-close>Cancelar</button>
       <button type="button" class="btn btn-primary" id="saveProdutoBtn">Salvar produto</button>
     </div>
   </div>
 </div>
 
-<div id="produtoPickerModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Escolher produto">
+<div id="produtoPickerModal" class="dialog-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="produtoPickerTitle">
   <div class="modal-box modal-box-lg">
     <div class="modal-header">
-      <h2>Escolher produto</h2>
-      <button type="button" class="modal-close" id="closeProdutoPickerBtn" aria-label="Fechar">&times;</button>
+      <h2 id="produtoPickerTitle">Escolher produto</h2>
+      <button type="button" class="modal-close" id="closeProdutoPickerBtn" data-dialog-close aria-label="Fechar">&times;</button>
     </div>
     <div class="modal-body">
-      <input type="search" id="produtoPickerSearch" class="picker-search" placeholder="Buscar produto" />
-      <div id="produtoPickerList" class="produtos-grid"></div>
+      <div class="search-row"><input type="search" id="produtoPickerSearch" placeholder="Buscar produto pelo nome" /></div>
+      <div id="produtoPickerList"></div>
     </div>
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
-<script src="motion-fx.js" defer></script>
-<script src="automations-subtabs.js" defer></script>
+<!-- ============================ SCRIPTS ============================ -->
+<!-- Animações da tela de login (motion-fx.js usa o gsap quando existe) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="motion-fx.js"></script>
+
+<!-- Núcleo (sessão, abas, contas, automações, admin) -->
+<script type="module" src="app.js"></script>
+
+<!-- Navegação e interface -->
+<script src="subnav.js"></script>
+<script src="automations-subtabs.js"></script>
+<script src="mobile-ui.js"></script>
+<script src="pwa-install.js"></script>
+<script src="layout.js"></script>
+
+<!-- Módulos de funcionalidade (produtos.js precisa vir antes de instagram-latest-posts.js) -->
+<script type="module" src="auto-automation.js"></script>
 <script type="module" src="produtos.js"></script>
 <script type="module" src="instagram-latest-posts.js"></script>
-<script type="module" src="instagram-tester-admin.js"></script>
 <script type="module" src="instagram-tester-onboarding.js"></script>
-<script type="module" src="app.js"></script>
-<script src="mobile-ui.js" defer></script>
-<script src="pwa-install.js" defer></script>
-<script src="subnav.js" defer></script>
+<script type="module" src="instagram-tester-admin.js"></script>
 <script type="module" src="visao-geral.js"></script>
 <script type="module" src="pagamentos.js"></script>
 <script type="module" src="teste-gratis.js"></script>
-<script type="module" src="auto-automation.js"></script>
-<script src="layout.js" defer></script>
 </body>
 </html>
