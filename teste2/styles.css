@@ -1313,3 +1313,63 @@ tbody tr:hover { background: var(--surface-2); }
   .kpi-item { box-shadow: none; }
   .nav-item.active { box-shadow: none; }
 }
+
+/* =====================================================================
+   SELETOR PREMIUM (layout.js) — substitui a lista nativa do select
+   ===================================================================== */
+.cs { position: relative; }
+.cs-native { display: none !important; }
+.cs-trigger {
+  width: 100%; display: flex; align-items: center; gap: 0.75rem;
+  min-height: 48px; padding: 0.45rem 0.75rem 0.45rem 0.55rem;
+  background-color: var(--bg-soft); border: 1px solid var(--border); border-radius: 12px;
+  color: var(--text); font: inherit; font-size: 0.92rem; font-weight: 500; text-align: left; cursor: pointer;
+  transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease), background-color 0.15s var(--ease);
+}
+.cs-trigger:hover { border-color: var(--text-faint); }
+.cs-trigger:focus-visible, .cs.open .cs-trigger { border-color: var(--accent-solid); box-shadow: var(--ring); outline: none; }
+.cs-value { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cs-value.is-placeholder { color: var(--text-faint); font-weight: 400; }
+.cs-chev { flex-shrink: 0; color: var(--text-faint); transition: transform 0.18s var(--ease); }
+.cs.open .cs-chev { transform: rotate(180deg); color: var(--text); }
+.cs-avatar {
+  width: 32px; height: 32px; flex-shrink: 0; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--accent-solid); color: #fff; font-family: var(--font-display); font-size: 0.8rem; font-weight: 700;
+}
+.cs-avatar.is-empty { background: var(--surface-2); color: var(--text-faint); }
+.cs-backdrop, .cs-sheet-title { display: none; }
+.cs-menu {
+  position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 50;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  box-shadow: var(--shadow-pop); padding: 0.35rem; max-height: 288px; overflow-y: auto;
+  opacity: 0; visibility: hidden; transform: translateY(-4px) scale(0.99); transform-origin: top center;
+  transition: opacity 0.14s var(--ease), transform 0.14s var(--ease), visibility 0.14s;
+}
+.cs.up .cs-menu { top: auto; bottom: calc(100% + 6px); transform-origin: bottom center; transform: translateY(4px) scale(0.99); }
+.cs.open .cs-menu { opacity: 1; visibility: visible; transform: none; }
+.cs-list { display: flex; flex-direction: column; gap: 2px; }
+.cs-item {
+  display: flex; align-items: center; gap: 0.75rem; width: 100%;
+  padding: 0.5rem 0.6rem; border: 0; border-radius: 10px; background: transparent;
+  color: var(--text); font: inherit; font-size: 0.92rem; text-align: left; cursor: pointer;
+}
+.cs-item:hover, .cs-item:focus-visible { background: var(--surface-hover); outline: none; }
+.cs-item[aria-selected='true'] { background: var(--accent-tint); font-weight: 600; }
+.cs-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cs-check { margin-left: auto; flex-shrink: 0; color: var(--accent-solid); opacity: 0; }
+.cs-item[aria-selected='true'] .cs-check { opacity: 1; }
+
+@media (max-width: 900px) {
+  .cs.open .cs-backdrop { display: block; position: fixed; inset: 0; z-index: 69; background: var(--overlay); animation: fadeIn 0.15s var(--ease); }
+  .cs-menu, .cs.up .cs-menu {
+    position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 70;
+    border-radius: 20px 20px 0 0; border-bottom: 0; max-height: 70dvh;
+    padding: 0.5rem 0.75rem calc(0.75rem + var(--safe-bottom));
+    transform: translateY(100%); transform-origin: bottom center;
+  }
+  .cs.open .cs-menu { transform: none; }
+  .cs-menu::before { content: ''; display: block; width: 36px; height: 4px; border-radius: 4px; background: var(--border); margin: 0.2rem auto 0.6rem; }
+  .cs-sheet-title { display: block; padding: 0 0.4rem 0.6rem; font-family: var(--font-display); font-weight: 600; font-size: 1rem; }
+  .cs-item { padding: 0.75rem 0.6rem; min-height: 52px; }
+}
