@@ -9,6 +9,8 @@ const $ = (id) => document.getElementById(id);
 let userId = null;
 let ready = false;
 let busy = false;
+let accounts = [];
+const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const isUrl = (v) => /^https?:\/\/\S+$/i.test(v);
 function injectStyles() {
   if ($("autoAutoStyles")) return;
@@ -29,6 +31,9 @@ function injectStyles() {
     .auto-mode label.active { border-color:var(--accent-1); }
     .auto-mode input { margin-top:.2rem; accent-color:var(--accent-1); }
     .auto-mode small { display:block; color:var(--text-muted); font-size:.8rem; }
+    .auto-acc-list { display:flex; flex-direction:column; gap:.5rem; margin-bottom:1rem; }
+    .auto-acc-list label { display:flex; align-items:center; gap:.6rem; padding:.6rem .9rem; border:1px solid var(--border); border-radius:12px; cursor:pointer; background:var(--surface); }
+    .auto-acc-list input { accent-color:var(--accent-1); }
     .auto-note { font-size:.82rem; color:var(--text-faint); margin:.8rem 0 0; }
   `;
   document.head.appendChild(st);
@@ -44,12 +49,27 @@ function syncUi() {
   $("autoAutoForm").classList.toggle("hidden", !on);
   const kw = document.querySelector('input[name="autoAutoMode"]:checked').value === "keyword";
   $("autoAutoKeywordField").classList.toggle("hidden", !kw);
+  const accSel = document.querySelector('input[name="autoAutoAccMode"]:checked').value === "selected";
+  $("autoAutoAccountList").classList.toggle("hidden", !accSel);
   document.querySelectorAll(".auto-mode label").forEach((l) => l.classList.toggle("active", l.querySelector("input").checked));
+}
+function selectedAccountIds() {
+  return Array.from(document.querySelectorAll("#autoAutoAccountList input:checked")).map((i) => i.value);
+}
+async function loadAccounts() {
+  const { data, error } = await sb.from("instagram_config").select("id, instagram_username").eq("user_id", userId);
+  accounts = error || !data ? [] : data;
+  $("autoAutoAccountList").innerHTML = accounts.map((a) => '<label><input type="checkbox" value="' + esc(a.id) + '" /><span>@' + esc(a.instagram_username || "conta") + "</span></label>").join("");
+  $("autoAutoAccountsBlock").classList.toggle("hidden", accounts.length < 2);
 }
 function fill(row) {
   $("autoAutoSwitch").checked = !!(row && row.enabled);
   const mode = row && row.keyword_mode === "keyword" ? "keyword" : "any";
   document.querySelector('input[name="autoAutoMode"][value="' + mode + '"]').checked = true;
+  const accMode = row && row.account_mode === "selected" && accounts.length > 1 ? "selected" : "all";
+  document.querySelector('input[name="autoAutoAccMode"][value="' + accMode + '"]').checked = true;
+  const ids = (row && row.instagram_config_ids) || [];
+  document.querySelectorAll("#autoAutoAccountList input").forEach((i) => { i.checked = ids.indexOf(i.value) !== -1; });
   $("autoAutoKeyword").value = (row && row.palavra_chave) || "";
   $("autoAutoUrl").value = (row && row.produto_url) || "";
   $("autoAutoImg").value = (row && row.imagem_url) || "";
@@ -72,7 +92,10 @@ async function save(enabledOverride) {
   const palavra = $("autoAutoKeyword").value.trim();
   const url = $("autoAutoUrl").value.trim();
   const img = $("autoAutoImg").value.trim();
+  const accMode = accounts.length > 1 ? document.querySelector('input[name="autoAutoAccMode"]:checked').value : "all";
+  const accIds = accMode === "selected" ? selectedAccountIds() : [];
   if (enabled) {
+    if (accMode === "selected" && accIds.length === 0) return setMsg("Escolha pelo menos uma conta do Instagram.", "error");
     if (!url || !isUrl(url)) return setMsg("Informe o link de destino (começando com http:// ou https://).", "error");
     if (img && !isUrl(img)) return setMsg("A URL da imagem precisa começar com http:// ou https://", "error");
     if (mode === "keyword" && !palavra) return setMsg("Informe a palavra-chave ou escolha responder qualquer comentário.", "error");
@@ -84,6 +107,8 @@ async function save(enabledOverride) {
       user_id: userId,
       enabled,
       keyword_mode: mode,
+      account_mode: accMode,
+      instagram_config_ids: accIds,
       palavra_chave: palavra || null,
       produto_url: url || null,
       imagem_url: img || null,
@@ -122,13 +147,18 @@ function build() {
     '<div class="auto-switch-row"><div class="auto-switch-copy"><strong>Criar automação em toda nova publicação</strong><span>Verificamos suas contas a cada poucos minutos.</span></div>' +
     '<label class="auto-switch"><input type="checkbox" id="autoAutoSwitch" aria-label="Ativar automação automática" /><i></i></label></div>' +
     '<div id="autoAutoForm" class="hidden">' +
-    '<div class="form-step"><b>1</b><span>Quando enviar o Direct?</span></div>' +
+    '<div id="autoAutoAccountsBlock" class="hidden"><div class="form-step"><b>1</b><span>Em quais contas?</span></div>' +
+    '<div class="auto-mode">' +
+    '<label class="active"><input type="radio" name="autoAutoAccMode" value="all" checked /><span><strong>Todas as minhas contas</strong><small>Inclusive contas que você conectar depois.</small></span></label>' +
+    '<label><input type="radio" name="autoAutoAccMode" value="selected" /><span><strong>Contas específicas</strong><small>Escolha quais contas terão a criação automática.</small></span></label>' +
+    '</div><div id="autoAutoAccountList" class="auto-acc-list hidden"></div></div>' +
+    '<div class="form-step"><b>2</b><span>Quando enviar o Direct?</span></div>' +
     '<div class="auto-mode">' +
     '<label class="active"><input type="radio" name="autoAutoMode" value="any" checked /><span><strong>Qualquer comentário</strong><small>Todo comentário no post recebe o Direct.</small></span></label>' +
     '<label><input type="radio" name="autoAutoMode" value="keyword" /><span><strong>Palavra-chave específica</strong><small>Só quem comentar a palavra recebe o Direct.</small></span></label>' +
     '</div>' +
     '<div class="field hidden" id="autoAutoKeywordField"><span>Palavra-chave do comentário</span><input type="text" id="autoAutoKeyword" placeholder="ex: quero" /></div>' +
-    '<div class="form-step"><b>2</b><span>O que enviar?</span></div>' +
+    '<div class="form-step"><b>3</b><span>O que enviar?</span></div>' +
     '<div class="produto-picker-row"><div class="field flush"><span>Link de destino (WhatsApp, loja, produto…)</span><input type="text" id="autoAutoUrl" placeholder="https://" /></div>' +
     '<button type="button" id="autoAutoPickBtn" class="btn btn-outline">📦 Escolher produto cadastrado</button></div>' +
     '<div class="automation-form-grid">' +
@@ -151,7 +181,7 @@ function build() {
     setMsg("");
     if (!$("autoAutoSwitch").checked) save(false);
   });
-  document.querySelectorAll('input[name="autoAutoMode"]').forEach((r) => r.addEventListener("change", syncUi));
+  document.querySelectorAll('input[name="autoAutoMode"], input[name="autoAutoAccMode"]').forEach((r) => r.addEventListener("change", syncUi));
   $("autoAutoSaveBtn").addEventListener("click", () => save());
   $("autoAutoPickBtn").addEventListener("click", () => {
     if (typeof window.openProdutoPicker !== "function") return;
@@ -171,6 +201,7 @@ async function init() {
   if (!build()) return;
   ready = true;
   userId = session.user.id;
+  await loadAccounts();
   await loadSettings();
 }
 document.addEventListener("DOMContentLoaded", () => {
