@@ -178,13 +178,13 @@ function updatePlanLinks() {
   const oneBtn = $("#planOneAccountBtn");
   if (oneBtn) {
     oneBtn.href = whatsappLink(
-      "Olá! Quero contratar o plano de 1 conta do Instagram (R$ 49,90/mês) no Respondi. Meu e-mail: " + email
+      "Olá! Quero contratar o plano de 1 conta do Instagram (R$ 99,90/mês) no Respondi. Meu e-mail: " + email
     );
   }
   const threeBtn = $("#planThreeAccountsBtn");
   if (threeBtn) {
     threeBtn.href = whatsappLink(
-      "Olá! Quero contratar o plano de até 3 contas do Instagram (R$ 89,90/mês) no Respondi. Meu e-mail: " + email
+      "Olá! Quero contratar o plano de até 3 contas do Instagram (R$ 189,90/mês) no Respondi. Meu e-mail: " + email
     );
   }
   const slider = $("#planAccountsSlider");
@@ -280,12 +280,12 @@ document.querySelectorAll(".nav-item").forEach((btn) => {
   });
 });
 let currentIgAccounts = [];
-// Tabela de preços oficial: 1 conta R$49,90 | até 3 contas R$89,90 | cada conta extra além de 3, +R$29,90
+// Tabela de preços oficial: 1 conta R$99,90 | até 3 contas R$189,90 | cada conta extra além de 3, +R$49,90
 function suggestPlanValue(limit) {
   const n = Number(limit) || 1;
-  if (n <= 1) return 49.9;
-  if (n <= 3) return 89.9;
-  return Math.round((89.9 + (n - 3) * 29.9) * 100) / 100;
+  if (n <= 1) return 99.9;
+  if (n <= 3) return 189.9;
+  return Math.round((189.9 + (n - 3) * 49.9) * 100) / 100;
 }
 function formatBRL(value) {
   return "R$ " + Number(value).toFixed(2).replace(".", ",");
@@ -969,7 +969,7 @@ async function openEditPaymentModal(event) {
         <div class="field">
           <label for="editIgLimit">Limite de contas do Instagram</label>
           <input type="number" id="editIgLimit" step="1" min="1" placeholder="1" />
-          <p class="field-hint">1 conta = R$49,90 · até 3 contas = R$89,90 · cada conta extra = +R$29,90</p>
+          <p class="field-hint">1 conta = R$99,90 · até 3 contas = R$189,90 · cada conta extra = +R$49,90</p>
         </div>
         <button type="button" class="btn btn-outline btn-sm" id="suggestPlanValueBtn">Sugerir valor do plano com base no limite</button>
       </div>
