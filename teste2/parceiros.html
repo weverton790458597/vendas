@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Achei &amp; Postei — Parceiros</title>
+<meta name="robots" content="noindex" />
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="parceiros.css" />
+<script>
+  (function () {
+    try { var t = localStorage.getItem('ap-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+
+<!-- LOGIN / CADASTRO DE PARCEIRO (sessão separada do painel principal) -->
+<section id="pAuth" class="pt-auth hidden">
+  <div class="pt-card">
+    <div class="pt-brand">🤝 Achei &amp; Postei <span class="pt-tag">Parceiros</span></div>
+    <div class="pt-tabs" id="ptAuthTabs">
+      <button type="button" class="active" data-mode="login">Entrar</button>
+      <button type="button" data-mode="signup">Criar conta de parceiro</button>
+    </div>
+    <div id="ptAuthBanner" class="banner"></div>
+    <div class="field pt-signup hidden"><label for="ptNome">Nome completo</label><input id="ptNome" autocomplete="name" /></div>
+    <div class="field pt-signup hidden"><label for="ptWhats">WhatsApp</label><input id="ptWhats" inputmode="tel" placeholder="(98) 90000-0000" /></div>
+    <div class="field"><label for="ptEmail">E-mail</label><input type="email" id="ptEmail" autocomplete="username" autocapitalize="off" /></div>
+    <div class="field"><label for="ptSenha">Senha</label><input type="password" id="ptSenha" autocomplete="current-password" /></div>
+    <button type="button" id="ptAuthBtn" class="btn btn-primary btn-full">Entrar</button>
+    <p class="pt-note pt-signup hidden">Depois de criar a conta, nossa equipe aprova o seu cadastro e o seu link de indicação é liberado.</p>
+  </div>
+</section>
+
+<!-- PAINEL -->
+<section id="pApp" class="hidden">
+  <header class="pt-top">
+    <div class="pt-brand">🤝 Parceiros <span class="pt-tag" id="ptStatusTag"></span></div>
+    <div class="pt-top-right"><span id="ptUserEmail" class="pt-muted"></span><button type="button" id="ptLogout" class="btn btn-outline btn-sm">Sair</button></div>
+  </header>
+  <nav class="pt-nav" id="ptNav">
+    <button type="button" data-ptab="resumo" class="active">Resumo</button>
+    <button type="button" data-ptab="clientes">Clientes</button>
+    <button type="button" data-ptab="financeiro">Financeiro</button>
+    <button type="button" data-ptab="perfil">Meu perfil</button>
+    <button type="button" data-ptab="admin" class="hidden">Admin</button>
+  </nav>
+  <main class="pt-main">
+    <div id="ptBanner" class="banner"></div>
+    <div id="pt-resumo" class="pt-panel"></div>
+    <div id="pt-clientes" class="pt-panel hidden"></div>
+    <div id="pt-financeiro" class="pt-panel hidden"></div>
+    <div id="pt-perfil" class="pt-panel hidden"></div>
+    <div id="pt-admin" class="pt-panel hidden"></div>
+  </main>
+</section>
+
+<script type="module" src="parceiros.js"></script>
+</body>
+</html>
