@@ -152,6 +152,11 @@ async function bootstrapSession() {
     return;
   }
   currentProfile = profile;
+  // Parceiros (afiliados) não usam este painel: vão para a área deles.
+  if (profile.is_partner && !profile.is_admin) {
+    window.location.replace("parceiro.html");
+    return;
+  }
   currentUserTable = currentProfile.automacoes_table_name;
   if (!profile.is_active) {
     showScreen("blocked");
