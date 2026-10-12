@@ -181,12 +181,27 @@ async function loadAdmin() {
     '<p class="pt-note">Use o e-mail no convite. O vínculo com o parceiro é automático quando o cliente é criado.</p>' +
     table(["E-mail", "Nome", "WhatsApp", "Parceiro", "Em", ""],
       data.leads.map((l) => [esc(l.email), esc(l.nome || "—"), esc(l.whatsapp || "—"), esc(l.parceiro), date(l.em),
-        '<button type="button" class="btn btn-primary btn-sm" data-ptadm="invite" data-email="' + esc(l.email) + '">Usar no convite</button>']),
+        '<div class="pt-actions"><button type="button" class="btn btn-primary btn-sm" data-ptadm="send" data-email="' + esc(l.email) + '">Enviar convite</button>' +
+        '<button type="button" class="btn btn-outline btn-sm" data-ptadm="invite" data-email="' + esc(l.email) + '">Usar no convite</button></div>']),
       "Nenhuma indicação pendente.") + "</section>";
 }
 async function adminAction(btn) {
   const a = btn.dataset.ptadm, id = btn.dataset.id;
   if (a === "refresh") return loadAdmin();
+  if (a === "send") {
+    btn.disabled = true;
+    try {
+      const { data, error } = await sb.functions.invoke("admin-invite-user", { body: { email: btn.dataset.email, is_founder: false } });
+      if (error) throw error;
+      if (data && data.error) throw new Error(data.error);
+      alert("Convite enviado para " + btn.dataset.email + ".");
+      loadAdmin();
+    } catch (err) {
+      alert("Erro ao enviar convite: " + err.message);
+      btn.disabled = false;
+    }
+    return;
+  }
   if (a === "invite") {
     const seg = document.querySelector('#tab-admin .seg-btn[data-seg="seg-invites"]');
     if (seg) seg.click();
