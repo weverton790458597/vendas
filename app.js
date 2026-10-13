@@ -12,7 +12,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 });
 let currentUser = null;
 let currentProfile = null;
-let currentUserTable = null;
+const AUTOMATIONS_TABLE = "post_automacao";
 let allAutomations = [];
 let allUsers = [];
 // Cache de publicações por conta (config_id -> Promise<Map<shortcode, post>>),
@@ -157,7 +157,6 @@ async function bootstrapSession() {
     window.location.replace("parceiros/");
     return;
   }
-  currentUserTable = currentProfile.automacoes_table_name;
   if (!profile.is_active) {
     showScreen("blocked");
     return;
@@ -658,15 +657,11 @@ async function loadAutomations() {
   const loading = $("#loadingAutomations");
   loading.classList.remove("hidden");
   $("#automationsTableBody").innerHTML = "";
-  if (!currentUserTable) {
-    $("#automationsTableBody").innerHTML = '<div class="empty-state">Erro: tabela de automações não encontrada para sua conta. Contate o administrador.</div>';
-    loading.classList.add("hidden");
-    return;
-  }
   try {
     const { data, error } = await supabase
-      .from(currentUserTable)
+      .from(AUTOMATIONS_TABLE)
       .select("*")
+      .eq("user_id", currentUser.id)
       .order("created_at", { ascending: false });
     if (error) throw error;
     allAutomations = data || [];
@@ -699,7 +694,7 @@ async function toggleActive(event) {
   const id = card.getAttribute("data-id");
   const currentAtivo = card.getAttribute("data-ativo") === "true";
   try {
-    const { error } = await supabase.from(currentUserTable).update({ ativo: !currentAtivo }).eq("id", id);
+    const { error } = await supabase.from(AUTOMATIONS_TABLE).update({ ativo: !currentAtivo }).eq("id", id);
     if (error) throw error;
     await loadAutomations();
   } catch (error) {
@@ -711,7 +706,7 @@ async function deleteAutomation(event) {
   const id = card.getAttribute("data-id");
   if (!confirm("Tem certeza que deseja excluir esta automação?")) return;
   try {
-    const { error } = await supabase.from(currentUserTable).delete().eq("id", id);
+    const { error } = await supabase.from(AUTOMATIONS_TABLE).delete().eq("id", id);
     if (error) throw error;
     showBanner("statusBanner", "Automação excluída.", "success");
     await loadAutomations();
@@ -769,7 +764,8 @@ $("#saveAutomationBtn").addEventListener("click", async () => {
     return;
   }
   try {
-    const { error } = await supabase.from(currentUserTable).insert({
+    const { error } = await supabase.from(AUTOMATIONS_TABLE).insert({
+      user_id: currentUser.id,
       instagram_media_id: shortcode,
       palavra_chave: palavraChave,
       produto_url: produtoUrl,
