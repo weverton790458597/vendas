@@ -852,7 +852,7 @@ function renderUsers(rows) {
     if (ps === "em_dia") {
       paymentBadge = '<span class="badge badge-ativo">Em dia</span>';
     } else if (ps === "atrasado") {
-      paymentBadge = '<span class="badge badge-danger">Atrasado</span>';
+      paymentBadge = '<span class="badge badge-danger">Atrasado' + (u._lateDays ? " · " + u._lateDays + "d" : "") + "</span>";
     } else if (ps === "cancelado") {
       paymentBadge = '<span class="badge badge-muted">Cancelado</span>';
     } else {
@@ -893,17 +893,44 @@ function renderUsers(rows) {
   document.querySelectorAll(".edit-payment-btn").forEach((btn) => btn.addEventListener("click", openEditPaymentModal));
   document.querySelectorAll(".view-autos-btn").forEach((btn) => btn.addEventListener("click", openViewAutosModal));
 }
+// Atraso de verdade vem da tabela `pagamentos` (cobrança pendente já vencida).
+// Marca como "atrasado" quem está "em dia"/sem status mas tem cobrança vencida.
+async function applyOverdue(rows) {
+  try {
+    const n = new Date();
+    const hoje = n.getFullYear() + "-" + String(n.getMonth() + 1).padStart(2, "0") + "-" + String(n.getDate()).padStart(2, "0");
+    const { data, error } = await supabase
+      .from("pagamentos")
+      .select("user_id, vencimento")
+      .eq("status", "pendente")
+      .lt("vencimento", hoje)
+      .order("vencimento", { ascending: true });
+    if (error || !data) return rows;
+    const oldest = {};
+    data.forEach((p) => { if (!oldest[p.user_id]) oldest[p.user_id] = p.vencimento; });
+    rows.forEach((u) => {
+      const v = oldest[u.id];
+      if (!v) return;
+      if (!u.payment_status || u.payment_status === "em_dia") u.payment_status = "atrasado";
+      if (u.payment_status === "atrasado") {
+        u._lateDays = Math.max(1, Math.floor((Date.now() - new Date(String(v).slice(0, 10) + "T00:00:00")) / 864e5));
+      }
+    });
+  } catch (_) { /* sem tabela/permissão: mantém o status do cadastro */ }
+  return rows;
+}
 async function loadUsers() {
   const loading = $("#loadingUsers");
   loading.classList.remove("hidden");
   $("#usersTableBody").innerHTML = "";
   try {
+    try { await supabase.rpc("admin_sync_atrasados"); } catch (_) { /* atrasados.sql ainda não rodado */ }
     const { data, error } = await supabase
       .from("profiles")
       .select("*")
       .order("created_at", { ascending: false });
     if (error) throw error;
-    allUsers = data || [];
+    allUsers = await applyOverdue(data || []);
     updateAdminKpis(allUsers);
     renderUsers(allUsers);
   } catch (error) {
