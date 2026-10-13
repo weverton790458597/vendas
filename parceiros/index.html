@@ -77,12 +77,12 @@
     <div id="pcBanner" class="banner"></div>
 
     <nav class="pc-tabs" id="pcTabs">
-      <button type="button" class="pc-tab active" data-pc-tab="home">🏠 Início</button>
-      <button type="button" class="pc-tab" data-pc-tab="invite">✉️ Convidar</button>
-      <button type="button" class="pc-tab" data-pc-tab="referrals">👥 Meus indicados</button>
-      <button type="button" class="pc-tab" data-pc-tab="commissions">💰 Comissões</button>
-      <button type="button" class="pc-tab" data-pc-tab="sell">🚀 Vender mais</button>
-      <button type="button" class="pc-tab" data-pc-tab="rules">📋 Regras e planos</button>
+      <button type="button" class="pc-tab active" data-pc-tab="home"><span data-icon="home"></span> Início</button>
+      <button type="button" class="pc-tab" data-pc-tab="invite"><span data-icon="mail"></span> Convidar</button>
+      <button type="button" class="pc-tab" data-pc-tab="referrals"><span data-icon="users"></span> Meus indicados</button>
+      <button type="button" class="pc-tab" data-pc-tab="commissions"><span data-icon="banknote"></span> Comissões</button>
+      <button type="button" class="pc-tab" data-pc-tab="sell"><span data-icon="rocket"></span> Vender mais</button>
+      <button type="button" class="pc-tab" data-pc-tab="rules"><span data-icon="clipboard"></span> Regras e planos</button>
     </nav>
 
     <!-- ================= INÍCIO ================= -->
@@ -96,7 +96,7 @@
           <div id="pcLevel"></div>
         </div>
         <div class="pc-card">
-          <div class="pc-card-head"><h2>🎯 Seu foco agora</h2></div>
+          <div class="pc-card-head"><h2><span data-icon="target"></span> Seu foco agora</h2></div>
           <div id="pcFocus"></div>
         </div>
       </div>
@@ -107,7 +107,7 @@
           <div id="pcFunnel"></div>
         </div>
         <div class="pc-card">
-          <div class="pc-card-head"><h2>🏆 Suas conquistas</h2><span id="pcMilestoneCount" class="pc-chip"></span></div>
+          <div class="pc-card-head"><h2><span data-icon="trophy"></span> Suas conquistas</h2><span id="pcMilestoneCount" class="pc-chip"></span></div>
           <div id="pcMilestones"></div>
         </div>
       </div>
@@ -121,10 +121,10 @@
       <p class="pc-note">O cliente recebe um e-mail de convite para criar a senha. Assim que ele aceitar, a administração é avisada e faz a configuração técnica (conexão do Instagram etc.).</p>
       <div class="pc-choices">
         <label class="pc-choice"><input type="radio" name="pcTipo" value="teste" checked />
-          <span><strong>🎁 Teste grátis de 7 dias</strong>
+          <span><strong><span data-icon="gift"></span> Teste grátis de 7 dias</strong>
           <small>O cliente testa por 7 dias (o prazo começa no 1º acesso dele) e assina se gostar. Sua comissão começa quando ele virar pagante.</small></span></label>
         <label class="pc-choice"><input type="radio" name="pcTipo" value="pago" />
-          <span><strong>💳 Já entra como pagante</strong>
+          <span><strong><span data-icon="credit-card"></span> Já entra como pagante</strong>
           <small>Para quando o cliente já fechou com você. Ele entra direto como assinante.</small></span></label>
       </div>
       <div class="pc-invite-row">
@@ -144,6 +144,7 @@
       <div class="panel-heading-row"><h2>Indicados em acompanhamento</h2>
         <button type="button" id="pcRefresh" class="btn btn-outline btn-sm">Atualizar</button></div>
       <p class="pc-note">Você acompanha cada indicado durante os <strong>2 primeiros meses</strong> de assinatura. Depois disso ele sai desta lista e passa a ser atendido só pela administração.</p>
+      <div id="pcRefFilters" class="pc-filters"></div>
       <div class="table-scroll"><table>
         <thead><tr><th>E-mail</th><th>Cadastro</th><th>Pagamento</th><th>Vencimento</th><th>Plano</th><th>Gestão até</th><th></th></tr></thead>
         <tbody id="pcReferralsBody"></tbody></table></div>
@@ -151,7 +152,7 @@
 
     <!-- ================= COMISSÕES ================= -->
     <section id="pcTab-commissions" class="pc-panel hidden">
-      <div class="panel-heading-row"><h2>Suas comissões</h2></div>
+      <div class="panel-heading-row"><h2>Suas comissões</h2><button type="button" id="pcExportCsv" class="btn btn-outline btn-sm">Exportar CSV</button></div>
       <p class="pc-note">Pagas em 2 parcelas de 50%, com acerto no dia 10. O nível vale para todos os clientes que começaram a pagar no mesmo mês.</p>
       <div class="pc-card">
         <div class="pc-card-head"><h2>Comissão gerada por mês</h2><span class="pc-chip">últimos 6 meses</span></div>
@@ -163,7 +164,7 @@
     <!-- ================= VENDER MAIS ================= -->
     <section id="pcTab-sell" class="pc-panel hidden">
       <div class="pc-card">
-        <div class="pc-card-head"><h2>💡 Simulador de ganhos</h2></div>
+        <div class="pc-card-head"><h2><span data-icon="lightbulb"></span> Simulador de ganhos</h2></div>
         <p class="pc-note" style="margin-top:0">Veja quanto você ganha ao trazer mais clientes no mesmo mês. Estimativa sobre a 1ª mensalidade; os valores reais seguem as regras de comissão.</p>
         <div class="pc-sim">
           <div class="pc-sim-controls">
@@ -191,9 +192,9 @@
     <section id="pcTab-rules" class="pc-panel hidden">
       <div class="panel-heading-row"><h2>Níveis de comissão</h2></div>
       <div class="pc-levels-visual">
-        <div class="pc-levelbox"><span class="pc-lv-emoji">🥉</span><b>Nível 1 · Bronze</b><span>1 a 10 clientes ativos no mês</span><strong>50%</strong></div>
-        <div class="pc-levelbox"><span class="pc-lv-emoji">🥈</span><b>Nível 2 · Prata</b><span>11 a 20 clientes ativos no mês</span><strong>60%</strong></div>
-        <div class="pc-levelbox"><span class="pc-lv-emoji">🥇</span><b>Nível 3 · Ouro</b><span>21 ou mais clientes ativos no mês</span><strong>70%</strong></div>
+        <div class="pc-levelbox"><span class="pc-lv-emoji" data-icon="medal-bronze"></span><b>Nível 1 · Bronze</b><span>1 a 10 clientes ativos no mês</span><strong>50%</strong></div>
+        <div class="pc-levelbox"><span class="pc-lv-emoji" data-icon="medal-silver"></span><b>Nível 2 · Prata</b><span>11 a 20 clientes ativos no mês</span><strong>60%</strong></div>
+        <div class="pc-levelbox"><span class="pc-lv-emoji" data-icon="medal-gold"></span><b>Nível 3 · Ouro</b><span>21 ou mais clientes ativos no mês</span><strong>70%</strong></div>
       </div>
       <p class="pc-note">A comissão incide sobre a 1ª mensalidade do cliente. O nível do mês vale para todos os clientes que começaram a pagar naquele mês.</p>
       <div class="panel-heading-row pc-gap"><h2>Planos dos seus indicados</h2></div>
