@@ -12,10 +12,7 @@ const empty = (t) => '<div class="empty-state">' + t + "</div>";
 const kpi = (cls, label, value) => '<div class="kpi-item ' + cls + '"><span class="kpi-value">' + value + '</span><span class="kpi-label">' + label + "</span></div>";
 const fmtDay = (iso) => iso.split("-").reverse().slice(0, 2).join("/");
 async function loadAutomations(uid) {
-  const { data: p } = await supabase.from("profiles").select("automacoes_table_name").eq("id", uid).maybeSingle();
-  const table = p && p.automacoes_table_name;
-  if (!table) return [];
-  const { data } = await supabase.from(table).select("instagram_media_id, palavra_chave, ativo");
+  const { data } = await supabase.from("post_automacao").select("instagram_media_id, palavra_chave, ativo").eq("user_id", uid);
   return data || [];
 }
 function dailyChart(d) {
