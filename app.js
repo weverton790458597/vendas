@@ -644,7 +644,9 @@ function renderAutomations(rows) {
       '<div class="automation-card-keyword"><span class="keyword-chip">' + escapeHtml(row.palavra_chave === "*" ? "Qualquer comentário" : row.palavra_chave) + "</span></div>" +
       '<div class="automation-card-post">ID do post: ' + escapeHtml(truncateUrl(row.instagram_media_id, 34)) + "</div>" +
       (productTitle ? '<div class="automation-card-post" style="color:var(--text);font-weight:600;">🛍️ ' + productTitle + "</div>" : "") +
-      '<a class="automation-card-link" href="' + escapeHtml(safeUrl(row.produto_url)) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(truncateUrl(row.produto_url, 40)) + "</a>" +
+      (row.fluxo_id
+        ? '<div class="automation-card-post" style="color:var(--text);font-weight:600;">🔀 <span class="fluxo-chip-name" data-fluxo-id="' + escapeHtml(row.fluxo_id) + '">Fluxo de conversa</span></div>'
+        : '<a class="automation-card-link" href="' + escapeHtml(safeUrl(row.produto_url)) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(truncateUrl(row.produto_url, 40)) + "</a>") +
       '<div class="automation-card-footer">Criado em ' + created + "</div>" +
       "</div>"
     );
@@ -738,11 +740,12 @@ $("#saveAutomationBtn").addEventListener("click", async () => {
   const tituloProduto = tituloProdutoInput.value.trim() || null;
   const precoProduto = precoProdutoInput.value.trim() || null;
   const igAccountId = $("#automationIgAccount").value || null;
-  if (!mediaIdRaw || !palavraChave || !produtoUrl) {
-    showBanner("statusBanner", "Post, palavra-chave (ou \"qualquer comentário\") e link do produto são obrigatórios.", "error");
+  const fluxoId = ($("#fluxoSelect") || {}).value || null;
+  if (!mediaIdRaw || !palavraChave || (!produtoUrl && !fluxoId)) {
+    showBanner("statusBanner", "Post, palavra-chave (ou \"qualquer comentário\") e link do produto (ou um fluxo) são obrigatórios.", "error");
     return;
   }
-  if (!isValidHttpUrl(produtoUrl)) {
+  if (produtoUrl && !isValidHttpUrl(produtoUrl)) {
     showBanner("statusBanner", "O link do produto precisa começar com http:// ou https://", "error");
     return;
   }
@@ -768,7 +771,8 @@ $("#saveAutomationBtn").addEventListener("click", async () => {
       user_id: currentUser.id,
       instagram_media_id: shortcode,
       palavra_chave: palavraChave,
-      produto_url: produtoUrl,
+      produto_url: produtoUrl || "",
+      ...(fluxoId ? { fluxo_id: fluxoId } : {}),
       imagem_url: imagemUrl,
       titulo_produto: tituloProduto,
       preco_produto: precoProduto,
@@ -786,6 +790,8 @@ $("#saveAutomationBtn").addEventListener("click", async () => {
     tituloProdutoInput.value = "";
     precoProdutoInput.value = "";
     $("#imagemUrlField").classList.add("hidden");
+    const fluxoSel = $("#fluxoSelect");
+    if (fluxoSel) { fluxoSel.value = ""; fluxoSel.dispatchEvent(new Event("change")); }
     await loadAutomations();
   } catch (error) {
     showBanner("statusBanner", "Erro ao salvar automação: " + error.message, "error");
