@@ -154,7 +154,7 @@ async function bootstrapSession() {
   currentProfile = profile;
   // Parceiros (afiliados) não usam este painel: vão para a área deles.
   if (profile.is_partner && !profile.is_admin) {
-    window.location.replace("parceiros/parceiro.html");
+    window.location.replace("parceiros/");
     return;
   }
   currentUserTable = currentProfile.automacoes_table_name;
