@@ -26,3 +26,10 @@
 .pc-month h3 { font-size: .95rem; margin: 0 0 .5rem; display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; }
 .pc-sub { color: var(--text-faint); font-size: .75rem; display: block; }
 @media (max-width: 640px) { .pc-main { padding: 1rem .8rem 3rem; } .pc-user { display: none; } }
+
+.pc-choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: .75rem; margin-bottom: 1rem; }
+.pc-choice { display: flex; gap: .7rem; align-items: flex-start; padding: .9rem 1rem; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); }
+.pc-choice:has(input:checked) { border-color: var(--accent-1); box-shadow: 0 0 0 1px var(--accent-1) inset; }
+.pc-choice input { margin-top: .25rem; }
+.pc-choice small { display: block; color: var(--text-muted); font-size: .78rem; margin-top: .2rem; }
