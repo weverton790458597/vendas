@@ -457,7 +457,7 @@ function ensureUI() {
       </section></div><div id="seg-pay-admin" class="seg-panel hidden"><div id="payAdmin" class="pay-admin-stack hidden"><section class="panel"><div class="panel-heading-row"><h2>Aguardando confirmação</h2></div><div id="payAdminPending"></div></section><section class="panel"><div class="panel-heading-row"><h2>Gerar cobranças</h2></div>
         <div class="automation-form-grid">
           <div class="field field-full"><span>Cliente</span><select id="payGenUser"></select></div>
-          <div class="field"><span>Valor mensal (R$)</span><input type="number" id="payGenValor" step="0.01" min="0" placeholder="49,90" /></div>
+          <div class="field"><span>Valor mensal (R$)</span><input type="number" id="payGenValor" step="0.01" min="0" placeholder="99,90" /></div>
           <div class="field"><span>Dia do vencimento (1–28)</span><input type="number" id="payGenDia" min="1" max="28" value="10" /></div>
           <div class="field"><span>Quantidade de meses</span><input type="number" id="payGenMeses" min="1" max="36" value="12" /></div>
           <div class="field">
@@ -586,6 +586,20 @@ function fillGenDefaults() {
   }
 }
 
+// Se o cliente ainda está em teste grátis, vira pagante (some o aviso "Teste grátis" para ele).
+async function converterTesteSeHouver(userId) {
+  try {
+    const { data: trials, error } = await sb.rpc('admin_list_trials');
+    if (error || !Array.isArray(trials) || !trials.some((t) => t.id === userId)) return false;
+    const r = await sb.rpc('admin_end_trial', { p_user_id: userId, p_convert: true });
+    return !r.error;
+  } catch (_) { return false; }
+}
+// Avisa o app.js para recarregar a aba "Clientes".
+function avisarClientesAtualizados() {
+  window.dispatchEvent(new CustomEvent('admin-users-changed'));
+}
+
 async function confirmarPago(id, userId, btn) {
   btn.disabled = true;
   const { error } = await sb.from('pagamentos').update({ status: 'pago', pago_em: new Date().toISOString() }).eq('id', id);
@@ -596,6 +610,8 @@ async function confirmarPago(id, userId, btn) {
   const upd = { payment_status: 'em_dia' };
   if (next?.[0]) upd.payment_due_date = next[0].vencimento;
   await sb.from('profiles').update(upd).eq('id', userId);
+  await converterTesteSeHouver(userId);
+  avisarClientesAtualizados();
   showBanner('Pagamento confirmado.', 'success');
   await loadPayments();
 }
@@ -633,7 +649,21 @@ async function gerarCobrancas() {
   const { error } = await sb.from('pagamentos').upsert(list, { onConflict: 'user_id,competencia', ignoreDuplicates: true });
   btn.disabled = false; btn.textContent = 'Gerar cobranças';
   if (error) { console.error(error); showBanner('Erro ao gerar: ' + error.message); return; }
-  showBanner(`Cobranças geradas para ${meses} mês(es). Meses já existentes foram mantidos.`, 'success');
+  // Reflete no cadastro do cliente (aba Clientes): valor do plano + próximo vencimento.
+  const hojeIso = iso(now.getFullYear(), now.getMonth(), now.getDate());
+  const proximo = list.find((x) => x.vencimento >= hojeIso) || list[0];
+  const { error: upErr } = await sb.from('profiles')
+    .update({ monthly_plan_value: valor, payment_due_date: proximo.vencimento })
+    .eq('id', userId);
+  const virouPagante = await converterTesteSeHouver(userId);
+  avisarClientesAtualizados();
+  if (upErr) {
+    console.error(upErr);
+    showBanner('Cobranças geradas, mas não consegui atualizar valor/vencimento no cliente: ' + upErr.message);
+  } else {
+    showBanner(`Cobranças geradas para ${meses} mês(es). Meses já existentes foram mantidos.` +
+      (virouPagante ? ' Teste encerrado: o cliente agora é pagante.' : ''), 'success');
+  }
   if (userId === me?.id) await loadPayments();
 }
 
