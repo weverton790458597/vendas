@@ -231,6 +231,7 @@
           <button type="button" class="subtab-btn" data-subtab="posts">Últimas publicações</button>
           <button type="button" class="subtab-btn active" data-subtab="list">Automações cadastradas</button>
           <button type="button" class="subtab-btn" data-subtab="produtos">Produtos</button>
+          <button type="button" class="subtab-btn" data-subtab="fluxos">Fluxos</button>
         </nav>
         <div id="subtab-new" class="subtab-panel hidden">
           <button type="button" class="sheet-close-btn" data-close-sheet aria-label="Fechar">✕</button>
@@ -321,6 +322,9 @@
             </div>
             <div id="produtosGrid" class="produtos-grid"></div>
           </section>
+        </div>
+        <div id="subtab-fluxos" class="subtab-panel hidden">
+          <section class="panel panel-plain"><div id="fluxosRoot"></div></section>
         </div>
         <button type="button" class="fab-new-automation" data-open-new-automation aria-label="Nova automação">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
@@ -516,6 +520,7 @@
 <script src="motion-fx.js" defer></script>
 <script src="automations-subtabs.js" defer></script>
 <script type="module" src="produtos.js"></script>
+<script type="module" src="fluxos.js"></script>
 <script type="module" src="instagram-latest-posts.js"></script>
 <script type="module" src="instagram-tester-admin.js"></script>
 <script type="module" src="instagram-tester-onboarding.js"></script>
