@@ -92,7 +92,69 @@ $("#pcLoginBtn").addEventListener("click", async () => {
   if (!email || !password) return banner("pcAuthBanner", "Preencha e-mail e senha.", "error");
   const { error } = await sb.auth.signInWithPassword({ email, password });
   if (error) return banner("pcAuthBanner", error.message, "error");
-  await bootstrap();
+  await 
+/* ------------------------------ rótulo do botão de convite ------------------------------ */
+document.querySelectorAll('input[name="pcTipo"]').forEach((r) =>
+  r.addEventListener("change", () => {
+    $("#pcInviteBtn").textContent = r.value === "teste" && r.checked ? "Enviar convite de teste" : "Enviar convite de pagante";
+  })
+);
+
+/* ------------------------------ esqueci minha senha ------------------------------ */
+const verifier = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+});
+$("#pcForgotBtn").addEventListener("click", async () => {
+  const email = $("#pcEmail").value.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return banner("pcAuthBanner", "Digite seu e-mail no campo acima e clique de novo.", "error");
+  const { error } = await verifier.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + window.location.pathname,
+  });
+  if (error) return banner("pcAuthBanner", "Não foi possível enviar: " + error.message, "error");
+  banner("pcAuthBanner", "Se esse e-mail tiver cadastro, enviamos um link para criar uma nova senha.", "success");
+});
+
+/* ------------------------------ alterar senha (logado) ------------------------------ */
+function pwMsg(text, type) { const el = $("#pcPwMsg"); el.textContent = text; el.className = "banner " + type; }
+$("#pcChangePwBtn").addEventListener("click", () => {
+  $("#pcPwMsg").className = "banner hidden";
+  ["#pcPwCurrent", "#pcPwNew", "#pcPwConfirm"].forEach((id) => { $(id).value = ""; $(id).type = "password"; });
+  $("#pcPwShow").checked = false;
+  $("#pcPwModal").classList.remove("hidden");
+  $("#pcPwCurrent").focus();
+});
+const closePw = () => $("#pcPwModal").classList.add("hidden");
+$("#pcPwClose").addEventListener("click", closePw);
+$("#pcPwCancel").addEventListener("click", closePw);
+$("#pcPwModal").addEventListener("click", (e) => { if (e.target.id === "pcPwModal") closePw(); });
+$("#pcPwShow").addEventListener("change", (e) => {
+  ["#pcPwCurrent", "#pcPwNew", "#pcPwConfirm"].forEach((id) => ($(id).type = e.target.checked ? "text" : "password"));
+});
+$("#pcPwSave").addEventListener("click", async () => {
+  const cur = $("#pcPwCurrent").value, nw = $("#pcPwNew").value, cf = $("#pcPwConfirm").value;
+  if (!cur) return pwMsg("Digite sua senha atual.", "error");
+  if (nw.length < 6) return pwMsg("A nova senha precisa ter pelo menos 6 caracteres.", "error");
+  if (nw !== cf) return pwMsg("As senhas novas não são iguais.", "error");
+  if (nw === cur) return pwMsg("A nova senha precisa ser diferente da atual.", "error");
+  const btn = $("#pcPwSave");
+  btn.disabled = true;
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) throw new Error("Sua sessão expirou. Entre novamente.");
+    const check = await verifier.auth.signInWithPassword({ email: session.user.email, password: cur });
+    if (check.error) throw new Error("Senha atual incorreta.");
+    const { error } = await sb.auth.updateUser({ password: nw });
+    if (error) throw new Error(error.message);
+    pwMsg("Senha alterada com sucesso!", "success");
+    setTimeout(closePw, 1600);
+  } catch (e) {
+    pwMsg(e.message, "error");
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+bootstrap();
 });
 $("#pcPassword").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#pcLoginBtn").click(); });
 
@@ -177,7 +239,7 @@ function renderReferrals() {
   body.innerHTML = referrals.map((x) => {
     const left = x.manage_until ? Math.max(0, Math.ceil((new Date(x.manage_until) - Date.now()) / 864e5)) : null;
     return "<tr>" +
-      "<td>" + esc(x.email) + "</td>" +
+      "<td>" + esc(x.email) + (x.invite_type === "teste" ? ' <span class="badge badge-founder">Teste 7 dias</span>' : "") + "</td>" +
       "<td>" + (x.accepted_at ? '<span class="badge badge-ativo">Cadastrado</span>' : '<span class="badge badge-muted">Convite enviado</span>') + "</td>" +
       "<td>" + payBadge(x.payment_status) + "</td>" +
       "<td>" + fmtDate(x.payment_due_date) + "</td>" +
@@ -217,16 +279,17 @@ async function invite() {
   const btn = $("#pcInviteBtn");
   const email = input.value.trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return banner("pcBanner", "Informe um e-mail válido.", "error");
+  const tipo = (document.querySelector('input[name="pcTipo"]:checked') || {}).value === "pago" ? "pago" : "teste";
   btn.disabled = true;
   try {
-    const { data, error } = await sb.functions.invoke("partner-invite-user", { body: { email } });
+    const { data, error } = await sb.functions.invoke("partner-invite-user", { body: { email, tipo } });
     if (error) {
       let msg = error.message;
       try { const j = await error.context.json(); if (j && j.error) msg = j.error; } catch (_) {}
       throw new Error(msg);
     }
     if (data && data.error) throw new Error(data.error);
-    banner("pcBanner", "Convite enviado para " + email + ".", "success");
+    banner("pcBanner", (tipo === "teste" ? "Convite de teste de 7 dias enviado para " : "Convite (pagante) enviado para ") + email + ".", "success");
     input.value = "";
     await loadAll();
   } catch (e) {
@@ -238,5 +301,67 @@ async function invite() {
 $("#pcInviteBtn").addEventListener("click", invite);
 $("#pcInviteEmail").addEventListener("keydown", (e) => { if (e.key === "Enter") invite(); });
 $("#pcRefresh").addEventListener("click", loadAll);
+
+
+/* ------------------------------ rótulo do botão de convite ------------------------------ */
+document.querySelectorAll('input[name="pcTipo"]').forEach((r) =>
+  r.addEventListener("change", () => {
+    $("#pcInviteBtn").textContent = r.value === "teste" && r.checked ? "Enviar convite de teste" : "Enviar convite de pagante";
+  })
+);
+
+/* ------------------------------ esqueci minha senha ------------------------------ */
+const verifier = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+});
+$("#pcForgotBtn").addEventListener("click", async () => {
+  const email = $("#pcEmail").value.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return banner("pcAuthBanner", "Digite seu e-mail no campo acima e clique de novo.", "error");
+  const { error } = await verifier.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + window.location.pathname,
+  });
+  if (error) return banner("pcAuthBanner", "Não foi possível enviar: " + error.message, "error");
+  banner("pcAuthBanner", "Se esse e-mail tiver cadastro, enviamos um link para criar uma nova senha.", "success");
+});
+
+/* ------------------------------ alterar senha (logado) ------------------------------ */
+function pwMsg(text, type) { const el = $("#pcPwMsg"); el.textContent = text; el.className = "banner " + type; }
+$("#pcChangePwBtn").addEventListener("click", () => {
+  $("#pcPwMsg").className = "banner hidden";
+  ["#pcPwCurrent", "#pcPwNew", "#pcPwConfirm"].forEach((id) => { $(id).value = ""; $(id).type = "password"; });
+  $("#pcPwShow").checked = false;
+  $("#pcPwModal").classList.remove("hidden");
+  $("#pcPwCurrent").focus();
+});
+const closePw = () => $("#pcPwModal").classList.add("hidden");
+$("#pcPwClose").addEventListener("click", closePw);
+$("#pcPwCancel").addEventListener("click", closePw);
+$("#pcPwModal").addEventListener("click", (e) => { if (e.target.id === "pcPwModal") closePw(); });
+$("#pcPwShow").addEventListener("change", (e) => {
+  ["#pcPwCurrent", "#pcPwNew", "#pcPwConfirm"].forEach((id) => ($(id).type = e.target.checked ? "text" : "password"));
+});
+$("#pcPwSave").addEventListener("click", async () => {
+  const cur = $("#pcPwCurrent").value, nw = $("#pcPwNew").value, cf = $("#pcPwConfirm").value;
+  if (!cur) return pwMsg("Digite sua senha atual.", "error");
+  if (nw.length < 6) return pwMsg("A nova senha precisa ter pelo menos 6 caracteres.", "error");
+  if (nw !== cf) return pwMsg("As senhas novas não são iguais.", "error");
+  if (nw === cur) return pwMsg("A nova senha precisa ser diferente da atual.", "error");
+  const btn = $("#pcPwSave");
+  btn.disabled = true;
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) throw new Error("Sua sessão expirou. Entre novamente.");
+    const check = await verifier.auth.signInWithPassword({ email: session.user.email, password: cur });
+    if (check.error) throw new Error("Senha atual incorreta.");
+    const { error } = await sb.auth.updateUser({ password: nw });
+    if (error) throw new Error(error.message);
+    pwMsg("Senha alterada com sucesso!", "success");
+    setTimeout(closePw, 1600);
+  } catch (e) {
+    pwMsg(e.message, "error");
+  } finally {
+    btn.disabled = false;
+  }
+});
 
 bootstrap();
