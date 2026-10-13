@@ -1374,3 +1374,127 @@ tbody tr:hover { background: var(--surface-2); }
   .cs-sheet-title { display: block; padding: 0 0.4rem 0.6rem; font-family: var(--font-display); font-weight: 600; font-size: 1rem; }
   .cs-item { padding: 0.75rem 0.6rem; min-height: 52px; }
 }
+
+/* =====================================================================
+   MOBILE SIMPLIFICADO — colar NO FINAL do styles.css
+   Só afeta telas <= 900px. O desktop/notebook não muda nada.
+   Depende do novo mobile-ui.js (botão de configurações + toques nos cards).
+   ===================================================================== */
+.ms-gear, .ms-overlay { display: none; }
+
+@media (max-width: 900px) {
+
+  /* ---------- Barra de baixo: só Início, Painel e Contas ---------- */
+  .app-nav .nav-item[data-tab="payments"],
+  #adminTabBtn { display: none !important; }
+  .nav-item { font-size: 0.72rem; }
+
+  /* ---------- Topo: marca + engrenagem (tema/senha/sair vão pra lá) ---------- */
+  .user-chip,
+  .app-topbar .theme-toggle { display: none; }
+  .ms-gear {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; border-radius: 12px; cursor: pointer;
+    border: 1px solid var(--border-soft); background: var(--surface-2); color: var(--text);
+  }
+  .ms-gear:active { transform: scale(0.94); }
+
+  /* ---------- Avisos viram "toast" (visíveis mesmo com a folha aberta) ---------- */
+  #statusBanner {
+    position: fixed; top: calc(var(--safe-top) + 64px); left: 1rem; right: 1rem;
+    z-index: 90; margin: 0; pointer-events: none; box-shadow: var(--shadow-pop);
+  }
+  #statusBanner.success { background: linear-gradient(var(--success-bg), var(--success-bg)), var(--surface); }
+  #statusBanner.error   { background: linear-gradient(var(--danger-bg), var(--danger-bg)), var(--surface); }
+
+  /* ---------- Menos texto de apoio em todas as telas ---------- */
+  .page-head p { display: none; }
+  .page-head { padding-bottom: 0.8rem; margin-bottom: 1rem; }
+  .page-head h1 { font-size: 1.35rem; }
+
+  /* ---------- Início: só o essencial (números + gráfico diário + top posts) ---------- */
+  #ovKpis .kpi-item:nth-child(n+5) { display: none; }
+  .ov-grid > .panel:nth-child(n+3) { display: none; }
+
+  /* ---------- Painel: vai direto ao assunto ---------- */
+  #tab-dashboard > .page-head,
+  #tab-dashboard > .kpi-strip { display: none; }
+
+  #automationsSubtabNav {
+    width: 100%; padding: 0.25rem; gap: 0.2rem; margin-bottom: 1rem;
+  }
+  #automationsSubtabNav .subtab-btn {
+    flex: 1 1 0; padding: 0.6em 0.4em; font-size: 0.8rem; text-align: center; white-space: nowrap;
+  }
+
+  /* Últimas publicações = grade de fotos; tocar na foto cria a automação */
+  #latestPostsGrid, .latest-posts-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.7rem;
+  }
+  .latest-post-card { padding: 0.5rem; gap: 0.5rem; cursor: pointer; border-radius: 14px; }
+  .latest-post-card .latest-post-thumb { aspect-ratio: 1 / 1; border-radius: 10px; }
+  .latest-post-card .latest-post-info p { display: none; }
+  .latest-post-card .latest-post-info strong {
+    display: block; font-size: 0.78rem; color: var(--text-muted);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .latest-post-actions { display: block; }
+  .latest-post-produto-btn { display: none; }
+  .latest-post-btn {
+    width: 100%; min-height: 38px; font-size: 0.8rem;
+    background: var(--accent-grad); border-color: transparent; color: #fff;
+  }
+
+  /* Lista de automações: card enxuto */
+  .automation-card:not(.keep) .automation-card-footer,
+  .automation-card > .automation-card-link,
+  .automation-card-postinfo .automation-card-link,
+  .automation-card .automation-card-post:not(.auto-card-title):not([style]) { display: none; }
+  .automation-card { gap: 0.5rem; padding: 0.85rem; }
+  .automation-card .keyword-chip { font-size: 0.85rem; padding: 0.35em 0.85em; }
+
+  /* ---------- Folha "Nova automação": curta e com botão sempre à vista ---------- */
+  #subtab-new .panel-lead { display: none; }
+  #subtab-new .produto-picker-row { flex-direction: column; align-items: stretch; gap: 0.6rem; }
+  #subtab-new .produto-picker-row .field { min-width: 0; }
+  #subtab-new #pickProdutoBtn { width: 100%; min-height: 46px; border-color: var(--accent-solid); color: var(--accent-solid); }
+  #subtab-new .choice-group { gap: 0.5rem; }
+  #subtab-new .choice { padding: 0.7rem 0.85rem; }
+  #subtab-new #toggleImagemUrlBtn {
+    background: transparent; border: 0; padding-left: 0; color: var(--text-muted);
+    text-decoration: underline; min-height: 32px; justify-content: flex-start;
+  }
+  #subtab-new #saveAutomationBtn {
+    position: sticky; bottom: calc(var(--safe-bottom) + 0.5rem);
+    width: 100%; min-height: 52px; font-size: 1rem; z-index: 2;
+    box-shadow: 0 -10px 20px 6px var(--bg), 0 10px 24px -8px rgba(145, 70, 255, 0.7);
+  }
+
+  /* ---------- Contas ---------- */
+  #tab-accounts .panel-lead { display: none; }
+
+  /* ---------- Folha de Configurações ---------- */
+  .ms-overlay {
+    display: flex; position: fixed; inset: 0; z-index: 120; align-items: flex-end;
+    background: var(--overlay); animation: fadeIn 0.15s var(--ease);
+  }
+  .ms-sheet {
+    width: 100%; background: var(--surface); border: 1px solid var(--border-soft); border-bottom: 0;
+    border-radius: 20px 20px 0 0; padding: 0.5rem 1rem calc(1rem + var(--safe-bottom));
+    animation: msUp 0.22s var(--ease);
+  }
+  @keyframes msUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+  .ms-sheet::before {
+    content: ''; display: block; width: 36px; height: 4px; border-radius: 4px;
+    background: var(--border); margin: 0.2rem auto 0.8rem;
+  }
+  .ms-user { padding: 0 0.4rem 0.7rem; font-size: 0.85rem; color: var(--text-muted); overflow-wrap: anywhere; }
+  .ms-item {
+    display: flex; align-items: center; gap: 0.85rem; width: 100%; min-height: 54px;
+    padding: 0.7rem 0.6rem; border: 0; border-radius: 12px; background: transparent;
+    color: var(--text); font: inherit; font-size: 0.97rem; font-weight: 500; text-align: left; cursor: pointer;
+  }
+  .ms-item:active { background: var(--surface-hover); }
+  .ms-item svg { flex-shrink: 0; color: var(--text-muted); }
+  .ms-item.danger, .ms-item.danger svg { color: var(--danger); }
+}
