@@ -607,7 +607,12 @@ async function confirmarPago(id, userId, btn) {
   // Mantém o painel Admin antigo coerente: cliente em dia + próximo vencimento.
   const { data: next } = await sb.from('pagamentos').select('vencimento')
     .eq('user_id', userId).eq('status', 'pendente').order('vencimento').limit(1);
-  const upd = { payment_status: 'em_dia' };
+  // Só volta para "em dia" se não restar outra cobrança vencida e pendente.
+  const hj = new Date();
+  const { data: aindaAtrasada } = await sb.from('pagamentos').select('id')
+    .eq('user_id', userId).eq('status', 'pendente')
+    .lt('vencimento', iso(hj.getFullYear(), hj.getMonth(), hj.getDate())).limit(1);
+  const upd = { payment_status: aindaAtrasada?.length ? 'atrasado' : 'em_dia' };
   if (next?.[0]) upd.payment_due_date = next[0].vencimento;
   await sb.from('profiles').update(upd).eq('id', userId);
   await converterTesteSeHouver(userId);
