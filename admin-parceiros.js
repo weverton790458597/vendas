@@ -145,7 +145,7 @@ function renderRefs(rows) {
       : r.payment_status === "atrasado" ? '<span class="badge badge-danger">Atrasado</span>'
       : '<span class="badge badge-muted">—</span>';
     return "<tr" + (isNew ? ' style="background:var(--warning-bg)"' : "") + ">" +
-      "<td>" + esc(r.referred_email) + (isNew ? ' <span class="badge badge-danger">novo</span>' : "") + "</td>" +
+      "<td>" + esc(r.referred_email) + (r.invite_type === "teste" ? ' <span class="badge badge-founder">Teste 7 dias</span>' : ' <span class="badge badge-muted">Pagante</span>') + (isNew ? ' <span class="badge badge-danger">novo</span>' : "") + "</td>" +
       "<td>via " + esc(r.partner_email) + "</td>" +
       "<td>" + sit + "</td><td>" + pay + "</td>" +
       "<td>" + fmtDateTime(r.accepted_at || r.invited_at) + "</td>" +
