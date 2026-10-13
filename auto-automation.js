@@ -229,14 +229,7 @@ async function loadAccounts() {
   $("autoAutoAccountsBlock").classList.toggle("hidden", accounts.length < 2);
 }
 async function getTableName() {
-  if (tableName) return tableName;
-  const { data } = await sb.from("profiles").select("automacoes_table_name").eq("id", userId).maybeSingle();
-  tableName = (data && data.automacoes_table_name) || null;
-  if (tableName) {
-    const { error } = await sb.rpc("ensure_automacao_columns", { p_table: tableName });
-    if (error) console.error("Automação automática:", error.message);
-  }
-  return tableName;
+  return "post_automacao";
 }
 async function loadRules() {
   const { data, error } = await sb.from(RULES).select("*").eq("user_id", userId).order("created_at", { ascending: true });
