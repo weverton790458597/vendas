@@ -34,6 +34,7 @@
     <div class="field"><label for="pcPassword">Senha</label>
       <input type="password" id="pcPassword" autocomplete="current-password" placeholder="••••••••" /></div>
     <button type="button" id="pcLoginBtn" class="btn btn-primary btn-full">Entrar</button>
+    <button type="button" id="pcForgotBtn" class="btn btn-outline btn-full" style="margin-top:.5rem">Esqueci minha senha</button>
     <p class="pc-note">Não tem acesso? O cadastro de parceiros é feito somente por convite.</p>
   </div>
 </section>
@@ -66,6 +67,7 @@
     <div class="pc-brand">Achei &amp; Postei <span class="badge badge-founder">Parceiro</span></div>
     <div class="pc-top-right">
       <span id="pcUserEmail" class="pc-user"></span>
+      <button type="button" class="btn btn-outline btn-sm" id="pcChangePwBtn">Alterar senha</button>
       <button type="button" class="btn btn-outline btn-sm" data-theme-toggle>Tema</button>
       <button type="button" class="btn btn-outline btn-sm" data-pc-logout>Sair</button>
     </div>
@@ -94,10 +96,18 @@
     <section id="pcTab-invite" class="pc-panel hidden">
       <div class="panel-heading-row"><h2>Convidar novo cliente</h2></div>
       <p class="pc-note">O cliente recebe um e-mail de convite para criar a senha. Assim que ele aceitar, a administração é avisada e faz a configuração técnica (conexão do Instagram etc.).</p>
+      <div class="pc-choices">
+        <label class="pc-choice"><input type="radio" name="pcTipo" value="teste" checked />
+          <span><strong>🎁 Teste grátis de 7 dias</strong>
+          <small>O cliente testa por 7 dias (o prazo começa no 1º acesso dele) e assina se gostar. Sua comissão começa quando ele virar pagante.</small></span></label>
+        <label class="pc-choice"><input type="radio" name="pcTipo" value="pago" />
+          <span><strong>💳 Já entra como pagante</strong>
+          <small>Para quando o cliente já fechou com você. Ele entra direto como assinante.</small></span></label>
+      </div>
       <div class="pc-invite-row">
         <div class="field flush"><span>E-mail do cliente</span>
           <input type="email" id="pcInviteEmail" placeholder="cliente@email.com" /></div>
-        <button type="button" id="pcInviteBtn" class="btn btn-primary">Enviar convite</button>
+        <button type="button" id="pcInviteBtn" class="btn btn-primary">Enviar convite de teste</button>
       </div>
     </section>
 
@@ -128,6 +138,26 @@
     </section>
   </main>
 </section>
+
+<!-- Alterar senha -->
+<div id="pcPwModal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-header"><h2>Alterar senha</h2>
+      <button type="button" class="modal-close" id="pcPwClose" aria-label="Fechar">&times;</button></div>
+    <div class="modal-body">
+      <div id="pcPwMsg" class="banner hidden"></div>
+      <div class="field"><label for="pcPwCurrent">Senha atual</label><input type="password" id="pcPwCurrent" autocomplete="current-password" /></div>
+      <div class="field"><label for="pcPwNew">Nova senha</label><input type="password" id="pcPwNew" autocomplete="new-password" placeholder="Mínimo 6 caracteres" /></div>
+      <div class="field"><label for="pcPwConfirm">Repita a nova senha</label><input type="password" id="pcPwConfirm" autocomplete="new-password" /></div>
+      <label class="field-hint" style="display:flex;gap:.4rem;align-items:center;cursor:pointer"><input type="checkbox" id="pcPwShow" /> Mostrar senhas</label>
+      <p class="field-hint">Esqueceu a senha atual? Saia e use "Esqueci minha senha" na tela de login.</p>
+    </div>
+    <div style="display:flex;gap:.5rem;justify-content:flex-end;padding:0 1.25rem 1.25rem">
+      <button type="button" class="btn btn-outline" id="pcPwCancel">Cancelar</button>
+      <button type="button" class="btn btn-primary" id="pcPwSave">Salvar nova senha</button>
+    </div>
+  </div>
+</div>
 
 <script type="module" src="parceiro.js"></script>
 </body>
