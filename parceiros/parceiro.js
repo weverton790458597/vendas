@@ -29,6 +29,86 @@ const fmtMonth = (v) => {
 };
 const MONTH_NAMES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
+/* ------------------------------ ícones SVG (traço 24×24, cor = currentColor) ------------------------------ */
+const ICON_PATHS = {
+  home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/>',
+  mail: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/>',
+  users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  banknote: '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/>',
+  rocket: '<path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>',
+  clipboard: '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6M9 16h6"/>',
+  target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+  trophy: '<path d="M8 21h8M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>',
+  lightbulb: '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1V17h5v-1c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/>',
+  gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 0 1 0 5"/>',
+  "credit-card": '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
+  "check-circle": '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  "alert-triangle": '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
+  bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
+  "user-check": '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m16 11 2 2 4-4"/>',
+  "trending-up": '<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
+  award: '<circle cx="12" cy="8" r="6"/><path d="M15.48 12.87 17 22l-5-3-5 3 1.52-9.13"/>',
+  copy: '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  "message-circle": '<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>',
+  "message-square": '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  "medal-bronze": '<circle cx="12" cy="8" r="6" stroke="#CD7F32"/><path d="M8.21 13.89 7 23l5-3 5 3-1.21-9.12" stroke="#CD7F32"/>',
+  "medal-silver": '<circle cx="12" cy="8" r="6" stroke="#8A96A3"/><path d="M8.21 13.89 7 23l5-3 5 3-1.21-9.12" stroke="#8A96A3"/>',
+  "medal-gold": '<circle cx="12" cy="8" r="6" stroke="#C48A00"/><path d="M8.21 13.89 7 23l5-3 5 3-1.21-9.12" stroke="#C48A00"/>',
+};
+
+// Monta o <svg> pelo nome. A classe "pc-ico" faz o ícone acompanhar o tamanho do texto.
+function icon(name, cls = "pc-ico") {
+  return '<svg class="' + cls + '" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (ICON_PATHS[name] || "") + "</svg>";
+}
+// Ícones estáticos do HTML: <span data-icon="home"></span> vira o SVG correspondente
+document.querySelectorAll("[data-icon]").forEach((el) => { el.innerHTML = icon(el.dataset.icon); });
+
+// Logo oficial do WhatsApp em SVG (usa a cor do texto, então fica branco no botão)
+const WA_ICON =
+  '<svg class="pc-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>';
+
+// Mensagens prontas de acompanhamento por indicado (abrem direto no WhatsApp)
+const FOLLOW_UPS = {
+  convite: "Oi! Te enviei um convite por e-mail para criar sua senha e começar a usar o Achei & Postei. Se não encontrar, dá uma olhada no spam.",
+  ativar: "Oi! Já deu pra ver os comentários virando Direct automático? Se quiser, te ajudo a configurar o primeiro post agora.",
+  vencendo: "Oi! Sua mensalidade do Achei & Postei vence em breve. Se tiver qualquer dúvida sobre o pagamento, me avisa.",
+  atraso: "Oi! Passando pra lembrar que a mensalidade do Achei & Postei está pendente. Se precisar de ajuda com o pagamento, me avisa.",
+};
+
+// Filtros da aba "Meus indicados"
+const REF_FILTERS = [
+  { key: "todos", label: "Todos", test: () => true },
+  { key: "acao", label: "Pedem ação", test: (x) => followUpKey(x) !== null },
+  { key: "atrasado", label: "Em atraso", test: (x) => x.payment_status === "atrasado" },
+  { key: "em_dia", label: "Em dia", test: (x) => x.payment_status === "em_dia" },
+];
+
+// Dias até o vencimento (negativo = já venceu; null = sem data)
+function daysUntilDue(x) {
+  if (!x.payment_due_date) return null;
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const due = new Date(String(x.payment_due_date).slice(0, 10) + "T00:00:00");
+  return Math.round((due - hoje) / 864e5);
+}
+
+// Pagante em dia cujo vencimento cai nos próximos 3 dias
+function isDueSoon(x) {
+  const d = daysUntilDue(x);
+  return x.payment_status === "em_dia" && d !== null && d >= 0 && d <= 3;
+}
+
+// Qual mensagem de WhatsApp faz sentido para o indicado (null = nenhuma)
+function followUpKey(x) {
+  if (x.payment_status === "cancelado") return null;
+  if (!x.accepted_at) return "convite";
+  if (x.payment_status === "atrasado") return "atraso";
+  if (x.payment_status === "em_dia") return isDueSoon(x) ? "vencendo" : null;
+  return "ativar";
+}
+
 const timers = {};
 function banner(id, msg, type) {
   const el = $("#" + id);
@@ -55,9 +135,9 @@ function denied(title, text, showPanelLink) {
 /* ------------------------------ regras de nível ------------------------------ */
 // 1–10 clientes no mês = 50% · 11–20 = 60% · 21+ = 70%
 const LEVELS = [
-  { n: 1, min: 1, pct: 0.5, name: "Bronze", emoji: "🥉" },
-  { n: 2, min: 11, pct: 0.6, name: "Prata", emoji: "🥈" },
-  { n: 3, min: 21, pct: 0.7, name: "Ouro", emoji: "🥇" },
+  { n: 1, min: 1, pct: 0.5, name: "Bronze", medal: "medal-bronze" },
+  { n: 2, min: 11, pct: 0.6, name: "Prata", medal: "medal-silver" },
+  { n: 3, min: 21, pct: 0.7, name: "Ouro", medal: "medal-gold" },
 ];
 const pctFor = (n) => (n >= 21 ? 0.7 : n >= 11 ? 0.6 : 0.5);
 
@@ -66,6 +146,7 @@ let userEmail = "";
 let referrals = [];
 let commissions = [];
 let level = { qtd_mes: 0, nivel: 1, percentual: 0.5 };
+let refFilter = "todos"; // filtro ativo na aba "Meus indicados"
 
 const localMonthKey = (d = new Date()) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
 
@@ -177,6 +258,12 @@ document.addEventListener("click", async (e) => {
     return;
   }
 
+  const fu = e.target.closest("[data-pc-fu]");
+  if (fu) return window.open("https://wa.me/?text=" + encodeURIComponent(FOLLOW_UPS[fu.dataset.pcFu] || ""), "_blank", "noopener");
+
+  const filt = e.target.closest("[data-pc-filter]");
+  if (filt) { refFilter = filt.dataset.pcFilter; return renderReferrals(); }
+
   const wa = e.target.closest("[data-pc-wa]");
   if (wa) {
     const ta = document.getElementById("pcTpl-" + wa.dataset.pcWa);
@@ -244,22 +331,22 @@ function renderHome() {
   else mensagem = "Você tem " + level.qtd_mes + " cliente(s) ativo(s) neste mês. Continue assim!";
 
   $("#pcHero").innerHTML =
-    "<h1>" + greeting() + ", " + esc(firstName()) + "! 👋</h1>" +
+    "<h1>" + greeting() + ", " + esc(firstName()) + "!</h1>" +
     "<p>" + esc(mensagem) + "</p>" +
     '<div class="pc-hero-main">' +
     '<div class="pc-hero-value"><small>Comissões a receber</small><b>' + brl(pendente) + "</b></div>" +
     '<div class="pc-hero-actions">' +
-    '<button type="button" class="btn btn-light" data-pc-goto="invite">✉️ Convidar cliente</button>' +
-    '<button type="button" class="btn btn-ghost" data-pc-goto="sell">🚀 Roteiros e simulador</button>' +
+    '<button type="button" class="btn btn-light" data-pc-goto="invite">' + icon("mail") + " Convidar cliente</button>" +
+    '<button type="button" class="btn btn-ghost" data-pc-goto="sell">' + icon("rocket") + " Roteiros e simulador</button>" +
     "</div></div>";
 
   const k = (cls, ico, v, l) => '<div class="pc-kpi ' + cls + '"><i>' + ico + "</i><b>" + v + "</b><span>" + l + "</span></div>";
   $("#pcKpis").innerHTML =
-    k("green", "✅", brl(pago), "Já recebido") +
-    k("", "📅", brl(thisMonthTotal), "Gerado neste mês (1ª mensalidade)") +
-    k("", "👥", referrals.length, "Indicados em acompanhamento") +
-    k("", lvl.emoji, "Nível " + lvl.n + " · " + Math.round(lvl.pct * 100) + "%", "Seu nível agora") +
-    k(late ? "danger" : "", late ? "⚠️" : "👍", late, "Pagamentos em atraso");
+    k("green", icon("check-circle"), brl(pago), "Já recebido") +
+    k("", icon("calendar"), brl(thisMonthTotal), "Gerado neste mês (1ª mensalidade)") +
+    k("", icon("users"), referrals.length, "Indicados em acompanhamento") +
+    k("", icon(lvl.medal), "Nível " + lvl.n + " · " + Math.round(lvl.pct * 100) + "%", "Seu nível agora") +
+    k(late ? "danger" : "", late ? icon("alert-triangle") : icon("check"), late, "Pagamentos em atraso");
 
   renderLevel(lvl);
   renderFocus();
@@ -282,31 +369,33 @@ function renderLevel(lvl) {
     const hoje = qtd * avgBase * lvl.pct;
     const la = next.min * avgBase * next.pct;
     body =
-      "<p>Faltam <strong>" + faltam + " cliente(s)</strong> para o Nível " + next.n + " " + next.emoji + " (" + Math.round(next.pct * 100) + "%).</p>" +
+      "<p>Faltam <strong>" + faltam + " cliente(s)</strong> para o Nível " + next.n + " " + icon(next.medal) + " (" + Math.round(next.pct * 100) + "%).</p>" +
       '<div class="pc-bonus">Ao chegar em ' + next.min + " clientes no mês, a comissão sobe de " +
       Math.round(lvl.pct * 100) + "% para " + Math.round(next.pct * 100) + "% em <u>todos</u> os clientes daquele mês. Estimativa: " +
       brl(hoje) + " → " + brl(la) + ".</div>";
   } else {
-    body = "<p>Você está no <strong>nível máximo</strong>. 70% de comissão em cada cliente do mês. 👏</p>";
+    body = "<p>Você está no <strong>nível máximo</strong>. 70% de comissão em cada cliente do mês.</p>";
   }
 
   $("#pcLevel").innerHTML =
     '<div class="pc-level"><div class="pc-ring" style="--p:' + pct + '"><div><b>' + qtd + "</b><span>clientes no mês</span></div></div>" +
-    '<div class="pc-level-info"><div class="pc-level-badge">' + lvl.emoji + " Nível " + lvl.n + " · " + lvl.name + " — " + Math.round(lvl.pct * 100) + "%</div>" + body + "</div></div>";
+    '<div class="pc-level-info"><div class="pc-level-badge">' + icon(lvl.medal) + " Nível " + lvl.n + " · " + lvl.name + " — " + Math.round(lvl.pct * 100) + "%</div>" + body + "</div></div>";
 }
 
 function renderFocus() {
   const items = [];
   const late = referrals.filter((x) => x.payment_status === "atrasado");
-  if (late.length) items.push({ ico: "⚠️", text: late.length + " indicado(s) com pagamento em atraso. Um lembrete gentil costuma resolver.", tab: "sell", cta: "Ver mensagem" });
+  if (late.length) items.push({ ico: "alert-triangle", text: late.length + " indicado(s) com pagamento em atraso. Um lembrete gentil costuma resolver.", tab: "sell", cta: "Ver mensagem" });
+  const vencendo = referrals.filter(isDueSoon);
+  if (vencendo.length) items.push({ ico: "bell", text: vencendo.length + " pagamento(s) vencendo nos próximos 3 dias. Um lembrete antes evita atraso.", tab: "referrals", cta: "Ver indicados" });
   const semCadastro = referrals.filter((x) => !x.accepted_at);
-  if (semCadastro.length) items.push({ ico: "✉️", text: semCadastro.length + " convite(s) ainda sem cadastro. Avise o cliente pelo WhatsApp.", tab: "referrals", cta: "Ver indicados" });
+  if (semCadastro.length) items.push({ ico: "mail", text: semCadastro.length + " convite(s) ainda sem cadastro. Avise o cliente pelo WhatsApp.", tab: "referrals", cta: "Ver indicados" });
   const aguardando = referrals.filter((x) => x.accepted_at && !["em_dia", "atrasado", "cancelado"].includes(x.payment_status));
-  if (aguardando.length) items.push({ ico: "🎁", text: aguardando.length + " cliente(s) cadastrado(s) esperando virar pagante. Hora do follow-up.", tab: "sell", cta: "Ver roteiro" });
-  if (!items.length) items.push({ ico: "🚀", text: "Nenhuma pendência por aqui. O melhor momento para convidar o próximo cliente é agora.", tab: "invite", cta: "Convidar" });
+  if (aguardando.length) items.push({ ico: "gift", text: aguardando.length + " cliente(s) cadastrado(s) esperando virar pagante. Hora do follow-up.", tab: "sell", cta: "Ver roteiro" });
+  if (!items.length) items.push({ ico: "rocket", text: "Nenhuma pendência por aqui. O melhor momento para convidar o próximo cliente é agora.", tab: "invite", cta: "Convidar" });
 
   $("#pcFocus").innerHTML = items.slice(0, 3).map((i) =>
-    '<div class="pc-focus-item"><span class="pc-focus-ico">' + i.ico + "</span><p>" + esc(i.text) + "</p>" +
+    '<div class="pc-focus-item"><span class="pc-focus-ico">' + icon(i.ico) + "</span><p>" + esc(i.text) + "</p>" +
     '<button type="button" class="btn btn-outline btn-sm" data-pc-goto="' + i.tab + '">' + esc(i.cta) + "</button></div>"
   ).join("");
 }
@@ -323,9 +412,9 @@ function renderFunnel() {
     '<div class="pc-funnel-row"><div class="pc-funnel-top"><span>' + label + "</span><b>" + v + '</b></div><div class="pc-track ' + cls + '"><i style="width:' + Math.round((v / convidados) * 100) + '%"></i></div></div>';
   const conv = Math.round((pagantes / convidados) * 100);
   $("#pcFunnel").innerHTML =
-    row("✉️ Convidados", convidados, "") +
-    row("🙋 Criaram a conta", cadastrados, "") +
-    row("💳 Viraram pagantes", pagantes, "green") +
+    row(icon("mail") + " Convidados", convidados, "") +
+    row(icon("user-check") + " Criaram a conta", cadastrados, "") +
+    row(icon("credit-card") + " Viraram pagantes", pagantes, "green") +
     '<p class="pc-funnel-foot">De cada 10 convites, <strong>' + Math.round(conv / 10) + '</strong> viraram pagantes. (Considera só os indicados em acompanhamento.)</p>';
 }
 
@@ -333,18 +422,18 @@ function renderMilestones() {
   const paying = new Set(commissions.map((x) => x.email)).size;
   const nivel = Number(level.nivel) || 1;
   const list = [
-    { ico: "✉️", label: "Primeiro convite", ok: referrals.length > 0 || commissions.length > 0 },
-    { ico: "🙋", label: "1º cliente cadastrado", ok: referrals.some((x) => x.accepted_at) || commissions.length > 0 },
-    { ico: "💳", label: "1º cliente pagante", ok: paying >= 1 },
-    { ico: "🔥", label: "5 clientes pagantes", ok: paying >= 5 },
-    { ico: "🏅", label: "10 clientes pagantes", ok: paying >= 10 },
-    { ico: "🥈", label: "Nível Prata", ok: nivel >= 2 },
-    { ico: "🥇", label: "Nível Ouro", ok: nivel >= 3 },
+    { ico: "mail", label: "Primeiro convite", ok: referrals.length > 0 || commissions.length > 0 },
+    { ico: "user-check", label: "1º cliente cadastrado", ok: referrals.some((x) => x.accepted_at) || commissions.length > 0 },
+    { ico: "credit-card", label: "1º cliente pagante", ok: paying >= 1 },
+    { ico: "trending-up", label: "5 clientes pagantes", ok: paying >= 5 },
+    { ico: "award", label: "10 clientes pagantes", ok: paying >= 10 },
+    { ico: "medal-silver", label: "Nível Prata", ok: nivel >= 2 },
+    { ico: "medal-gold", label: "Nível Ouro", ok: nivel >= 3 },
   ];
   const done = list.filter((m) => m.ok).length;
   $("#pcMilestoneCount").textContent = done + " de " + list.length;
   $("#pcMilestones").innerHTML = '<div class="pc-miles">' + list.map((m) =>
-    '<div class="pc-mile ' + (m.ok ? "done" : "") + '"><span class="pc-mile-ico">' + m.ico + "</span><span>" + esc(m.label) + "</span></div>"
+    '<div class="pc-mile ' + (m.ok ? "done" : "") + '"><span class="pc-mile-ico">' + icon(m.ico) + "</span><span>" + esc(m.label) + "</span></div>"
   ).join("") + "</div>";
 }
 
@@ -359,7 +448,7 @@ const TIPS = [
 ];
 function renderTip() {
   const t = TIPS[Math.floor(Date.now() / 864e5) % TIPS.length];
-  $("#pcTip").innerHTML = '<span class="pc-tip-ico">💡</span><div><b>Dica do dia</b><p>' + esc(t) + "</p></div>";
+  $("#pcTip").innerHTML = '<span class="pc-tip-ico">' + icon("lightbulb") + '</span><div><b>Dica do dia</b><p>' + esc(t) + "</p></div>";
 }
 
 /* ------------------------------ indicados ------------------------------ */
@@ -372,11 +461,25 @@ function payBadge(s) {
 
 function renderReferrals() {
   const body = $("#pcReferralsBody");
+  const bar = $("#pcRefFilters");
+  if (bar) {
+    bar.innerHTML = !referrals.length ? "" : REF_FILTERS.map((f) =>
+      '<button type="button" class="pc-filter' + (f.key === refFilter ? " active" : "") + '" data-pc-filter="' + f.key + '">' +
+      esc(f.label) + " <b>" + referrals.filter(f.test).length + "</b></button>"
+    ).join("");
+  }
   if (!referrals.length) {
     body.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum indicado em acompanhamento. Envie seu primeiro convite na aba "Convidar".</td></tr>';
     return;
   }
-  body.innerHTML = referrals.map((x) => {
+  const filtro = REF_FILTERS.find((f) => f.key === refFilter) || REF_FILTERS[0];
+  const list = referrals.filter(filtro.test);
+  if (!list.length) {
+    body.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum indicado neste filtro.</td></tr>';
+    return;
+  }
+  body.innerHTML = list.map((x) => {
+    const fu = followUpKey(x);
     const left = x.manage_until ? Math.max(0, Math.ceil((new Date(x.manage_until) - Date.now()) / 864e5)) : null;
     return "<tr>" +
       "<td>" + esc(x.email) + (x.invite_type === "teste" ? ' <span class="badge badge-founder">Teste 7 dias</span>' : "") + "</td>" +
@@ -385,7 +488,9 @@ function renderReferrals() {
       "<td>" + fmtDate(x.payment_due_date) + "</td>" +
       "<td>" + (x.monthly_plan_value ? brl(x.monthly_plan_value) : "—") + "</td>" +
       "<td>" + (x.manage_until ? fmtDate(x.manage_until) + '<span class="pc-sub">' + left + " dia(s) restantes</span>" : '<span class="pc-sub">começa no 1º pagamento</span>') + "</td>" +
-      '<td><a class="btn btn-outline btn-sm" href="mailto:' + esc(x.email) + '">Contatar</a></td>' +
+      '<td><div class="pc-row-actions"><a class="btn btn-outline btn-sm" href="mailto:' + esc(x.email) + '">E-mail</a>' +
+      (fu ? '<button type="button" class="btn btn-wa btn-sm" data-pc-fu="' + fu + '">' + WA_ICON + "WhatsApp</button>" : "") +
+      "</div></td>" +
       "</tr>";
   }).join("");
 }
@@ -417,6 +522,29 @@ function renderChart() {
   }).join("") + "</div>";
 }
 
+// Exporta as comissões em CSV (abre no Excel em pt-BR: separador ";" e vírgula decimal)
+function exportCommissions() {
+  if (!commissions.length) return banner("pcBanner", "Ainda não há comissões para exportar.", "error");
+  const money = (v) => Number(v || 0).toFixed(2).replace(".", ",");
+  const head = ["Mês", "Cliente", "Nível", "Percentual", "Clientes no mês", "1ª mensalidade (R$)", "Comissão total (R$)", "Parcela", "Valor da parcela (R$)", "Acerto", "Situação"];
+  const rows = commissions.map((x) => [
+    fmtMonth(x.mes), x.email, x.nivel, Math.round(Number(x.percentual) * 100) + "%", x.qtd_mes,
+    money(x.base), money(x.total), x.parcela + "/2", money(x.valor), fmtDate(x.vencimento), x.pago ? "Pago" : "Pendente",
+  ]);
+  const csv = [head, ...rows]
+    .map((r) => r.map((v) => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"').join(";"))
+    .join("\r\n");
+  const url = URL.createObjectURL(new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "comissoes-" + localMonthKey() + ".csv";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  banner("pcBanner", "Planilha de comissões exportada.", "success");
+}
+
 function renderCommissions() {
   const host = $("#pcCommissions");
   if (!commissions.length) {
@@ -443,33 +571,33 @@ function renderCommissions() {
 /* ------------------------------ roteiros e objeções ------------------------------ */
 const TEMPLATES = [
   {
-    key: "first", title: "👋 1º contato", when: "Para apresentar a ferramenta",
+    key: "first", ico: "message-circle", title: "1º contato", when: "Para apresentar a ferramenta",
     text: "Oi, [nome]! Tudo bem? Vi que você vende pelo Instagram e queria te mostrar uma coisa: com o Achei & Postei, quando alguém comenta uma palavra-chave no seu post, o link do produto (com foto e preço) chega direto no Direct, na hora, sem você precisar responder um por um. Posso liberar 7 dias grátis pra você testar?",
   },
   {
-    key: "invite", title: "✉️ Aviso do convite", when: "Logo depois de enviar o convite",
-    text: "[nome], acabei de te enviar o convite por e-mail para criar sua senha e testar o Achei & Postei por 7 dias. Se não aparecer na caixa de entrada, dá uma olhada no spam ou em promoções 😉 Qualquer dúvida me chama!",
+    key: "invite", ico: "mail", title: "Aviso do convite", when: "Logo depois de enviar o convite",
+    text: "[nome], acabei de te enviar o convite por e-mail para criar sua senha e testar o Achei & Postei por 7 dias. Se não aparecer na caixa de entrada, dá uma olhada no spam ou em promoções. Qualquer dúvida me chama!",
   },
   {
-    key: "followup", title: "🎁 Follow-up do teste", when: "No 3º dia do teste",
+    key: "followup", ico: "message-square", title: "Follow-up do teste", when: "No 3º dia do teste",
     text: "[nome], como está indo o teste? Já deu pra ver os comentários virando Direct automático? Se quiser, te ajudo a configurar o primeiro post agora.",
   },
   {
-    key: "close", title: "💳 Fechamento", when: "Quando o cliente gostou",
+    key: "close", ico: "credit-card", title: "Fechamento", when: "Quando o cliente gostou",
     text: "Que bom que gostou! O plano Individual é R$ 99,90/mês (1 conta do Instagram e 300 mensagens por mês) e o Multi é R$ 189,90/mês (até 3 contas). Qual combina mais com o seu momento?",
   },
   {
-    key: "late", title: "🔔 Lembrete de pagamento", when: "Cliente em atraso",
-    text: "Oi, [nome]! Passando pra lembrar que a mensalidade do Achei & Postei está pendente. Se precisar de ajuda com o pagamento, me avisa que eu te ajudo 🙏",
+    key: "late", ico: "bell", title: "Lembrete de pagamento", when: "Cliente em atraso",
+    text: "Oi, [nome]! Passando pra lembrar que a mensalidade do Achei & Postei está pendente. Se precisar de ajuda com o pagamento, me avisa que eu te ajudo.",
   },
 ];
 
 function tplCard(t, prefix) {
   const id = prefix + "-" + t.key;
-  return '<div class="pc-tpl"><div><h3>' + esc(t.title) + "</h3><small>" + esc(t.when) + "</small></div>" +
+  return '<div class="pc-tpl"><div><h3>' + icon(t.ico) + esc(t.title) + "</h3><small>" + esc(t.when) + "</small></div>" +
     '<textarea id="pcTpl-' + id + '">' + esc(t.text) + "</textarea>" +
-    '<div class="pc-tpl-actions"><button type="button" class="btn btn-outline btn-sm" data-pc-copy="' + id + '">📋 Copiar</button>' +
-    '<button type="button" class="btn btn-primary btn-sm" data-pc-wa="' + id + '">WhatsApp</button></div></div>';
+    '<div class="pc-tpl-actions"><button type="button" class="btn btn-outline btn-sm" data-pc-copy="' + id + '">' + icon("copy") + " Copiar</button>" +
+    '<button type="button" class="btn btn-wa btn-sm" data-pc-wa="' + id + '">' + WA_ICON + "WhatsApp</button></div></div>";
 }
 
 function renderTemplates() {
@@ -539,7 +667,7 @@ async function invite() {
     banner("pcBanner", (tipo === "teste" ? "Convite de teste de 7 dias enviado para " : "Convite (pagante) enviado para ") + email + ".", "success");
     input.value = "";
     $("#pcAfterInvite").innerHTML =
-      '<div class="pc-after"><h3>🎉 Convite enviado!</h3>' +
+      '<div class="pc-after"><h3>' + icon("check-circle") + " Convite enviado!</h3>" +
       "<p>Agora avise o cliente pelo WhatsApp. Quem sabe que o e-mail está chegando abre e cria a senha mais rápido.</p>" +
       tplCard(TEMPLATES.find((t) => t.key === "invite"), "after") + "</div>";
     await loadAll();
@@ -552,6 +680,7 @@ async function invite() {
 $("#pcInviteBtn").addEventListener("click", invite);
 $("#pcInviteEmail").addEventListener("keydown", (e) => { if (e.key === "Enter") invite(); });
 $("#pcRefresh").addEventListener("click", loadAll);
+$("#pcExportCsv")?.addEventListener("click", exportCommissions);
 
 /* ------------------------------ esqueci minha senha ------------------------------ */
 const verifier = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
