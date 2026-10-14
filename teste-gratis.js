@@ -40,6 +40,9 @@ let loaded = false;
 let busy = false;
 let tickTimer = null;
 let adminReady = false;
+let myNome = "";
+const who = () => (myNome ? "Meu nome é " + myNome + ". " : "");
+window.addEventListener("user-nome-changed", (e) => { myNome = (e.detail && e.detail.nome) || ""; });
 
 /* ------------------------------ estilos ------------------------------ */
 function injectStyles() {
@@ -99,7 +102,7 @@ function showExpired(email) {
     "<h1>Seu teste grátis terminou</h1>" +
     "<p>Gostou do Respondi? Assine para continuar respondendo comentários e enviando produtos por DM automaticamente.</p>" +
     '<a class="btn btn-primary btn-full" target="_blank" rel="noopener" href="' +
-    esc(wa("Olá! Meu teste grátis de " + CONFIG.TRIAL_DAYS + " dias no Respondi terminou e quero assinar. Meu e-mail: " + email)) +
+    esc(wa("Olá! " + who() + "Meu teste grátis de " + CONFIG.TRIAL_DAYS + " dias no Respondi terminou e quero assinar. Meu e-mail: " + email)) +
     '">Assinar pelo WhatsApp</a>' +
     '<button type="button" class="btn btn-outline btn-full" id="trialLogoutBtn">Sair</button>' +
     "</div>";
@@ -124,7 +127,7 @@ function showBanner(t, email) {
     '<div class="trial-copy"><strong>Teste grátis: restam ' + leftText(left) + "</strong>" +
     "<span>Seu acesso de teste termina em " + fmtDate(t.trial_ends_at) + ".</span></div>" +
     '<a class="btn btn-primary btn-sm" target="_blank" rel="noopener" href="' +
-    esc(wa("Olá! Estou testando o Respondi e quero assinar um plano. Meu e-mail: " + email)) +
+    esc(wa("Olá! " + who() + "Estou testando o Respondi e quero assinar um plano. Meu e-mail: " + email)) +
     '">Assinar agora</a>';
 
   clearInterval(tickTimer);
@@ -178,12 +181,13 @@ async function loadTrials() {
     body.innerHTML = '<tr><td colspan="5" class="empty-state">Nenhum usuário de teste ainda.</td></tr>';
     return;
   }
+  const nomes = window.NomeUsuario ? await window.NomeUsuario.mapById(data.map((r) => r.id)) : {};
   body.innerHTML = data
     .map((r) => {
       const s = situation(r);
       return (
         "<tr>" +
-        "<td>" + esc(r.email) + "</td>" +
+        "<td>" + (nomes[r.id] ? "<strong>" + esc(nomes[r.id]) + "</strong><br>" : "") + esc(r.email) + "</td>" +
         "<td>" + fmtDate(r.created_at) + "</td>" +
         '<td><span class="trial-pill ' + s.cls + '">' + esc(s.text) + "</span></td>" +
         "<td>" + fmtDate(r.trial_ends_at) + "</td>" +
@@ -244,7 +248,12 @@ async function inviteTrial() {
     }
     if (lastErr) throw new Error("Convite enviado, mas não foi possível marcar como teste: " + lastErr.message);
 
-    adminMsg("Convite de teste (" + CONFIG.TRIAL_DAYS + " dias) enviado para " + email + ".", "success");
+    const nomeInput = $("trialInviteNome");
+    const nomeConvidado = nomeInput ? nomeInput.value.trim() : "";
+    if (nomeConvidado && window.NomeUsuario) await window.NomeUsuario.setByEmail(email, nomeConvidado);
+    if (nomeInput) nomeInput.value = "";
+
+    adminMsg("Convite de teste (" + CONFIG.TRIAL_DAYS + " dias) enviado para " + (nomeConvidado ? nomeConvidado + " (" + email + ")" : email) + ".", "success");
     input.value = "";
     await loadTrials();
   } catch (e) {
@@ -265,6 +274,7 @@ function setupAdmin() {
   invite.innerHTML =
     '<div class="panel-heading-row"><h2>🎁 Convidar usuário de teste (' + CONFIG.TRIAL_DAYS + " dias)</h2></div>" +
     '<div class="produto-picker-row mb-sm">' +
+    '<div class="field flush"><span>Nome (opcional)</span><input type="text" id="trialInviteNome" maxlength="80" placeholder="Nome do cliente" /></div>' +
     '<div class="field flush"><span>E-mail do usuário de teste</span>' +
     '<input type="email" id="trialInviteEmail" placeholder="teste@email.com" /></div>' +
     '<button type="button" id="trialInviteBtn" class="btn btn-primary">Enviar convite de teste</button></div>' +
@@ -305,8 +315,9 @@ async function load() {
 
     const [t, p] = await Promise.all([
       sb.rpc("get_my_trial"),
-      sb.from("profiles").select("is_admin").eq("id", session.user.id).maybeSingle(),
+      sb.from("profiles").select("is_admin, nome").eq("id", session.user.id).maybeSingle(),
     ]);
+    myNome = String((p.data && p.data.nome) || "").trim();
     if (t.error) console.error("Teste grátis:", t.error.message);
     else renderUserSide(t.data, session.user.email);
 
