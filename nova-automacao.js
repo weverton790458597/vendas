@@ -1,10 +1,10 @@
 // nova-automacao.js
 // Ajustes da aba "Nova automação":
-//  1) Botão "Escolher post da conta": lista as publicações de uma conta conectada
-//     e preenche o post e a conta do formulário ao tocar.
-//  2) Estilos do formulário organizado em etapas e do botão de fechar no celular.
-// Módulo isolado (mesmo padrão dos outros): client próprio que só LÊ a sessão do app.js,
-// estilos injetados aqui. Usa os ids do bloco #subtab-new do index.html.
+//  1) Botão "Escolher post da conta": janela com as publicações de uma conta conectada.
+//     Ao tocar num post, preenche o post e a conta do formulário.
+//  2) Formulário organizado em etapas e botão de fechar no celular.
+// Módulo isolado: client próprio que só LÊ a sessão do app.js, estilos injetados aqui.
+// Usa os ids do bloco #subtab-new do index.html.
 
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
@@ -21,6 +21,7 @@ const esc = (v) =>
   String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const safeImg = (u) => (/^https:\/\/\S+$/i.test(String(u || "")) ? String(u) : "");
 const oneLine = (s, n) => String(s || "").replace(/\s+/g, " ").trim().slice(0, n);
+const initial = (s) => String(s || "?").replace(/^@/, "").charAt(0).toUpperCase();
 
 let userId = null;
 let accounts = [];   // [{ id, instagram_username }]
@@ -36,6 +37,8 @@ function injectStyles() {
   const st = document.createElement("style");
   st.id = "nfStyles";
   st.textContent = `
+    .nf-hide { display: none !important; }
+
     /* ---------- Formulário em etapas ---------- */
     .nf { max-width: 760px; background: var(--surface); border: 1px solid var(--border-soft); border-radius: var(--radius-lg); overflow: hidden; }
     .nf-head { display: flex; align-items: center; gap: 0.75rem; padding: 1.1rem 1.3rem; border-bottom: 1px solid var(--border-soft); }
@@ -61,39 +64,72 @@ function injectStyles() {
     .nf-foot { display: flex; justify-content: flex-end; padding-top: 1.1rem; border-top: 1px solid var(--border-soft); }
     .nf-save { min-width: 200px; min-height: 46px; }
 
-    /* ---------- Janela de escolher post ---------- */
+    /* ---------- Janela "Escolher post" ---------- */
     .nf-overlay { position: fixed; inset: 0; z-index: 300; background: var(--overlay); display: flex; align-items: center; justify-content: center;
-      padding: 1rem; backdrop-filter: blur(4px); }
-    .nf-overlay.hidden { display: none; }
-    .nf-sheet { width: 100%; max-width: 680px; max-height: 88vh; display: flex; flex-direction: column; background: var(--surface);
-      border: 1px solid var(--border-soft); border-radius: var(--radius-lg); box-shadow: var(--shadow-pop); overflow: hidden; }
-    .nf-sheet-h { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 1rem 1.1rem; border-bottom: 1px solid var(--border-soft); }
-    .nf-sheet-h h3 { margin: 0; font-size: 1.02rem; }
-    .nf-sheet-acts { display: flex; align-items: center; gap: 0.5rem; }
-    .nf-link { border: 0; background: none; color: var(--accent-solid); font-weight: 600; font-size: 0.84rem; cursor: pointer; padding: 0.3rem; }
-    .nf-xbtn { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); cursor: pointer; font-size: 0.95rem; }
-    .nf-chips { display: flex; gap: 0.45rem; flex-wrap: wrap; padding: 0.9rem 1.1rem 0; }
-    .nf-chips:empty { display: none; }
-    .nf-chip { border: 1px solid var(--border); background: var(--bg-soft); color: var(--text-muted); border-radius: 999px; padding: 0.42em 0.9em;
-      font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+      padding: 24px; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); animation: nfFade 0.16s var(--ease); }
+    @keyframes nfFade { from { opacity: 0; } to { opacity: 1; } }
+    .nf-sheet { width: 100%; max-width: 760px; max-height: min(86vh, 820px); display: flex; flex-direction: column; min-height: 0;
+      background: var(--surface); border: 1px solid var(--border-soft); border-radius: 18px; box-shadow: var(--shadow-pop); overflow: hidden;
+      animation: nfPop 0.2s var(--ease); }
+    @keyframes nfPop { from { opacity: 0; transform: translateY(8px) scale(0.985); } to { opacity: 1; transform: none; } }
+
+    .nf-sheet-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1.1rem 1.25rem 0.9rem; flex-shrink: 0; }
+    .nf-title h3 { margin: 0; font-size: 1.08rem; font-family: var(--font-display); font-weight: 600; }
+    .nf-title p { margin: 0.2rem 0 0; font-size: 0.82rem; color: var(--text-muted); }
+    .nf-sheet-acts { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
+    .nf-iconbtn { width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px;
+      border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted); cursor: pointer; transition: color .15s, border-color .15s; }
+    .nf-iconbtn:hover { color: var(--text); border-color: var(--text-faint); }
+
+    .nf-tabs { display: flex; gap: 0.4rem; padding: 0 1.25rem 0.9rem; overflow-x: auto; scrollbar-width: none; flex-shrink: 0;
+      border-bottom: 1px solid var(--border-soft); }
+    .nf-tabs::-webkit-scrollbar { display: none; }
+    .nf-chip { display: inline-flex; align-items: center; gap: 0.5rem; flex-shrink: 0; padding: 0.35em 0.85em 0.35em 0.35em; border-radius: 999px;
+      border: 1px solid var(--border); background: var(--bg-soft); color: var(--text-muted); font: inherit; font-size: 0.84rem; font-weight: 600; cursor: pointer;
+      transition: all .15s var(--ease); }
+    .nf-chip:hover { color: var(--text); border-color: var(--text-faint); }
     .nf-chip.on { background: var(--accent-tint); border-color: var(--accent-solid); color: var(--text); }
-    .nf-search { padding: 0.8rem 1.1rem 0; }
-    .nf-search input { margin: 0; }
-    .nf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.6rem; padding: 0.9rem 1.1rem 1.2rem; overflow-y: auto; }
-    .nf-msg { grid-column: 1 / -1; padding: 2rem 1rem; text-align: center; color: var(--text-faint); font-size: 0.9rem; }
+    .nf-av { width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+      background: var(--surface-2); color: var(--text-muted); font-size: 0.72rem; font-weight: 700; }
+    .nf-chip.on .nf-av { background: var(--accent-solid); color: #fff; }
 
-    .nf-post { display: block; width: 100%; padding: 0; border: 1px solid var(--border-soft); border-radius: 12px;
-      background: var(--bg-soft); overflow: hidden; cursor: pointer; text-align: left; color: var(--text);
-      font: inherit; transition: border-color 0.15s var(--ease); }
-    .nf-post:hover, .nf-post:focus-visible { border-color: var(--accent-solid); outline: none; }
-    .nf-media { position: relative; width: 100%; padding-top: 100%; background: var(--surface-2); overflow: hidden; }
-    .nf-media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+    .nf-toolbar { display: flex; align-items: center; gap: 0.75rem; padding: 0.9rem 1.25rem; flex-shrink: 0; }
+    .nf-search { flex: 1; position: relative; display: flex; align-items: center; min-width: 0; }
+    .nf-search svg { position: absolute; left: 0.85rem; color: var(--text-faint); pointer-events: none; }
+    .nf-search input { margin: 0; padding-left: 2.5rem; height: 42px; border-radius: 12px; background: var(--bg-soft); }
+    .nf-count { font-size: 0.78rem; color: var(--text-faint); white-space: nowrap; }
+
+    .nf-grid { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(156px, 1fr)); gap: 12px; padding: 0 1.25rem 1.25rem; align-content: start; }
+
+    .nf-post { display: flex; flex-direction: column; width: 100%; padding: 0; min-width: 0; border: 1px solid var(--border-soft); border-radius: 12px;
+      background: var(--bg-soft); overflow: hidden; cursor: pointer; text-align: left; color: var(--text); font: inherit;
+      transition: border-color .15s var(--ease), transform .15s var(--ease), box-shadow .15s var(--ease); }
+    .nf-post:hover { border-color: var(--accent-solid); transform: translateY(-2px); box-shadow: 0 10px 22px -14px rgba(0,0,0,.45); }
+    .nf-post:active { transform: scale(0.98); }
+    .nf-post:focus-visible { outline: 2px solid var(--accent-solid); outline-offset: 2px; }
+    .nf-media { position: relative; width: 100%; aspect-ratio: 1 / 1; background: var(--surface-2); overflow: hidden; }
+    .nf-media img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; max-width: none; object-fit: cover; display: block; }
     .nf-media-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; color: var(--text-faint); }
-    .nf-cap { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.6em;
-      padding: 0.5rem 0.6rem 0; font-size: 0.76rem; line-height: 1.35; color: var(--text); }
-    .nf-when { display: block; padding: 0.25rem 0.6rem 0.6rem; font-size: 0.7rem; color: var(--text-faint); }
+    .nf-kind { position: absolute; top: 8px; right: 8px; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 8px;
+      background: rgba(0,0,0,.55); color: #fff; font-size: 0.7rem; display: inline-flex; align-items: center; justify-content: center; }
+    .nf-meta { display: flex; flex-direction: column; gap: 3px; padding: 0.6rem 0.7rem 0.7rem; }
+    .nf-cap { font-size: 0.8rem; line-height: 1.35; color: var(--text); min-height: 2.7em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .nf-when { font-size: 0.72rem; color: var(--text-faint); }
 
-    /* ---------- Celular: formulário em tela cheia com botão de fechar ---------- */
+    .nf-skel .nf-media { background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-hover) 37%, var(--surface-2) 63%);
+      background-size: 400% 100%; animation: nfShim 1.2s ease infinite; }
+    .nf-skel .nf-cap { height: 10px; min-height: 0; margin-top: 4px; border-radius: 6px; background: var(--surface-2); -webkit-line-clamp: 1; }
+    .nf-skel .nf-when { height: 8px; width: 40%; border-radius: 6px; background: var(--surface-2); }
+    @keyframes nfShim { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+
+    .nf-state { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; gap: 0.6rem; padding: 3rem 1rem; text-align: center;
+      color: var(--text-muted); font-size: 0.9rem; }
+    .nf-state .nf-state-ico { width: 44px; height: 44px; border-radius: 14px; background: var(--surface-2); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+    .nf-state .nf-retry { margin-top: 0.2rem; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); border-radius: 10px;
+      padding: 0.5em 1em; font: inherit; font-size: 0.84rem; font-weight: 600; cursor: pointer; }
+
+    /* ---------- Celular: folha inferior ---------- */
     @media (max-width: 900px) {
       .app-body { z-index: auto !important; }
       #subtab-new:not(.hidden) { position: fixed; inset: 0; z-index: 60; background: var(--bg); overflow-y: auto;
@@ -108,13 +144,35 @@ function injectStyles() {
       .nf-grid-2 { grid-template-columns: 1fr; }
       .nf-foot { position: sticky; bottom: 0; z-index: 3; background: var(--bg); margin: 0 -1rem; padding: 0.8rem 1rem calc(0.8rem + var(--safe-bottom)); }
       .nf-save { width: 100%; min-width: 0; }
-      .nf-sheet { max-height: 90dvh; border-radius: 20px 20px 0 0; border-bottom: 0; }
-      .nf-overlay { align-items: flex-end; padding: 0; }
-      .nf-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+      .nf-overlay { align-items: flex-end; padding: 0; background: var(--overlay); }
+      .nf-sheet { max-width: none; width: 100%; max-height: 92dvh; height: 92dvh; border-radius: 22px 22px 0 0; border: 0;
+        animation: nfUp 0.24s var(--ease); padding-bottom: var(--safe-bottom); }
+      @keyframes nfUp { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+      .nf-sheet::before { content: ""; display: block; width: 40px; height: 4px; border-radius: 4px; background: var(--border); margin: 8px auto 0; flex-shrink: 0; }
+      .nf-sheet-h { padding: 0.7rem 1rem 0.8rem; }
+      .nf-title h3 { font-size: 1.02rem; }
+      .nf-tabs { padding: 0 1rem 0.8rem; }
+      .nf-chip { font-size: 0.82rem; }
+      .nf-toolbar { padding: 0.8rem 1rem; }
+      .nf-search input { height: 44px; font-size: 16px; }
+      .nf-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 0 0.75rem 1.25rem; }
+      .nf-post { border-radius: 10px; }
+      .nf-post:hover { transform: none; box-shadow: none; }
+      .nf-meta { padding: 0.4rem 0.45rem 0.5rem; }
+      .nf-cap { font-size: 0.7rem; min-height: 0; -webkit-line-clamp: 2; }
+      .nf-when { display: none; }
+      .nf-kind { top: 5px; right: 5px; min-width: 20px; height: 20px; font-size: 0.6rem; }
+      .nf-count { font-size: 0.74rem; }
     }
   `;
   document.head.appendChild(st);
 }
+
+/* ------------------------------ ícones ------------------------------ */
+const ICON_SEARCH = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>';
+const ICON_REFRESH = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 4v5h-5"/></svg>';
+const ICON_CLOSE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 
 /* ------------------------------ dados ------------------------------ */
 async function getAccounts() {
@@ -140,14 +198,22 @@ async function fetchPosts(configId, force) {
 function ensureOverlay() {
   if (overlay) return overlay;
   overlay = document.createElement("div");
-  overlay.className = "nf-overlay hidden";
+  overlay.className = "nf-overlay nf-hide";
   overlay.innerHTML =
-    '<div class="nf-sheet" role="dialog" aria-modal="true" aria-label="Escolher post">' +
-    '<div class="nf-sheet-h"><h3>Escolher post</h3>' +
-    '<div class="nf-sheet-acts"><button type="button" class="nf-link" data-nf="reload">Atualizar</button>' +
-    '<button type="button" class="nf-xbtn" data-nf="close" aria-label="Fechar">✕</button></div></div>' +
-    '<div id="nfChips" class="nf-chips"></div>' +
-    '<div class="nf-search"><input type="search" id="nfSearch" placeholder="Buscar pela legenda" /></div>' +
+    '<div class="nf-sheet" role="dialog" aria-modal="true" aria-labelledby="nfTitle">' +
+    '<header class="nf-sheet-h">' +
+    '<div class="nf-title"><h3 id="nfTitle">Escolher publicação</h3>' +
+    "<p>Toque em um post para usar na automação.</p></div>" +
+    '<div class="nf-sheet-acts">' +
+    '<button type="button" class="nf-iconbtn" data-nf="reload" title="Atualizar" aria-label="Atualizar">' + ICON_REFRESH + "</button>" +
+    '<button type="button" class="nf-iconbtn" data-nf="close" title="Fechar" aria-label="Fechar">' + ICON_CLOSE + "</button>" +
+    "</div></header>" +
+    '<div id="nfTabs" class="nf-tabs"></div>' +
+    '<div class="nf-toolbar">' +
+    '<label class="nf-search">' + ICON_SEARCH +
+    '<input type="search" id="nfSearch" placeholder="Buscar pela legenda" autocomplete="off" /></label>' +
+    '<span id="nfCount" class="nf-count"></span>' +
+    "</div>" +
     '<div id="nfGrid" class="nf-grid"></div>' +
     "</div>";
   document.body.appendChild(overlay);
@@ -170,55 +236,90 @@ function ensureOverlay() {
 }
 
 function close() {
-  if (overlay) overlay.classList.add("hidden");
+  if (overlay) overlay.classList.add("nf-hide");
 }
 
-function renderChips() {
-  const box = $("nfChips");
+function renderTabs() {
+  const box = $("nfTabs");
   if (!box) return;
   if (accounts.length < 2) {
+    box.classList.add("nf-hide");
     box.innerHTML = "";
     return;
   }
+  box.classList.remove("nf-hide");
   box.innerHTML = accounts
-    .map((a) =>
-      '<button type="button" class="nf-chip' + (a.id === activeId ? " on" : "") + '" data-acc="' + esc(a.id) + '">@' +
-      esc(a.instagram_username || "conta") + "</button>"
-    )
+    .map((a) => {
+      const on = a.id === activeId;
+      return (
+        '<button type="button" class="nf-chip' + (on ? " on" : "") + '" data-acc="' + esc(a.id) + '" aria-pressed="' + on + '">' +
+        '<span class="nf-av">' + esc(initial(a.instagram_username)) + "</span>@" +
+        esc(a.instagram_username || "conta") + "</button>"
+      );
+    })
     .join("");
+}
+
+function setCount(n) {
+  const el = $("nfCount");
+  if (el) el.textContent = n == null ? "" : n === 1 ? "1 publicação" : n + " publicações";
+}
+
+function renderSkeleton() {
+  const grid = $("nfGrid");
+  if (!grid) return;
+  setCount(null);
+  let h = "";
+  for (let i = 0; i < 8; i++) {
+    h += '<div class="nf-post nf-skel" aria-hidden="true"><div class="nf-media"></div><div class="nf-meta"><span class="nf-cap"></span><span class="nf-when"></span></div></div>';
+  }
+  grid.innerHTML = h;
+}
+
+function renderState(icon, text, retry) {
+  const grid = $("nfGrid");
+  if (!grid) return;
+  setCount(null);
+  grid.innerHTML =
+    '<div class="nf-state"><span class="nf-state-ico">' + icon + "</span><span>" + text + "</span>" +
+    (retry ? '<button type="button" class="nf-retry" data-nf="reload">Tentar novamente</button>' : "") +
+    "</div>";
 }
 
 function renderPosts() {
   const grid = $("nfGrid");
   if (!grid) return;
   if (!posts.length) {
-    grid.innerHTML = '<div class="nf-msg">Nenhuma publicação encontrada nesta conta.</div>';
+    renderState("🗂️", "Nenhuma publicação encontrada nesta conta.", false);
     return;
   }
   const term = (($("nfSearch") && $("nfSearch").value) || "").trim().toLowerCase();
-  const list = term
-    ? posts.filter((p) => String(p.caption || "").toLowerCase().includes(term))
-    : posts;
+  const list = term ? posts.filter((p) => String(p.caption || "").toLowerCase().includes(term)) : posts;
   if (!list.length) {
-    grid.innerHTML = '<div class="nf-msg">Nada encontrado para essa busca.</div>';
+    renderState("🔎", "Nada encontrado para &ldquo;" + esc(term) + "&rdquo;.", false);
+    setCount(0);
     return;
   }
+  setCount(list.length);
   grid.innerHTML = list
     .map((p) => {
       const code = p.shortcode || p.media_id || "";
       const img = safeImg(p.thumbnail_url);
-      const cap = p.caption ? oneLine(p.caption, 90) : "(sem legenda)";
+      const cap = p.caption ? oneLine(p.caption, 110) : "Sem legenda";
       const when = p.timestamp ? new Date(p.timestamp).toLocaleDateString("pt-BR") : "";
+      const type = String(p.media_type || "").toUpperCase();
+      const kind = type === "VIDEO" ? "▶" : type === "CAROUSEL_ALBUM" ? "❏" : "";
       return (
-        '<button type="button" class="nf-post" data-code="' + esc(code) + '">' +
+        '<button type="button" class="nf-post" data-code="' + esc(code) + '" aria-label="' + esc(cap) + '">' +
         '<div class="nf-media">' +
         (img
           ? '<img src="' + esc(img) + '" alt="" loading="lazy" referrerpolicy="no-referrer" />'
           : '<div class="nf-media-empty">📷</div>') +
+        (kind ? '<span class="nf-kind">' + kind + "</span>" : "") +
         "</div>" +
-        '<span class="nf-cap">' + esc(cap) + "</span>" +
-        '<span class="nf-when">' + esc(when) + "</span>" +
-        "</button>"
+        '<div class="nf-meta"><span class="nf-cap">' + esc(cap) + "</span>" +
+        (when ? '<span class="nf-when">' + esc(when) + "</span>" : "") +
+        "</div></button>"
       );
     })
     .join("");
@@ -226,10 +327,9 @@ function renderPosts() {
 
 async function showAccount(id, force) {
   activeId = id;
-  renderChips();
+  renderTabs();
   const token = ++seq;
-  const grid = $("nfGrid");
-  if (grid) grid.innerHTML = '<div class="loading-row">Buscando publicações…</div>';
+  renderSkeleton();
   try {
     const list = await fetchPosts(id, force);
     if (token !== seq) return;
@@ -237,29 +337,29 @@ async function showAccount(id, force) {
     renderPosts();
   } catch (e) {
     if (token !== seq) return;
-    if (grid) grid.innerHTML = '<div class="nf-msg">Não foi possível carregar: ' + esc(e.message) + "</div>";
+    renderState("⚠️", "Não foi possível carregar as publicações.<br><small>" + esc(e.message) + "</small>", true);
   }
 }
 
 async function open() {
   ensureOverlay();
-  overlay.classList.remove("hidden");
+  overlay.classList.remove("nf-hide");
   $("nfSearch").value = "";
-  $("nfGrid").innerHTML = '<div class="loading-row">Carregando contas…</div>';
+  renderSkeleton();
 
   if (!userId) {
     const { data: { session } } = await sb.auth.getSession();
     userId = session ? session.user.id : null;
   }
   if (!userId) {
-    $("nfGrid").innerHTML = '<div class="nf-msg">Sua sessão expirou. Atualize a página e entre novamente.</div>';
+    renderState("🔒", "Sua sessão expirou. Atualize a página e entre novamente.", false);
     return;
   }
 
   accounts = await getAccounts();
   if (!accounts.length) {
-    $("nfChips").innerHTML = "";
-    $("nfGrid").innerHTML = '<div class="nf-msg">Nenhuma conta conectada. Conecte uma conta do Instagram primeiro.</div>';
+    renderTabs();
+    renderState("📸", "Nenhuma conta conectada. Conecte uma conta do Instagram primeiro.", false);
     return;
   }
 
@@ -267,7 +367,6 @@ async function open() {
   const sel = $("automationIgAccount");
   const current = sel ? sel.value : "";
   const start = accounts.some((a) => a.id === current) ? current : accounts[0].id;
-  renderChips();
   await showAccount(start);
 }
 
@@ -284,7 +383,7 @@ function choose(code) {
     const acc = accounts.find((a) => a.id === activeId);
     const cap = post && post.caption ? oneLine(post.caption, 60) : "post sem legenda";
     picked.textContent = "Post escolhido: " + cap + (acc ? " · @" + (acc.instagram_username || "conta") : "");
-    picked.classList.remove("hidden");
+    picked.classList.remove("nf-hide");
   }
   close();
 }
@@ -301,12 +400,12 @@ document.addEventListener("DOMContentLoaded", () => {
   $("saveAutomationBtn")?.addEventListener("click", () => {
     setTimeout(() => {
       const picked = $("postEscolhido");
-      if (picked && !$("instagramMediaId").value) picked.classList.add("hidden");
+      if (picked && !$("instagramMediaId").value) picked.classList.add("nf-hide");
     }, 1500);
   });
 
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && overlay && !overlay.classList.contains("hidden")) close();
+    if (e.key === "Escape" && overlay && !overlay.classList.contains("nf-hide")) close();
   });
 
   sb.auth.getSession().then(({ data: { session } }) => {
