@@ -91,7 +91,16 @@ document.addEventListener("DOMContentLoaded", () => {
     for (let i = 0; i < 45; i++) {
       particles.push(new Particle());
     }
+    const authScreen = document.getElementById("authScreen");
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let raf = 0;
+    // Só anima enquanto a tela de login está visível, a aba está ativa e o canvas aparece
+    // (no celular ele é display:none). Antes o loop continuava 60x/s dentro do painel.
+    const canAnimate = () => !reduced && !document.hidden && canvas.offsetParent !== null && (!authScreen || !authScreen.classList.contains("hidden"));
+    function startParticles() { if (!raf && canAnimate()) raf = requestAnimationFrame(animateParticles); }
     function animateParticles() {
+      raf = 0;
+      if (!canAnimate()) return;
       ctx.clearRect(0, 0, width, height);
       particles.forEach((p) => {
         p.update();
@@ -112,8 +121,11 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         }
       }
-      requestAnimationFrame(animateParticles);
+      raf = requestAnimationFrame(animateParticles);
     }
-    animateParticles();
+    startParticles();
+    document.addEventListener("visibilitychange", startParticles);
+    window.addEventListener("resize", startParticles);
+    if (authScreen) new MutationObserver(startParticles).observe(authScreen, { attributes: true, attributeFilter: ["class"] });
   }
 });
