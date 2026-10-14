@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Área do Parceiro — Achei &amp; Postei</title>
 <meta name="robots" content="noindex" />
+<meta name="theme-color" content="#2a1058" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Parceiro" />
 <link rel="stylesheet" href="../styles.css" />
 <link rel="stylesheet" href="parceiro.css" />
 <script>
@@ -28,9 +33,9 @@
   <div class="center-card">
     <h1>Área do Parceiro</h1>
     <p>Acesso exclusivo para parceiros convidados.</p>
-    <div id="pcAuthBanner" class="banner"></div>
+    <div id="pcAuthBanner" class="banner" role="status" aria-live="polite"></div>
     <div class="field"><label for="pcEmail">E-mail</label>
-      <input type="email" id="pcEmail" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="voce@email.com" /></div>
+      <input type="email" id="pcEmail" autocomplete="username" autocapitalize="off" spellcheck="false" inputmode="email" placeholder="voce@email.com" /></div>
     <div class="field"><label for="pcPassword">Senha</label>
       <input type="password" id="pcPassword" autocomplete="current-password" placeholder="••••••••" /></div>
     <button type="button" id="pcLoginBtn" class="btn btn-primary btn-full">Entrar</button>
@@ -44,7 +49,7 @@
   <div class="center-card is-setpass">
     <h1>Crie sua senha</h1>
     <p>Defina a senha para acessar a Área do Parceiro.</p>
-    <div id="pcSetBanner" class="banner"></div>
+    <div id="pcSetBanner" class="banner" role="status" aria-live="polite"></div>
     <div class="field"><label for="pcNewPassword">Nova senha</label>
       <input type="password" id="pcNewPassword" autocomplete="new-password" placeholder="Mínimo 6 caracteres" /></div>
     <button type="button" id="pcSetPasswordBtn" class="btn btn-primary btn-full">Salvar senha e entrar</button>
@@ -64,19 +69,32 @@
 <!-- Painel -->
 <section id="pcApp" class="pc-app hidden">
   <header class="pc-top">
-    <div class="pc-brand">Achei &amp; Postei <span class="badge badge-founder">Parceiro</span></div>
-    <div class="pc-top-right">
-      <span id="pcUserEmail" class="pc-user"></span>
-      <button type="button" class="btn btn-outline btn-sm" id="pcChangePwBtn">Alterar senha</button>
-      <button type="button" class="btn btn-outline btn-sm" data-theme-toggle>Tema</button>
-      <button type="button" class="btn btn-outline btn-sm" data-pc-logout>Sair</button>
+    <div class="pc-top-bar">
+      <button type="button" class="pc-icon-btn" id="pcMenuBtn" aria-label="Abrir menu"><span data-icon="menu"></span></button>
+      <div class="pc-brand">Achei &amp; Postei <span class="badge badge-founder">Parceiro</span></div>
+      <div class="pc-top-right">
+        <span id="pcUserEmail" class="pc-user"></span>
+        <button type="button" class="btn btn-outline btn-sm pc-d-only" data-pc-changepw>Alterar senha</button>
+        <button type="button" class="btn btn-outline btn-sm pc-d-only" data-theme-toggle>Tema</button>
+        <button type="button" class="btn btn-outline btn-sm pc-d-only" data-pc-logout>Sair</button>
+        <button type="button" class="pc-icon-btn" data-theme-toggle aria-label="Alternar tema"><span class="pc-theme-ic" data-icon="moon"></span></button>
+        <button type="button" class="pc-icon-btn" data-pc-bell aria-label="Indicados que pedem ação"><span data-icon="bell"></span><span id="pcBellBadge" class="pc-badge-dot hidden"></span></button>
+      </div>
     </div>
+    <div class="pc-top-greet">
+      <span class="pc-avatar" id="pcAvatar">P</span>
+      <div class="pc-greet-txt">
+        <div class="pc-greet-hi" id="pcGreetName">Olá!</div>
+        <div class="pc-greet-sub" id="pcGreetSub">Carregando seus dados…</div>
+      </div>
+    </div>
+    <div id="pcPills" class="pc-pills" aria-label="Resumo"></div>
   </header>
 
   <main class="pc-main">
-    <div id="pcBanner" class="banner"></div>
+    <div id="pcBanner" class="banner" role="status" aria-live="polite"></div>
 
-    <nav class="pc-tabs" id="pcTabs">
+    <nav class="pc-tabs" id="pcTabs" aria-label="Seções">
       <button type="button" class="pc-tab active" data-pc-tab="home"><span data-icon="home"></span> Início</button>
       <button type="button" class="pc-tab" data-pc-tab="invite"><span data-icon="mail"></span> Convidar</button>
       <button type="button" class="pc-tab" data-pc-tab="referrals"><span data-icon="users"></span> Meus indicados</button>
@@ -92,7 +110,7 @@
 
       <div class="pc-grid2">
         <div class="pc-card">
-          <div class="pc-card-head"><h2>Seu nível</h2></div>
+          <div class="pc-card-head"><h2><span data-icon="award"></span> Seu nível</h2></div>
           <div id="pcLevel"></div>
         </div>
         <div class="pc-card">
@@ -103,7 +121,7 @@
 
       <div class="pc-grid2">
         <div class="pc-card">
-          <div class="pc-card-head"><h2>Funil dos seus indicados</h2></div>
+          <div class="pc-card-head"><h2><span data-icon="trending-up"></span> Funil dos seus indicados</h2></div>
           <div id="pcFunnel"></div>
         </div>
         <div class="pc-card">
@@ -112,7 +130,7 @@
         </div>
       </div>
 
-      <div id="pcTip" class="pc-tip"></div>
+      <div id="pcTip" class="pc-tip hidden"></div>
     </section>
 
     <!-- ================= CONVIDAR ================= -->
@@ -128,8 +146,8 @@
           <small>Para quando o cliente já fechou com você. Ele entra direto como assinante.</small></span></label>
       </div>
       <div class="pc-invite-row">
-        <div class="field flush"><span>E-mail do cliente</span>
-          <input type="email" id="pcInviteEmail" placeholder="cliente@email.com" /></div>
+        <div class="field flush"><label for="pcInviteEmail">E-mail do cliente</label>
+          <input type="email" id="pcInviteEmail" inputmode="email" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="cliente@email.com" /></div>
         <button type="button" id="pcInviteBtn" class="btn btn-primary">Enviar convite de teste</button>
       </div>
       <div id="pcAfterInvite"></div>
@@ -145,7 +163,7 @@
         <button type="button" id="pcRefresh" class="btn btn-outline btn-sm">Atualizar</button></div>
       <p class="pc-note">Você acompanha cada indicado durante os <strong>2 primeiros meses</strong> de assinatura. Depois disso ele sai desta lista e passa a ser atendido só pela administração.</p>
       <div id="pcRefFilters" class="pc-filters"></div>
-      <div class="table-scroll"><table>
+      <div class="table-scroll pc-rt-wrap"><table class="pc-rt">
         <thead><tr><th>E-mail</th><th>Cadastro</th><th>Pagamento</th><th>Vencimento</th><th>Plano</th><th>Gestão até</th><th></th></tr></thead>
         <tbody id="pcReferralsBody"></tbody></table></div>
     </section>
@@ -168,9 +186,9 @@
         <p class="pc-note" style="margin-top:0">Veja quanto você ganha ao trazer mais clientes no mesmo mês. Estimativa sobre a 1ª mensalidade; os valores reais seguem as regras de comissão.</p>
         <div class="pc-sim">
           <div class="pc-sim-controls">
-            <div class="field"><span>Clientes que começam a pagar no mês: <strong id="pcSimNLabel">5</strong></span>
+            <div class="field"><label for="pcSimN">Clientes que começam a pagar no mês: <strong id="pcSimNLabel">5</strong></label>
               <input type="range" id="pcSimN" min="1" max="40" value="5" /></div>
-            <div class="field"><span>Plano mais vendido</span>
+            <div class="field"><label for="pcSimPlan">Plano mais vendido</label>
               <select id="pcSimPlan">
                 <option value="99.9">Individual — R$ 99,90</option>
                 <option value="189.9">Multi — R$ 189,90</option>
@@ -192,22 +210,44 @@
     <section id="pcTab-rules" class="pc-panel hidden">
       <div class="panel-heading-row"><h2>Níveis de comissão</h2></div>
       <div class="pc-levels-visual">
-        <div class="pc-levelbox"><span class="pc-lv-emoji" data-icon="medal-bronze"></span><b>Nível 1 · Bronze</b><span>1 a 10 clientes ativos no mês</span><strong>50%</strong></div>
-        <div class="pc-levelbox"><span class="pc-lv-emoji" data-icon="medal-silver"></span><b>Nível 2 · Prata</b><span>11 a 20 clientes ativos no mês</span><strong>60%</strong></div>
-        <div class="pc-levelbox"><span class="pc-lv-emoji" data-icon="medal-gold"></span><b>Nível 3 · Ouro</b><span>21 ou mais clientes ativos no mês</span><strong>70%</strong></div>
+        <div class="pc-levelbox"><span class="pc-lv-emoji" data-icon="medal-bronze"></span><b>Nível 1 · Bronze</b><span>1 a 10 clientes no mês</span><strong>50%</strong></div>
+        <div class="pc-levelbox"><span class="pc-lv-emoji" data-icon="medal-silver"></span><b>Nível 2 · Prata</b><span>11 a 20 clientes no mês</span><strong>60%</strong></div>
+        <div class="pc-levelbox"><span class="pc-lv-emoji" data-icon="medal-gold"></span><b>Nível 3 · Ouro</b><span>21 ou mais clientes no mês</span><strong>70%</strong></div>
       </div>
-      <p class="pc-note">A comissão incide sobre a 1ª mensalidade do cliente. O nível do mês vale para todos os clientes que começaram a pagar naquele mês.</p>
+      <p class="pc-note">Contam os clientes que começaram a pagar no mês. A comissão incide sobre a 1ª mensalidade, e o nível do mês vale para todos esses clientes.</p>
       <div class="panel-heading-row pc-gap"><h2>Planos dos seus indicados</h2></div>
-      <div class="table-scroll"><table class="pc-small">
+      <div class="table-scroll pc-rt-wrap"><table class="pc-small pc-rt">
         <thead><tr><th>Plano</th><th>Valor</th><th>Inclui</th></tr></thead>
         <tbody>
-          <tr><td>Individual</td><td>R$ 99,90/mês</td><td>1 conta do Instagram · 300 mensagens/mês</td></tr>
-          <tr><td>Multi</td><td>R$ 189,90/mês</td><td>Até 3 contas · 300 mensagens/mês por conta</td></tr>
-          <tr><td>Conta adicional</td><td>R$ 49,90/mês</td><td>Por conta acima de 3</td></tr>
-          <tr><td>Excedente</td><td>R$ 0,10/mensagem</td><td>Acima de 300 mensagens por conta</td></tr>
+          <tr><td data-label="Plano">Individual</td><td data-label="Valor">R$ 99,90/mês</td><td data-label="Inclui">1 conta do Instagram · 300 mensagens/mês</td></tr>
+          <tr><td data-label="Plano">Multi</td><td data-label="Valor">R$ 189,90/mês</td><td data-label="Inclui">Até 3 contas · 300 mensagens/mês por conta</td></tr>
+          <tr><td data-label="Plano">Conta adicional</td><td data-label="Valor">R$ 49,90/mês</td><td data-label="Inclui">Por conta acima de 3</td></tr>
+          <tr><td data-label="Plano">Excedente</td><td data-label="Valor">R$ 0,10/mensagem</td><td data-label="Inclui">Acima de 300 mensagens por conta</td></tr>
         </tbody></table></div>
     </section>
   </main>
+
+  <!-- Barra inferior (somente celular) -->
+  <nav class="pc-bottom" id="pcBottomNav" aria-label="Navegação principal">
+    <button type="button" class="pc-bn active" data-pc-tab="home"><span data-icon="home"></span><span>Início</span></button>
+    <button type="button" class="pc-bn" data-pc-tab="referrals"><span data-icon="users"></span><span>Indicados</span></button>
+    <button type="button" class="pc-bn pc-bn-fab" data-pc-tab="invite" aria-label="Convidar cliente"><span class="pc-fab"><span data-icon="plus"></span></span><span class="pc-bn-label">Convidar</span></button>
+    <button type="button" class="pc-bn" data-pc-tab="commissions"><span data-icon="banknote"></span><span>Comissões</span></button>
+    <button type="button" class="pc-bn" data-pc-tab="sell"><span data-icon="rocket"></span><span>Vender</span></button>
+  </nav>
+
+  <!-- Menu (somente celular) -->
+  <div id="pcMenu" class="pc-sheet-overlay hidden">
+    <div class="pc-sheet" role="dialog" aria-modal="true" aria-label="Menu">
+      <div class="pc-sheet-grab"></div>
+      <div class="pc-sheet-user"><span class="pc-avatar" id="pcMenuAvatar">P</span>
+        <div><b id="pcMenuName"></b><small id="pcMenuEmail"></small></div></div>
+      <button type="button" class="pc-sheet-item" data-pc-tab="rules"><span data-icon="clipboard"></span> Regras e planos</button>
+      <button type="button" class="pc-sheet-item" data-pc-changepw><span data-icon="key"></span> Alterar senha</button>
+      <button type="button" class="pc-sheet-item" data-theme-toggle><span class="pc-theme-ic" data-icon="moon"></span> Alternar tema</button>
+      <button type="button" class="pc-sheet-item danger" data-pc-logout><span data-icon="log-out"></span> Sair</button>
+    </div>
+  </div>
 </section>
 
 <!-- Alterar senha -->
