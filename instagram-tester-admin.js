@@ -41,9 +41,15 @@ function escapeHtml(str) {
   }[c]));
 }
 
+let loadingRequests = false;
 async function loadPendingRequests() {
   const list = $("#igTesterAdminList");
-  if (!list) return;
+  if (!list || loadingRequests) return;
+  loadingRequests = true;
+  try { await renderPendingRequests(list); } finally { loadingRequests = false; }
+}
+
+async function renderPendingRequests(list) {
   list.innerHTML = '<div class="loading-row">Carregando solicitações…</div>';
 
   const { data, error } = await supabase
@@ -133,6 +139,14 @@ document.addEventListener("DOMContentLoaded", () => {
   loadPendingRequests();
   const refreshBtn = $("#igTesterAdminRefreshBtn");
   if (refreshBtn) refreshBtn.addEventListener("click", loadPendingRequests);
+  // Sem sessão no 1º carregamento a lista vinha vazia ("Nenhuma solicitação") mesmo havendo
+  // pedidos pendentes. Recarrega quando a sessão aparece e sempre que a aba Admin é aberta.
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (session && event === "SIGNED_IN") setTimeout(loadPendingRequests, 0);
+  });
+  document.addEventListener("click", (e) => {
+    if (e.target.closest('.nav-item[data-tab="admin"]')) loadPendingRequests();
+  });
 });
 
 /* ============================================================
