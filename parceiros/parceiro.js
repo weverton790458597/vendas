@@ -8,7 +8,10 @@ const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFiZGxpaW95emt5bGNjZnlsaWxzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNzkxMzIsImV4cCI6MjA4MzY1NTEzMn0.5s0zEdAgxx92pbC9yx75hHMfysHr2Aad86GhC1-tEmU";
 
 // Lido ANTES de criar o client (ele limpa o hash ao processar o token).
-const isInviteLink = /type=(invite|recovery)/.test(window.location.hash || "");
+const rawHash = window.location.hash || "";
+const isInviteLink = /type=(invite|recovery)/.test(rawHash);
+const hashParams = new URLSearchParams(rawHash.replace(/^#/, ""));
+const linkErrorCode = hashParams.get("error_code") || (hashParams.get("error") ? "error" : "");
 
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
@@ -17,12 +20,19 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 const $ = (s) => document.querySelector(s);
 const esc = (v) =>
   String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const brl = (n) => "R$ " + Number(n || 0).toFixed(2).replace(".", ",");
-const fmtDate = (v) => {
-  if (!v) return "—";
+
+// R$ 1.234,56 (com separador de milhar)
+const brlFmt = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const brl = (n) => brlFmt.format(Number(n || 0)).replace(/ /g, " ");
+// Rótulo curto para o gráfico: R$ 1.235
+const brlShort = (n) => "R$ " + Math.round(Number(n || 0)).toLocaleString("pt-BR");
+
+// Datas "YYYY-MM-DD" são lidas no fuso local (evita cair no dia anterior)
+const parseDay = (v, endOfDay) => {
   const s = String(v);
-  return new Date(s.length === 10 ? s + "T00:00:00" : s).toLocaleDateString("pt-BR");
+  return new Date(s.length === 10 ? s + (endOfDay ? "T23:59:59" : "T00:00:00") : s);
 };
+const fmtDate = (v) => (v ? parseDay(v).toLocaleDateString("pt-BR") : "—");
 const fmtMonth = (v) => {
   const [y, m] = String(v).slice(0, 7).split("-");
   return m + "/" + y;
@@ -53,6 +63,12 @@ const ICON_PATHS = {
   copy: '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
   "message-circle": '<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>',
   "message-square": '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+  moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  key: '<circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.8-9.8M16 7l3 3M14 9l2 2"/>',
+  "log-out": '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/>',
   "medal-bronze": '<circle cx="12" cy="8" r="6" stroke="#CD7F32"/><path d="M8.21 13.89 7 23l5-3 5 3-1.21-9.12" stroke="#CD7F32"/>',
   "medal-silver": '<circle cx="12" cy="8" r="6" stroke="#8A96A3"/><path d="M8.21 13.89 7 23l5-3 5 3-1.21-9.12" stroke="#8A96A3"/>',
   "medal-gold": '<circle cx="12" cy="8" r="6" stroke="#C48A00"/><path d="M8.21 13.89 7 23l5-3 5 3-1.21-9.12" stroke="#C48A00"/>',
@@ -90,8 +106,7 @@ function daysUntilDue(x) {
   if (!x.payment_due_date) return null;
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
-  const due = new Date(String(x.payment_due_date).slice(0, 10) + "T00:00:00");
-  return Math.round((due - hoje) / 864e5);
+  return Math.round((parseDay(String(x.payment_due_date).slice(0, 10)) - hoje) / 864e5);
 }
 
 // Pagante em dia cujo vencimento cai nos próximos 3 dias
@@ -110,13 +125,13 @@ function followUpKey(x) {
 }
 
 const timers = {};
-function banner(id, msg, type) {
+function banner(id, msg, type, ms = 6000) {
   const el = $("#" + id);
   if (!el) return;
   el.textContent = msg;
   el.className = "banner " + type;
   clearTimeout(timers[id]);
-  timers[id] = setTimeout(() => (el.className = "banner"), 6000);
+  timers[id] = setTimeout(() => (el.className = "banner"), ms);
 }
 
 function show(name) {
@@ -133,7 +148,7 @@ function denied(title, text, showPanelLink) {
 }
 
 /* ------------------------------ regras de nível ------------------------------ */
-// 1–10 clientes no mês = 50% · 11–20 = 60% · 21+ = 70%
+// Clientes que começaram a pagar no mês: 1–10 = 50% · 11–20 = 60% · 21+ = 70%
 const LEVELS = [
   { n: 1, min: 1, pct: 0.5, name: "Bronze", medal: "medal-bronze" },
   { n: 2, min: 11, pct: 0.6, name: "Prata", medal: "medal-silver" },
@@ -148,14 +163,58 @@ let referrals = [];
 let commissions = [];
 let level = { qtd_mes: 0, nivel: 1, percentual: 0.5 };
 let refFilter = "todos"; // filtro ativo na aba "Meus indicados"
+let loadState = "loading"; // "loading" | "ready" | "error"
+let hasLoaded = false;
+let lastLoad = 0;
 
 const localMonthKey = (d = new Date()) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+const skel = (h, w = "100%") => '<div class="pc-skel" style="height:' + h + "px;width:" + w + '"></div>';
+
+/* ------------------------------ tema ------------------------------ */
+function isDark() {
+  const attr = document.documentElement.getAttribute("data-theme");
+  if (attr) return attr === "dark";
+  const m = (getComputedStyle(document.body).backgroundColor || "").match(/[\d.]+/g);
+  if (m && m.length >= 3 && !(m.length >= 4 && Number(m[3]) === 0)) {
+    return 0.299 * Number(m[0]) + 0.587 * Number(m[1]) + 0.114 * Number(m[2]) < 128;
+  }
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+function syncThemeIcon() {
+  document.querySelectorAll(".pc-theme-ic").forEach((el) => { el.innerHTML = icon(isDark() ? "sun" : "moon"); });
+}
 
 /* ------------------------------ sessão ------------------------------ */
+// Espera o client trocar o token do link (convite/recuperação) por uma sessão.
+async function waitForSession(ms = 6000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) return session;
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  return null;
+}
+
 async function bootstrap() {
+  if (linkErrorCode) {
+    history.replaceState(null, "", window.location.pathname);
+    banner(
+      "pcAuthBanner",
+      linkErrorCode === "otp_expired"
+        ? 'Esse link expirou ou já foi usado. Entre com sua senha ou use "Esqueci minha senha".'
+        : 'Não foi possível validar o link. Peça um novo convite ou use "Esqueci minha senha".',
+      "error",
+      15000
+    );
+    return show("Auth");
+  }
   if (isInviteLink) {
-    // O client precisa de um instante para trocar o token do link por sessão.
-    await new Promise((r) => setTimeout(r, 400));
+    const s = await waitForSession();
+    if (!s) {
+      banner("pcAuthBanner", 'Não foi possível validar o link. Peça um novo convite ou use "Esqueci minha senha".', "error", 15000);
+      return show("Auth");
+    }
     show("SetPassword");
     return;
   }
@@ -186,30 +245,52 @@ async function bootstrap() {
   $("#pcUserEmail").textContent = userNome || userEmail;
   $("#pcUserEmail").title = userEmail;
   show("App");
+  syncThemeIcon();
   renderTemplates();
   renderObjections();
   renderSim();
+  // Reabre a aba em que o parceiro estava (ex.: após recarregar a página)
+  const saved = new URLSearchParams(window.location.hash.replace(/^#/, "")).get("aba");
+  if (saved && document.getElementById("pcTab-" + saved)) goTab(saved, true);
   await loadAll();
 }
 
-$("#pcLoginBtn").addEventListener("click", async () => {
+async function doLogin() {
+  const btn = $("#pcLoginBtn");
   const email = $("#pcEmail").value.trim();
   const password = $("#pcPassword").value;
   if (!email || !password) return banner("pcAuthBanner", "Preencha e-mail e senha.", "error");
-  const { error } = await sb.auth.signInWithPassword({ email, password });
-  if (error) return banner("pcAuthBanner", error.message, "error");
-  await bootstrap();
-});
-$("#pcPassword").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#pcLoginBtn").click(); });
+  btn.disabled = true;
+  btn.textContent = "Entrando…";
+  try {
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) return banner("pcAuthBanner", error.message, "error");
+    $("#pcPassword").value = "";
+    await bootstrap();
+  } catch (e) {
+    banner("pcAuthBanner", "Falha de conexão. Tente novamente.", "error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Entrar";
+  }
+}
+$("#pcLoginBtn").addEventListener("click", doLogin);
+$("#pcEmail").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#pcPassword").focus(); });
+$("#pcPassword").addEventListener("keydown", (e) => { if (e.key === "Enter") doLogin(); });
 
-$("#pcSetPasswordBtn").addEventListener("click", async () => {
+async function doSetPassword() {
   const pw = $("#pcNewPassword").value;
   if (!pw || pw.length < 6) return banner("pcSetBanner", "A senha precisa ter pelo menos 6 caracteres.", "error");
+  const btn = $("#pcSetPasswordBtn");
+  btn.disabled = true;
   const { error } = await sb.auth.updateUser({ password: pw });
+  btn.disabled = false;
   if (error) return banner("pcSetBanner", error.message, "error");
   history.replaceState(null, "", window.location.pathname);
   location.reload();
-});
+}
+$("#pcSetPasswordBtn").addEventListener("click", doSetPassword);
+$("#pcNewPassword").addEventListener("keydown", (e) => { if (e.key === "Enter") doSetPassword(); });
 
 // Nome preenchido depois do login (nome-usuario.js): atualiza topo e saudação.
 window.addEventListener("user-nome-changed", (e) => {
@@ -219,11 +300,17 @@ window.addEventListener("user-nome-changed", (e) => {
 });
 
 /* ------------------------------ navegação ------------------------------ */
-function goTab(id) {
-  document.querySelectorAll(".pc-tab").forEach((b) => b.classList.toggle("active", b.dataset.pcTab === id));
+function goTab(id, instant) {
+  document.querySelectorAll("[data-pc-tab]").forEach((b) => b.classList.toggle("active", b.dataset.pcTab === id));
   document.querySelectorAll(".pc-panel").forEach((p) => p.classList.toggle("hidden", p.id !== "pcTab-" + id));
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  try {
+    history.replaceState(null, "", id === "home" ? window.location.pathname + window.location.search : "#aba=" + id);
+  } catch (_) { /* sem suporte */ }
+  window.scrollTo({ top: 0, behavior: instant ? "auto" : "smooth" });
 }
+
+const openMenu = () => $("#pcMenu").classList.remove("hidden");
+const closeMenu = () => $("#pcMenu").classList.add("hidden");
 
 async function copyText(text) {
   try {
@@ -244,20 +331,46 @@ async function copyText(text) {
 }
 
 document.addEventListener("click", async (e) => {
-  if (e.target.closest("[data-pc-logout]")) return sb.auth.signOut().then(() => location.reload());
+  // Qualquer item do menu inferior fecha a folha (e segue para a ação dele)
+  if (e.target.id === "pcMenu") return closeMenu();
+  if (e.target.closest(".pc-sheet-item")) closeMenu();
+
+  if (e.target.closest("#pcMenuBtn")) return openMenu();
+
+  if (e.target.closest("[data-pc-logout]")) {
+    return sb.auth.signOut().finally(() => {
+      history.replaceState(null, "", window.location.pathname);
+      location.reload();
+    });
+  }
 
   if (e.target.closest("[data-theme-toggle]")) {
-    const next = document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light";
+    const next = isDark() ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", next);
     try { localStorage.setItem("ap-theme", next); } catch (_) { /* storage indisponível */ }
+    syncThemeIcon();
     return;
   }
+
+  if (e.target.closest("[data-pc-changepw]")) return openPw();
+
+  if (e.target.closest("[data-pc-bell]")) {
+    refFilter = "acao";
+    renderReferrals();
+    return goTab("referrals");
+  }
+
+  if (e.target.closest("[data-pc-retry]")) return loadAll();
 
   const tab = e.target.closest("[data-pc-tab]");
   if (tab) return goTab(tab.dataset.pcTab);
 
   const go = e.target.closest("[data-pc-goto]");
-  if (go) { e.preventDefault(); return goTab(go.dataset.pcGoto); }
+  if (go) {
+    e.preventDefault();
+    if (go.dataset.pcSetfilter) { refFilter = go.dataset.pcSetfilter; renderReferrals(); }
+    return goTab(go.dataset.pcGoto);
+  }
 
   const copy = e.target.closest("[data-pc-copy]");
   if (copy) {
@@ -278,31 +391,70 @@ document.addEventListener("click", async (e) => {
   if (wa) {
     const ta = document.getElementById("pcTpl-" + wa.dataset.pcWa);
     if (!ta) return;
+    // Não deixa sair "[nome]" literal na mensagem
+    const i = ta.value.indexOf("[nome]");
+    if (i >= 0) {
+      ta.focus();
+      ta.setSelectionRange(i, i + 6);
+      return banner("pcBanner", "Troque [nome] pelo nome do cliente antes de enviar.", "error");
+    }
     window.open("https://wa.me/?text=" + encodeURIComponent(ta.value), "_blank", "noopener");
   }
 });
 
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") { closeMenu(); closePw(); }
+});
+
+// Ao voltar para a aba/app depois de um tempo, atualiza os números sozinho
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden || !hasLoaded || Date.now() - lastLoad < 60000) return;
+  if ($("#pcApp").classList.contains("hidden")) return;
+  loadAll();
+});
+
 /* ------------------------------ dados ------------------------------ */
-async function loadAll() {
-  $("#pcReferralsBody").innerHTML = '<tr><td colspan="7" class="loading-row">Carregando…</td></tr>';
-  const [r, c, l] = await Promise.all([
-    sb.rpc("partner_my_referrals"),
-    sb.rpc("partner_my_commissions"),
-    sb.rpc("partner_my_level"),
-  ]);
-  const err = r.error || c.error || l.error;
-  if (err) {
-    banner("pcBanner", "Erro ao carregar dados: " + err.message, "error");
-    $("#pcReferralsBody").innerHTML = '<tr><td colspan="7" class="empty-state">Não foi possível carregar.</td></tr>';
-    return;
-  }
-  referrals = r.data || [];
-  commissions = c.data || [];
-  if (l.data && l.data[0]) level = l.data[0];
+function renderAll() {
   renderHome();
   renderReferrals();
   renderChart();
   renderCommissions();
+}
+
+async function loadAll() {
+  if (!hasLoaded) { loadState = "loading"; renderAll(); }
+  const btn = $("#pcRefresh");
+  if (btn) { btn.disabled = true; btn.textContent = "Atualizando…"; }
+  try {
+    const [r, c, l] = await Promise.all([
+      sb.rpc("partner_my_referrals"),
+      sb.rpc("partner_my_commissions"),
+      sb.rpc("partner_my_level"),
+    ]);
+    const err = r.error || c.error || l.error;
+    if (err) throw new Error(err.message);
+    referrals = r.data || [];
+    commissions = c.data || [];
+    const ld = Array.isArray(l.data) ? l.data[0] : l.data;
+    if (ld) level = ld;
+    hasLoaded = true;
+    lastLoad = Date.now();
+    loadState = "ready";
+  } catch (e) {
+    if (!hasLoaded) loadState = "error";
+    banner("pcBanner", "Erro ao carregar dados: " + e.message, "error");
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "Atualizar"; }
+  }
+  renderAll();
+}
+
+// Mensagem para as áreas que dependem dos dados enquanto não estão prontos
+function stateHtml() {
+  if (loadState === "loading") return '<div class="loading-row">Carregando…</div>';
+  if (loadState === "error")
+    return '<div class="empty-state">Não foi possível carregar. <button type="button" class="btn btn-outline btn-sm" data-pc-retry>Tentar de novo</button></div>';
+  return "";
 }
 
 /* ------------------------------ INÍCIO ------------------------------ */
@@ -320,7 +472,7 @@ function monthTotals() {
 
 function greeting() {
   const h = new Date().getHours();
-  return h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite";
+  return h >= 5 && h < 12 ? "Bom dia" : h >= 12 && h < 18 ? "Boa tarde" : "Boa noite";
 }
 
 function firstName() {
@@ -329,23 +481,92 @@ function firstName() {
   return local ? local.charAt(0).toUpperCase() + local.slice(1) : "parceiro";
 }
 
-function renderHome() {
-  const pendente = commissions.filter((x) => !x.pago).reduce((a, x) => a + Number(x.valor), 0);
-  const pago = commissions.filter((x) => x.pago).reduce((a, x) => a + Number(x.valor), 0);
-  const late = referrals.filter((x) => x.payment_status === "atrasado").length;
-  const { thisMonthTotal } = monthTotals();
-  const lvl = LEVELS[Math.max(0, Math.min(2, (Number(level.nivel) || 1) - 1))];
+function computeStats() {
+  return {
+    pendente: commissions.filter((x) => !x.pago).reduce((a, x) => a + Number(x.valor), 0),
+    pago: commissions.filter((x) => x.pago).reduce((a, x) => a + Number(x.valor), 0),
+    late: referrals.filter((x) => x.payment_status === "atrasado").length,
+    acao: referrals.filter((x) => followUpKey(x) !== null).length,
+    thisMonthTotal: monthTotals().thisMonthTotal,
+    lvl: LEVELS[Math.max(0, Math.min(2, (Number(level.nivel) || 1) - 1))],
+  };
+}
 
+// Cabeçalho do celular: saudação, aviso (sino) e pílulas de resumo
+function renderHeader(S) {
+  const name = firstName();
+  const initial = (name.charAt(0) || "P").toUpperCase();
+  $("#pcAvatar").textContent = initial;
+  $("#pcMenuAvatar").textContent = initial;
+  $("#pcMenuName").textContent = userNome || name;
+  $("#pcMenuEmail").textContent = userEmail;
+  $("#pcGreetName").textContent = greeting() + ", " + name + "!";
+
+  const bell = $("#pcBellBadge");
+  if (loadState !== "ready") {
+    bell.classList.add("hidden");
+    $("#pcGreetSub").textContent = loadState === "error" ? "Não foi possível carregar seus dados" : "Carregando seus dados…";
+    $("#pcPills").innerHTML = loadState === "loading" ? '<div class="pc-pill pc-skel-pill"></div><div class="pc-pill pc-skel-pill"></div><div class="pc-pill pc-skel-pill"></div>' : "";
+    return;
+  }
+  bell.textContent = S.acao > 9 ? "9+" : String(S.acao);
+  bell.classList.toggle("hidden", !S.acao);
+  $("#pcGreetSub").textContent = S.acao ? S.acao + " indicado(s) pedindo a sua ação" : "Tudo em dia com os seus indicados";
+
+  const pill = (ico, v, l, cls) =>
+    '<div class="pc-pill ' + (cls || "") + '"><span class="pc-pill-ico">' + icon(ico) + '</span><span><b>' + v + "</b><small>" + l + "</small></span></div>";
+  $("#pcPills").innerHTML =
+    pill("banknote", brl(S.pendente), "A receber", "hi") +
+    pill("check-circle", brl(S.pago), "Já recebido") +
+    pill("calendar", brl(S.thisMonthTotal), "Gerado no mês") +
+    pill("users", referrals.length, "Indicados") +
+    pill(S.late ? "alert-triangle" : "check", S.late, "Em atraso", S.late ? "bad" : "") +
+    pill(S.lvl.medal, "Nível " + S.lvl.n, Math.round(S.lvl.pct * 100) + "% de comissão");
+}
+
+function renderHome() {
+  const S = computeStats();
+  renderHeader(S);
+  const hero = $("#pcHero");
+
+  if (loadState === "loading") {
+    hero.className = "pc-hero";
+    hero.innerHTML = skel(150);
+    $("#pcKpis").innerHTML = [1, 2, 3, 4, 5].map(() => skel(84)).join("");
+    $("#pcLevel").innerHTML = skel(110);
+    $("#pcFocus").innerHTML = skel(56) + skel(56);
+    $("#pcFunnel").innerHTML = skel(90);
+    $("#pcMilestones").innerHTML = skel(90);
+    $("#pcMilestoneCount").textContent = "";
+    $("#pcTip").classList.add("hidden");
+    return;
+  }
+  if (loadState === "error") {
+    hero.className = "pc-hero is-error";
+    hero.innerHTML =
+      "<h1>Não foi possível carregar</h1><p>Verifique sua conexão e tente de novo.</p>" +
+      '<div class="pc-hero-main"><div class="pc-hero-actions"><button type="button" class="btn btn-light" data-pc-retry>Tentar de novo</button></div></div>';
+    $("#pcKpis").innerHTML = "";
+    $("#pcLevel").innerHTML = stateHtml();
+    $("#pcFocus").innerHTML = "";
+    $("#pcFunnel").innerHTML = "";
+    $("#pcMilestones").innerHTML = "";
+    $("#pcMilestoneCount").textContent = "";
+    $("#pcTip").classList.add("hidden");
+    return;
+  }
+
+  hero.className = "pc-hero";
   let mensagem;
   if (!referrals.length && !commissions.length) mensagem = "Seu primeiro convite é o passo que destrava tudo. Vamos começar?";
   else if (Number(level.qtd_mes) === 0) mensagem = "Mês novo, chance nova: cada cliente que começa a pagar aumenta o seu ganho.";
-  else mensagem = "Você tem " + level.qtd_mes + " cliente(s) ativo(s) neste mês. Continue assim!";
+  else mensagem = "Neste mês, " + level.qtd_mes + " cliente(s) já começaram a pagar. Continue assim!";
 
-  $("#pcHero").innerHTML =
+  hero.innerHTML =
     "<h1>" + greeting() + ", " + esc(firstName()) + "!</h1>" +
     "<p>" + esc(mensagem) + "</p>" +
     '<div class="pc-hero-main">' +
-    '<div class="pc-hero-value"><small>Comissões a receber</small><b>' + brl(pendente) + "</b></div>" +
+    '<div class="pc-hero-value"><small>Comissões a receber</small><b>' + brl(S.pendente) + "</b></div>" +
     '<div class="pc-hero-actions">' +
     '<button type="button" class="btn btn-light" data-pc-goto="invite">' + icon("mail") + " Convidar cliente</button>" +
     '<button type="button" class="btn btn-ghost" data-pc-goto="sell">' + icon("rocket") + " Roteiros e simulador</button>" +
@@ -353,13 +574,13 @@ function renderHome() {
 
   const k = (cls, ico, v, l) => '<div class="pc-kpi ' + cls + '"><i>' + ico + "</i><b>" + v + "</b><span>" + l + "</span></div>";
   $("#pcKpis").innerHTML =
-    k("green", icon("check-circle"), brl(pago), "Já recebido") +
-    k("", icon("calendar"), brl(thisMonthTotal), "Gerado neste mês (1ª mensalidade)") +
+    k("green", icon("check-circle"), brl(S.pago), "Já recebido") +
+    k("", icon("calendar"), brl(S.thisMonthTotal), "Comissão gerada neste mês") +
     k("", icon("users"), referrals.length, "Indicados em acompanhamento") +
-    k("", icon(lvl.medal), "Nível " + lvl.n + " · " + Math.round(lvl.pct * 100) + "%", "Seu nível agora") +
-    k(late ? "danger" : "", late ? icon("alert-triangle") : icon("check"), late, "Pagamentos em atraso");
+    k("", icon(S.lvl.medal), "Nível " + S.lvl.n + " · " + Math.round(S.lvl.pct * 100) + "%", "Seu nível agora") +
+    k(S.late ? "danger" : "", S.late ? icon("alert-triangle") : icon("check"), S.late, "Pagamentos em atraso");
 
-  renderLevel(lvl);
+  renderLevel(S.lvl);
   renderFocus();
   renderFunnel();
   renderMilestones();
@@ -396,18 +617,18 @@ function renderLevel(lvl) {
 function renderFocus() {
   const items = [];
   const late = referrals.filter((x) => x.payment_status === "atrasado");
-  if (late.length) items.push({ ico: "alert-triangle", text: late.length + " indicado(s) com pagamento em atraso. Um lembrete gentil costuma resolver.", tab: "sell", cta: "Ver mensagem" });
+  if (late.length) items.push({ ico: "alert-triangle", text: late.length + " indicado(s) com pagamento em atraso. Um lembrete gentil costuma resolver.", tab: "referrals", filter: "atrasado", cta: "Ver indicados" });
   const vencendo = referrals.filter(isDueSoon);
-  if (vencendo.length) items.push({ ico: "bell", text: vencendo.length + " pagamento(s) vencendo nos próximos 3 dias. Um lembrete antes evita atraso.", tab: "referrals", cta: "Ver indicados" });
+  if (vencendo.length) items.push({ ico: "bell", text: vencendo.length + " pagamento(s) vencendo nos próximos 3 dias. Um lembrete antes evita atraso.", tab: "referrals", filter: "acao", cta: "Ver indicados" });
   const semCadastro = referrals.filter((x) => !x.accepted_at);
-  if (semCadastro.length) items.push({ ico: "mail", text: semCadastro.length + " convite(s) ainda sem cadastro. Avise o cliente pelo WhatsApp.", tab: "referrals", cta: "Ver indicados" });
+  if (semCadastro.length) items.push({ ico: "mail", text: semCadastro.length + " convite(s) ainda sem cadastro. Avise o cliente pelo WhatsApp.", tab: "referrals", filter: "acao", cta: "Ver indicados" });
   const aguardando = referrals.filter((x) => x.accepted_at && !["em_dia", "atrasado", "cancelado"].includes(x.payment_status));
-  if (aguardando.length) items.push({ ico: "gift", text: aguardando.length + " cliente(s) cadastrado(s) esperando virar pagante. Hora do follow-up.", tab: "sell", cta: "Ver roteiro" });
+  if (aguardando.length) items.push({ ico: "gift", text: aguardando.length + " cliente(s) cadastrado(s) esperando virar pagante. Hora do follow-up.", tab: "referrals", filter: "acao", cta: "Ver indicados" });
   if (!items.length) items.push({ ico: "rocket", text: "Nenhuma pendência por aqui. O melhor momento para convidar o próximo cliente é agora.", tab: "invite", cta: "Convidar" });
 
   $("#pcFocus").innerHTML = items.slice(0, 3).map((i) =>
     '<div class="pc-focus-item"><span class="pc-focus-ico">' + icon(i.ico) + "</span><p>" + esc(i.text) + "</p>" +
-    '<button type="button" class="btn btn-outline btn-sm" data-pc-goto="' + i.tab + '">' + esc(i.cta) + "</button></div>"
+    '<button type="button" class="btn btn-outline btn-sm" data-pc-goto="' + i.tab + '"' + (i.filter ? ' data-pc-setfilter="' + i.filter + '"' : "") + ">" + esc(i.cta) + "</button></div>"
   ).join("");
 }
 
@@ -431,7 +652,8 @@ function renderFunnel() {
 
 function renderMilestones() {
   const paying = new Set(commissions.map((x) => x.email)).size;
-  const nivel = Number(level.nivel) || 1;
+  // As conquistas não podem "sumir" quando vira o mês: usa o maior nível já atingido no histórico.
+  const nivel = Math.max(Number(level.nivel) || 1, ...commissions.map((x) => Number(x.nivel) || 1));
   const list = [
     { ico: "mail", label: "Primeiro convite", ok: referrals.length > 0 || commissions.length > 0 },
     { ico: "user-check", label: "1º cliente cadastrado", ok: referrals.some((x) => x.accepted_at) || commissions.length > 0 },
@@ -454,12 +676,14 @@ const TIPS = [
   "Mostre o resultado com um exemplo: peça para ele comentar no próprio post e receber o produto no Direct.",
   "Faça follow-up no 3º dia do teste. É quando o cliente costuma ter dúvidas ou esquece de testar.",
   "Foque em quem já vende por link de afiliado ou loja no Instagram: é o cliente que mais entende o valor.",
-  "Concentre os fechamentos no mesmo mês: ao passar de 10 clientes ativos, a comissão sobe para 60% em todos.",
+  "Concentre os fechamentos no mesmo mês: ao passar de 10 clientes no mês, a comissão sobe para 60% em todos.",
   "Apresente o plano Multi para quem tem mais de uma conta. O ticket é maior e a comissão também.",
 ];
 function renderTip() {
   const t = TIPS[Math.floor(Date.now() / 864e5) % TIPS.length];
-  $("#pcTip").innerHTML = '<span class="pc-tip-ico">' + icon("lightbulb") + '</span><div><b>Dica do dia</b><p>' + esc(t) + "</p></div>";
+  const tip = $("#pcTip");
+  tip.classList.remove("hidden");
+  tip.innerHTML = '<span class="pc-tip-ico">' + icon("lightbulb") + '</span><div><b>Dica do dia</b><p>' + esc(t) + "</p></div>";
 }
 
 /* ------------------------------ indicados ------------------------------ */
@@ -473,12 +697,15 @@ function payBadge(s) {
 function renderReferrals() {
   const body = $("#pcReferralsBody");
   const bar = $("#pcRefFilters");
-  if (bar) {
-    bar.innerHTML = !referrals.length ? "" : REF_FILTERS.map((f) =>
-      '<button type="button" class="pc-filter' + (f.key === refFilter ? " active" : "") + '" data-pc-filter="' + f.key + '">' +
-      esc(f.label) + " <b>" + referrals.filter(f.test).length + "</b></button>"
-    ).join("");
+  if (loadState !== "ready") {
+    bar.innerHTML = "";
+    body.innerHTML = '<tr><td colspan="7">' + stateHtml() + "</td></tr>";
+    return;
   }
+  bar.innerHTML = !referrals.length ? "" : REF_FILTERS.map((f) =>
+    '<button type="button" class="pc-filter' + (f.key === refFilter ? " active" : "") + '" data-pc-filter="' + f.key + '">' +
+    esc(f.label) + " <b>" + referrals.filter(f.test).length + "</b></button>"
+  ).join("");
   if (!referrals.length) {
     body.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum indicado em acompanhamento. Envie seu primeiro convite na aba "Convidar".</td></tr>';
     return;
@@ -491,15 +718,15 @@ function renderReferrals() {
   }
   body.innerHTML = list.map((x) => {
     const fu = followUpKey(x);
-    const left = x.manage_until ? Math.max(0, Math.ceil((new Date(x.manage_until) - Date.now()) / 864e5)) : null;
+    const left = x.manage_until ? Math.max(0, Math.ceil((parseDay(x.manage_until, true) - Date.now()) / 864e5)) : null;
     return "<tr>" +
       "<td>" + esc(x.email) + (x.invite_type === "teste" ? ' <span class="badge badge-founder">Teste 7 dias</span>' : "") + "</td>" +
-      "<td>" + (x.accepted_at ? '<span class="badge badge-ativo">Cadastrado</span>' : '<span class="badge badge-muted">Convite enviado</span>') + "</td>" +
-      "<td>" + payBadge(x.payment_status) + "</td>" +
-      "<td>" + fmtDate(x.payment_due_date) + "</td>" +
-      "<td>" + (x.monthly_plan_value ? brl(x.monthly_plan_value) : "—") + "</td>" +
-      "<td>" + (x.manage_until ? fmtDate(x.manage_until) + '<span class="pc-sub">' + left + " dia(s) restantes</span>" : '<span class="pc-sub">começa no 1º pagamento</span>') + "</td>" +
-      '<td><div class="pc-row-actions"><a class="btn btn-outline btn-sm" href="mailto:' + esc(x.email) + '">E-mail</a>' +
+      '<td data-label="Cadastro">' + (x.accepted_at ? '<span class="badge badge-ativo">Cadastrado</span>' : '<span class="badge badge-muted">Convite enviado</span>') + "</td>" +
+      '<td data-label="Pagamento">' + payBadge(x.payment_status) + "</td>" +
+      '<td data-label="Vencimento">' + fmtDate(x.payment_due_date) + "</td>" +
+      '<td data-label="Plano">' + (x.monthly_plan_value ? brl(x.monthly_plan_value) : "—") + "</td>" +
+      '<td data-label="Gestão até"><span>' + (x.manage_until ? fmtDate(x.manage_until) + '<span class="pc-sub">' + left + " dia(s) restantes</span>" : '<span class="pc-sub">começa no 1º pagamento</span>') + "</span></td>" +
+      '<td class="pc-actions-cell"><div class="pc-row-actions"><a class="btn btn-outline btn-sm" href="mailto:' + esc(x.email) + '">E-mail</a>' +
       (fu ? '<button type="button" class="btn btn-wa btn-sm" data-pc-fu="' + fu + '">' + WA_ICON + "WhatsApp</button>" : "") +
       "</div></td>" +
       "</tr>";
@@ -509,6 +736,7 @@ function renderReferrals() {
 /* ------------------------------ comissões ------------------------------ */
 function renderChart() {
   const host = $("#pcChart");
+  if (loadState !== "ready") { host.innerHTML = stateHtml(); return; }
   const now = new Date();
   const months = [];
   for (let i = 5; i >= 0; i--) {
@@ -526,8 +754,8 @@ function renderChart() {
   }
   host.innerHTML = '<div class="pc-chart">' + months.map((m) => {
     const h = m.value ? Math.max(6, Math.round((m.value / max) * 100)) : 0;
-    return '<div class="pc-bar ' + (m.value ? "" : "empty") + (m.current ? " current" : "") + '">' +
-      '<span class="pc-bar-val">' + (m.value ? brl(m.value) : "—") + "</span>" +
+    return '<div class="pc-bar ' + (m.value ? "" : "empty") + (m.current ? " current" : "") + '"' + (m.value ? ' title="' + esc(brl(m.value)) + '"' : "") + ">" +
+      '<span class="pc-bar-val">' + (m.value ? brlShort(m.value) : "—") + "</span>" +
       '<div class="pc-bar-fill" style="height:' + (m.value ? h * 1.15 : 3) + 'px"></div>' +
       '<span class="pc-bar-label">' + m.label + "</span></div>";
   }).join("") + "</div>";
@@ -545,7 +773,7 @@ function exportCommissions() {
   const csv = [head, ...rows]
     .map((r) => r.map((v) => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"').join(";"))
     .join("\r\n");
-  const url = URL.createObjectURL(new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" }));
+  const url = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));
   const a = document.createElement("a");
   a.href = url;
   a.download = "comissoes-" + localMonthKey() + ".csv";
@@ -558,6 +786,7 @@ function exportCommissions() {
 
 function renderCommissions() {
   const host = $("#pcCommissions");
+  if (loadState !== "ready") { host.innerHTML = stateHtml(); return; }
   if (!commissions.length) {
     host.innerHTML = '<div class="empty-state">Suas comissões aparecem aqui quando um indicado fizer o primeiro pagamento.</div>';
     return;
@@ -569,12 +798,12 @@ function renderCommissions() {
     const f = rows[0];
     return '<div class="pc-month"><h3>' + fmtMonth(mes) +
       '<span class="badge badge-founder">Nível ' + f.nivel + " · " + Math.round(f.percentual * 100) + "%</span>" +
-      '<span class="pc-sub">' + f.qtd_mes + " cliente(s) ativo(s) no mês</span></h3>" +
-      '<div class="table-scroll"><table class="pc-small"><thead><tr><th>Cliente</th><th>1ª mensalidade</th><th>Comissão total</th><th>Parcela</th><th>Valor</th><th>Acerto</th><th>Situação</th></tr></thead><tbody>' +
+      '<span class="pc-sub">' + f.qtd_mes + " cliente(s) no mês</span></h3>" +
+      '<div class="table-scroll pc-rt-wrap"><table class="pc-small pc-rt"><thead><tr><th>Cliente</th><th>1ª mensalidade</th><th>Comissão total</th><th>Parcela</th><th>Valor</th><th>Acerto</th><th>Situação</th></tr></thead><tbody>' +
       rows.map((x) =>
-        "<tr><td>" + esc(x.email) + "</td><td>" + brl(x.base) + "</td><td>" + brl(x.total) + "</td>" +
-        "<td>" + x.parcela + "/2</td><td>" + brl(x.valor) + "</td><td>" + fmtDate(x.vencimento) + "</td>" +
-        "<td>" + (x.pago ? '<span class="badge badge-ativo">Pago</span>' : '<span class="badge badge-muted">Pendente</span>') + "</td></tr>"
+        "<tr><td>" + esc(x.email) + '</td><td data-label="1ª mensalidade">' + brl(x.base) + '</td><td data-label="Comissão total">' + brl(x.total) + "</td>" +
+        '<td data-label="Parcela">' + x.parcela + '/2</td><td data-label="Valor">' + brl(x.valor) + '</td><td data-label="Acerto">' + fmtDate(x.vencimento) + "</td>" +
+        '<td data-label="Situação">' + (x.pago ? '<span class="badge badge-ativo">Pago</span>' : '<span class="badge badge-muted">Pendente</span>') + "</td></tr>"
       ).join("") + "</tbody></table></div></div>";
   }).join("");
 }
@@ -648,7 +877,7 @@ function renderSim() {
     '<div class="pc-sim-big">' + brl(total) + "</div>" +
     '<div class="pc-sim-sub">em comissões com ' + n + " cliente(s) no mês · Nível " + (n >= 21 ? 3 : n >= 11 ? 2 : 1) + " (" + Math.round(pct * 100) + "%)</div>" +
     '<div class="pc-sim-line"><span>Por cliente</span><b>' + brl(plan * pct) + "</b></div>" +
-    '<div class="pc-sim-line"><span>Mantendo esse ritmo por 12 meses</span><b>' + brl(total * 12) + "</b></div>" + up;
+    '<div class="pc-sim-line"><span>Se repetir esse mês por 12 meses</span><b>' + brl(total * 12) + "</b></div>" + up;
 }
 $("#pcSimN").addEventListener("input", renderSim);
 $("#pcSimPlan").addEventListener("change", renderSim);
@@ -666,7 +895,9 @@ async function invite() {
   const email = input.value.trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return banner("pcBanner", "Informe um e-mail válido.", "error");
   const tipo = (document.querySelector('input[name="pcTipo"]:checked') || {}).value === "pago" ? "pago" : "teste";
+  const label = btn.textContent;
   btn.disabled = true;
+  btn.textContent = "Enviando…";
   try {
     const { data, error } = await sb.functions.invoke("partner-invite-user", { body: { email, tipo } });
     if (error) {
@@ -681,11 +912,13 @@ async function invite() {
       '<div class="pc-after"><h3>' + icon("check-circle") + " Convite enviado!</h3>" +
       "<p>Agora avise o cliente pelo WhatsApp. Quem sabe que o e-mail está chegando abre e cria a senha mais rápido.</p>" +
       tplCard(TEMPLATES.find((t) => t.key === "invite"), "after") + "</div>";
+    $("#pcAfterInvite").scrollIntoView({ behavior: "smooth", block: "nearest" });
     await loadAll();
   } catch (e) {
     banner("pcBanner", "Não foi possível enviar: " + e.message, "error");
   } finally {
     btn.disabled = false;
+    btn.textContent = label;
   }
 }
 $("#pcInviteBtn").addEventListener("click", invite);
@@ -709,14 +942,14 @@ $("#pcForgotBtn").addEventListener("click", async () => {
 
 /* ------------------------------ alterar senha (logado) ------------------------------ */
 function pwMsg(text, type) { const el = $("#pcPwMsg"); el.textContent = text; el.className = "banner " + type; }
-$("#pcChangePwBtn").addEventListener("click", () => {
+function openPw() {
   $("#pcPwMsg").className = "banner hidden";
   ["#pcPwCurrent", "#pcPwNew", "#pcPwConfirm"].forEach((id) => { $(id).value = ""; $(id).type = "password"; });
   $("#pcPwShow").checked = false;
   $("#pcPwModal").classList.remove("hidden");
   $("#pcPwCurrent").focus();
-});
-const closePw = () => $("#pcPwModal").classList.add("hidden");
+}
+function closePw() { $("#pcPwModal").classList.add("hidden"); }
 $("#pcPwClose").addEventListener("click", closePw);
 $("#pcPwCancel").addEventListener("click", closePw);
 $("#pcPwModal").addEventListener("click", (e) => { if (e.target.id === "pcPwModal") closePw(); });
