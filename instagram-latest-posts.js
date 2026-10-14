@@ -122,16 +122,19 @@ function useForAutomationWithProduto(btn) {
   });
 }
 
+let loadingPosts = false;
 async function loadLatestPosts() {
   const container = $("#latestPostsGrid");
-  if (!container) return;
+  if (!container || loadingPosts) return;
+  loadingPosts = true;
   container.innerHTML = '<div class="loading-row">Buscando os últimos posts das suas contas…</div>';
 
   const {
     data: { session },
   } = await supabase.auth.getSession();
   if (!session) {
-    container.innerHTML = '<div class="empty-state">Sua sessão expirou. Atualize a página.</div>';
+    container.innerHTML = '<div class="empty-state">Entre na sua conta para ver as publicações.</div>';
+    loadingPosts = false;
     return;
   }
 
@@ -141,6 +144,8 @@ async function loadLatestPosts() {
     renderPosts(data?.posts || []);
   } catch (error) {
     container.innerHTML = '<div class="empty-state">Não foi possível buscar os posts: ' + escapeHtml(error.message) + "</div>";
+  } finally {
+    loadingPosts = false;
   }
 }
 
@@ -149,6 +154,12 @@ document.addEventListener("DOMContentLoaded", () => {
   loadLatestPosts();
   const refreshBtn = $("#latestPostsRefreshBtn");
   if (refreshBtn) refreshBtn.addEventListener("click", loadLatestPosts);
+  // Login sem reload: busca assim que a sessão existir (antes ficava com erro até dar F5).
+  let fetchedForSession = false;
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === "SIGNED_OUT") { fetchedForSession = false; return; }
+    if (session && !fetchedForSession) { fetchedForSession = true; setTimeout(loadLatestPosts, 0); }
+  });
 });
 
 /* ============================================================
