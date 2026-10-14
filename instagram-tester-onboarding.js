@@ -3,7 +3,8 @@
 // cada conta vira um "cartão" com 4 passos, e só o passo da vez tem botão.
 //   1. Enviar o @            (usuário digita e clica)
 //   2. Liberação do acesso   (automático — a tela atualiza sozinha)
-//   3. Aceitar o convite     (botão abre o Instagram)
+//   3. Aceitar o convite     (notebook: botão abre o Instagram; celular: copia o link
+//                             e guia pela "versão para computador")
 //   4. Conectar a conta      (botão inicia a conexão)
 // Funciona igual no notebook e no celular (os estilos são injetados aqui).
 // Não importa nem depende de app.js — usa o próprio client do Supabase. O único
@@ -48,6 +49,13 @@ let formError = "";
 let limitHit = false;     // plano no limite de contas
 let loaded = false;
 const openedIds = readOpened();
+const copiedIds = new Set(); // celular: quem já copiou o link do convite
+
+// Celular/tablet: lá a aba "Convites do testador" só aparece na versão para
+// computador do site do Instagram, então o passo 3 é diferente.
+const IS_MOBILE =
+  /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
 function $(sel) {
   return document.querySelector(sel);
@@ -130,6 +138,10 @@ function injectStyles() {
     .igw-help summary { cursor: pointer; color: var(--accent-1); font-weight: 600; }
     .igw-help ol { margin: .6rem 0 0; padding-left: 1.2rem; }
     .igw-help li { margin-bottom: .4rem; }
+    .igw-step-body ol { margin: .2rem 0 .8rem; padding-left: 1.2rem; }
+    .igw-step-body li { margin-bottom: .45rem; }
+    .igw-linkbox { width: 100%; box-sizing: border-box; margin: 0 0 .7rem; padding: .6rem .7rem; font-size: .8rem;
+      border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2, transparent); color: var(--text); }
     .igw-reject { margin: .2rem 0 .9rem; font-size: .9rem; color: var(--text-muted); }
     .igw-add { margin-bottom: .9rem; }
     .igw-limit { border: 1px solid var(--warning); background: var(--warning-bg); border-radius: var(--radius-md, 14px);
@@ -174,14 +186,38 @@ function statusBadge(status) {
   return '<span class="badge badge-muted">Aguardando</span>';
 }
 
-const HELP_STEPS =
-  '<details class="igw-help"><summary>Não achei o convite? Veja o passo a passo</summary><ol>' +
-  "<li>Abra o <strong>navegador</strong> do celular (Chrome ou Safari) e entre em instagram.com. " +
-  "<strong>Não use o app do Instagram</strong> — nele essa opção não aparece.</li>" +
-  "<li>Toque na sua foto de perfil, depois em <strong>☰</strong> → <strong>Configurações e privacidade</strong>.</li>" +
-  "<li>Em “Seu app e suas mídias”, toque em <strong>Permissões do site do app</strong> → <strong>Apps e sites</strong>.</li>" +
-  "<li>Na aba <strong>“Convites do testador”</strong>, toque em <strong>Aceitar</strong>.</li>" +
-  "</ol></details>";
+function helpSteps(user) {
+  return (
+    '<details class="igw-help"><summary>Não achei o convite? Veja o passo a passo</summary><ol>' +
+    "<li>Entre em <strong>instagram.com</strong> com a conta <strong>@" + user + "</strong> " +
+    "(o convite só aparece nela).</li>" +
+    "<li>Abra a página <strong>Apps e sites</strong> (o botão acima leva direto para ela).</li>" +
+    "<li>Clique na aba <strong>“Convites do testador”</strong> e depois em <strong>Aceitar</strong>.</li>" +
+    "</ol></details>"
+  );
+}
+
+function mobileInviteStep(id, user, copied) {
+  if (!copied) {
+    return stepRow(3, "active", "Aceite o convite no Instagram",
+      "<p>No celular, esse convite só aparece na <strong>versão para computador</strong> do site do Instagram. " +
+      "Vamos por partes. Primeiro, copie o link:</p>" +
+      '<button type="button" class="btn btn-primary btn-full igw-btn" data-igw="copy-link" data-id="' + id + '">Copiar o link</button>');
+  }
+  return stepRow(3, "active", "Aceite o convite no Instagram",
+    "<p><strong>Link copiado!</strong> Agora faça assim:</p><ol>" +
+    "<li>Abra o <strong>Chrome</strong> ou o <strong>Safari</strong> (<strong>não o app do Instagram</strong>, ele não mostra essa opção), " +
+    "cole o link na barra de endereço e entre com a conta <strong>@" + user + "</strong>.</li>" +
+    "<li>Se não abrir direto em <strong>Apps e sites</strong>: toque na foto de perfil → <strong>☰</strong> → <strong>Configurações e privacidade</strong> → " +
+    "“Seu app e suas mídias” → <strong>Permissões do site do app</strong> → <strong>Apps e sites</strong>.</li>" +
+    "<li>Na aba <strong>“Convites do testador”</strong>, toque em <strong>Aceitar</strong>.</li></ol>" +
+    '<details class="igw-help"><summary>Não apareceu a aba “Convites do testador”?</summary>' +
+    "<p>Ative a <strong>“Versão para computador”</strong> no navegador (Chrome: botão <strong>⋮</strong> · Safari: botão <strong>aA</strong> → “Solicitar site para computador”), " +
+    "abra o link de novo e procure a aba.</p></details>" +
+    '<input type="text" class="igw-linkbox" readonly value="' + INVITES_URL + '" aria-label="Link do Instagram" onfocus="this.select()" />' +
+    '<button type="button" class="btn btn-primary btn-full igw-btn" data-igw="accepted" data-id="' + id + '">Já aceitei o convite</button>' +
+    '<p class="igw-note"><button type="button" class="igw-link" data-igw="copy-link" data-id="' + id + '">Copiar o link de novo</button></p>');
+}
 
 function formStep() {
   return (
@@ -234,15 +270,19 @@ function requestCard(row) {
   if (!approved) {
     s3 = stepRow(3, "locked", "Aceitar o convite no Instagram");
   } else if (!opened) {
-    s3 = stepRow(3, "active", "Aceite o convite no Instagram",
-      "<p>Toque no botão, entre na sua conta e, na aba <strong>“Convites do testador”</strong>, toque em <strong>Aceitar</strong>.</p>" +
-      '<button type="button" class="btn btn-primary btn-full igw-btn" data-igw="open-invite" data-id="' + id + '">Abrir o Instagram</button>' +
-      HELP_STEPS);
+    s3 = IS_MOBILE
+      ? mobileInviteStep(id, user, copiedIds.has(String(row.id)))
+      : stepRow(3, "active", "Aceite o convite no Instagram",
+          "<p>Clique no botão, entre com a conta <strong>@" + user + "</strong> e, na aba <strong>“Convites do testador”</strong>, clique em <strong>Aceitar</strong>.</p>" +
+          '<button type="button" class="btn btn-primary btn-full igw-btn" data-igw="open-invite" data-id="' + id + '">Abrir o Instagram</button>' +
+          helpSteps(user));
   } else {
-    s3 = stepRow(3, "done", "Convite aberto no Instagram",
-      '<p>Aceitou o convite? Então siga para o passo 4. Não conseguiu? ' +
-      '<button type="button" class="igw-link" data-igw="open-invite" data-id="' + id + '">Abrir de novo</button></p>' +
-      HELP_STEPS);
+    s3 = stepRow(3, "done", "Convite aceito no Instagram",
+      "<p>Aceitou o convite? Então siga para o passo 4. Não conseguiu? " +
+      (IS_MOBILE
+        ? '<button type="button" class="igw-link" data-igw="redo-invite" data-id="' + id + '">Ver o passo a passo de novo</button>'
+        : '<button type="button" class="igw-link" data-igw="open-invite" data-id="' + id + '">Abrir de novo</button>') +
+      "</p>" + (IS_MOBILE ? "" : helpSteps(user)));
   }
 
   const s4 = opened
@@ -467,6 +507,22 @@ function onClick(event) {
     // window.open precisa rodar dentro do próprio clique (senão o navegador bloqueia).
     window.open(INVITES_URL, "_blank", "noopener");
     openedIds.add(String(t.getAttribute("data-id")));
+    saveOpened();
+    render();
+  } else if (act === "copy-link") {
+    try {
+      if (navigator.clipboard) navigator.clipboard.writeText(INVITES_URL).catch(() => {});
+    } catch (_e) {}
+    copiedIds.add(String(t.getAttribute("data-id")));
+    render();
+  } else if (act === "accepted") {
+    openedIds.add(String(t.getAttribute("data-id")));
+    saveOpened();
+    render();
+  } else if (act === "redo-invite") {
+    const rid = String(t.getAttribute("data-id"));
+    openedIds.delete(rid);
+    copiedIds.add(rid);
     saveOpened();
     render();
   } else if (act === "connect") {
