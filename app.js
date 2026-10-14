@@ -161,8 +161,10 @@ async function bootstrapSession() {
     showScreen("blocked");
     return;
   }
-  $("#userEmailLabel").textContent = currentUser.email;
-  $("#userAvatar").textContent = currentUser.email.charAt(0).toUpperCase();
+  const displayName = String(profile.nome || "").trim() || currentUser.email;
+  $("#userEmailLabel").textContent = displayName;
+  $("#userEmailLabel").title = currentUser.email;
+  $("#userAvatar").textContent = displayName.charAt(0).toUpperCase();
   $("#adminTabBtn").classList.toggle("hidden", !profile.is_admin);
   const founderBadge = $("#founderBadgeIco");
   const founderPanel = $("#founderPanel");
@@ -177,18 +179,27 @@ async function bootstrapSession() {
   if (profile.is_founder) await loadFounderIdeaTermsState();
 }
 // ---------- Planos / mais contas ----------
+function introNome() {
+  const n = currentProfile && currentProfile.nome ? String(currentProfile.nome).trim() : "";
+  return n ? "Meu nome é " + n + ". " : "";
+}
+// O nome pode ser preenchido depois do login (nome-usuario.js): atualiza os links de WhatsApp.
+window.addEventListener("user-nome-changed", (e) => {
+  if (currentProfile) currentProfile.nome = e.detail && e.detail.nome;
+  updatePlanLinks();
+});
 function updatePlanLinks() {
   const email = currentUser ? currentUser.email : "";
   const oneBtn = $("#planOneAccountBtn");
   if (oneBtn) {
     oneBtn.href = whatsappLink(
-      "Olá! Quero contratar o plano de 1 conta do Instagram (R$ 99,90/mês) no Respondi. Meu e-mail: " + email
+      "Olá! " + introNome() + "Quero contratar o plano de 1 conta do Instagram (R$ 99,90/mês) no Respondi. Meu e-mail: " + email
     );
   }
   const threeBtn = $("#planThreeAccountsBtn");
   if (threeBtn) {
     threeBtn.href = whatsappLink(
-      "Olá! Quero contratar o plano de até 3 contas do Instagram (R$ 189,90/mês) no Respondi. Meu e-mail: " + email
+      "Olá! " + introNome() + "Quero contratar o plano de até 3 contas do Instagram (R$ 189,90/mês) no Respondi. Meu e-mail: " + email
     );
   }
   const slider = $("#planAccountsSlider");
@@ -199,7 +210,7 @@ function updatePlanLinks() {
     $("#planAccountsCount").textContent = n;
     $("#planSliderPrice").textContent = formatBRL(price);
     sliderBtn.href = whatsappLink(
-      "Olá! Quero atualizar meu plano no Respondi para " + n + " contas do Instagram (" +
+      "Olá! " + introNome() + "Quero atualizar meu plano no Respondi para " + n + " contas do Instagram (" +
       formatBRL(price) + "/mês). Meu e-mail: " + email
     );
   }
@@ -220,7 +231,7 @@ function renderFounderIdeaState(accepted) {
   pendingBox.classList.toggle("hidden", accepted);
   if (accepted && suggestBtn && currentUser) {
     suggestBtn.href = whatsappLink(
-      "Olá! Sou membro fundador do Respondi e já aceitei os Termos de Uso de Ideias. " +
+      "Olá! " + introNome() + "Sou membro fundador do Respondi e já aceitei os Termos de Uso de Ideias. " +
       "Quero sugerir uma nova função pra plataforma: [descreva sua ideia aqui]. Meu e-mail: " + currentUser.email
     );
   }
@@ -801,6 +812,8 @@ $("#inviteUserBtn").addEventListener("click", async () => {
   const emailInput = $("#inviteEmail");
   const founderCheckbox = $("#inviteFounderCheckbox");
   const email = emailInput.value.trim();
+  const nomeInput = $("#inviteNome");
+  const nomeConvidado = nomeInput ? nomeInput.value.trim() : "";
   const isFounder = !!(founderCheckbox && founderCheckbox.checked);
   if (!email) {
     showBanner("statusBanner", "Informe o e-mail do novo cliente.", "error");
@@ -818,7 +831,10 @@ $("#inviteUserBtn").addEventListener("click", async () => {
       "Convite enviado para " + email + (isFounder ? " (membro fundador 🏅)." : "."),
       "success"
     );
+    // Grava o nome no perfil do convidado (o perfil nasce com o convite).
+    if (nomeConvidado && window.NomeUsuario) await window.NomeUsuario.setByEmail(email, nomeConvidado);
     emailInput.value = "";
+    if (nomeInput) nomeInput.value = "";
     if (founderCheckbox) founderCheckbox.checked = false;
     await loadUsers();
   } catch (error) {
@@ -871,7 +887,7 @@ function renderUsers(rows) {
       : "";
     return (
       '<tr data-id="' + escapeHtml(u.id) + '">' +
-      "<td>" + escapeHtml(u.email) +
+      "<td>" + (u.nome ? "<strong>" + escapeHtml(u.nome) + "</strong><br>" : "") + escapeHtml(u.email) +
       (u.is_admin ? ' <span class="badge badge-ativo">admin</span>' : "") +
       (u.is_founder ? ' <span class="badge badge-founder">🏅 fundador</span>' : "") + "</td>" +
       "<td>" + created + "</td>" +
@@ -947,7 +963,7 @@ $("#userSearch").addEventListener("input", (e) => {
     renderUsers(allUsers);
     return;
   }
-  renderUsers(allUsers.filter((u) => (u.email || "").toLowerCase().includes(term)));
+  renderUsers(allUsers.filter((u) => ((u.nome || "") + " " + (u.email || "")).toLowerCase().includes(term)));
 });
 // O módulo de Pagamentos (pagamentos.js) avisa quando muda valor/vencimento de um cliente.
 window.addEventListener("admin-users-changed", () => {
@@ -967,7 +983,7 @@ async function toggleUserActive(event) {
 }
 function userLabel(userId) {
   const u = allUsers.find((x) => x.id === userId);
-  return (u && u.email) || userId;
+  return (u && (u.nome ? u.nome + " (" + u.email + ")" : u.email)) || userId;
 }
 function closeModal() {
   document.querySelectorAll(".modal-overlay").forEach((overlay) => overlay.remove());
