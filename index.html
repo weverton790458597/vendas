@@ -6,8 +6,7 @@
 <title>Achei &amp; Postei — automação de comentários e DM do Instagram</title>
 <meta name="description" content="Responda comentários do Instagram no automático e envie o link do produto certo por DM, sem perder venda." />
 <link rel="manifest" href="manifest.json" />
-<meta name="theme-color" content="#0e0e10" media="(prefers-color-scheme: dark)" />
-<meta name="theme-color" content="#f7f7f8" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#1a1033" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -32,7 +31,7 @@
     <div class="auth-brand-content">
       <div class="brand-mark">
         <span class="brand-glyph">
-          <img src="apple-touch-icon.png" alt="Achei & Postei Ícone">
+          <img src="apple-touch-icon.png" alt="Achei &amp; Postei">
         </span>
         <span>Achei &amp; Postei</span>
       </div>
@@ -119,7 +118,7 @@
     <div class="auth-form-card">
       <div class="auth-form-mobile-brand">
         <span class="brand-glyph">
-          <img src="apple-touch-icon.png" alt="Achei & Postei Ícone">
+          <img src="apple-touch-icon.png" alt="Achei &amp; Postei">
         </span>
         <span>Achei &amp; Postei</span>
       </div>
@@ -128,11 +127,11 @@
       <div id="authBanner" class="banner"></div>
       <div class="field">
         <label for="authEmail">E-mail</label>
-        <input type="email" id="authEmail" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="voce@empresa.com" />
+        <input type="email" id="authEmail" autocomplete="username" inputmode="email" enterkeyhint="next" autocapitalize="off" spellcheck="false" placeholder="voce@empresa.com" />
       </div>
       <div class="field">
         <label for="authPassword">Senha</label>
-        <input type="password" id="authPassword" autocomplete="current-password" placeholder="••••••••" />
+        <input type="password" id="authPassword" autocomplete="current-password" enterkeyhint="go" placeholder="••••••••" />
       </div>
       <button type="button" id="authSubmitBtn" class="btn btn-primary btn-full">Entrar</button>
 
@@ -167,7 +166,7 @@
   <header class="app-topbar">
     <div class="topbar-brand">
       <span class="brand-glyph">
-        <img src="apple-touch-icon.png" alt="Achei & Postei Ícone">
+        <img src="apple-touch-icon.png" alt="Achei &amp; Postei">
       </span>
       <span>Achei &amp; Postei</span>
     </div>
@@ -384,7 +383,7 @@
           <p class="panel-lead">Precisa conectar mais contas do Instagram? Veja os valores abaixo e chame no WhatsApp pra gente atualizar seu plano.</p>
           <div class="plans-grid">
             <div class="plan-card">
-              <span class="plan-card-tag">Plano atual mais simples</span>
+              <span class="plan-card-tag">Mais simples</span>
               <h3>1 conta</h3>
               <div class="plan-card-price"><b>R$ 99,90</b><span>/mês</span></div>
               <p class="plan-card-desc">Ideal pra quem tem uma única conta comercial do Instagram. Inclui 300 mensagens por mês.</p>
@@ -401,7 +400,7 @@
               <span class="plan-card-tag">Mais de 3 contas</span>
               <h3>Personalize a quantidade</h3>
               <div class="plan-slider-row">
-                <input type="range" id="planAccountsSlider" min="3" max="20" step="1" value="4" />
+                <input type="range" id="planAccountsSlider" min="4" max="20" step="1" value="4" />
                 <div class="plan-slider-value"><span id="planAccountsCount">4</span> contas</div>
               </div>
               <div class="plan-card-price"><b id="planSliderPrice">R$ 239,80</b><span>/mês</span></div>
