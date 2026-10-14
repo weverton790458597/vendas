@@ -35,7 +35,8 @@ const TABLE = "instagram_tester_requests";
 const CONNECTED_TABLE = "instagram_config";
 const INVITES_URL = "https://www.instagram.com/accounts/manage_access/";
 const SUPPORT_WHATSAPP = "5598982672165";
-const OPENED_KEY = "respondi-ig-invite-opened";
+const OPENED_KEY = "respondi-ig-invite-opened";      // já aceitou o convite (libera o passo 4)
+const LINK_OPENED_KEY = "respondi-ig-link-opened";   // já tocou em "Abrir o Instagram" (celular)
 
 let realtimeChannel = null;
 let currentUserId = null;
@@ -49,7 +50,9 @@ let formError = "";
 let limitHit = false;     // plano no limite de contas
 let loaded = false;
 const openedIds = readOpened();
-const copiedIds = new Set(); // celular: quem já copiou o link do convite
+// Celular: quem já tocou em "Abrir o Instagram". Fica salvo no aparelho porque, ao
+// voltar do Instagram, o navegador costuma recarregar a página e a memória se perde.
+const copiedIds = readSet(LINK_OPENED_KEY);
 
 const IS_ANDROID = /android/i.test(navigator.userAgent);
 const IS_IOS =
@@ -100,18 +103,20 @@ function normalizeUsername(raw) {
     .toLowerCase();
 }
 
-function readOpened() {
+function readSet(key) {
   try {
-    return new Set(JSON.parse(localStorage.getItem(OPENED_KEY) || "[]").map(String));
+    return new Set(JSON.parse(localStorage.getItem(key) || "[]").map(String));
   } catch (_e) {
     return new Set();
   }
 }
-function saveOpened() {
+function saveSet(key, set) {
   try {
-    localStorage.setItem(OPENED_KEY, JSON.stringify(Array.from(openedIds)));
+    localStorage.setItem(key, JSON.stringify(Array.from(set)));
   } catch (_e) {}
 }
+function readOpened() { return readSet(OPENED_KEY); }
+function saveOpened() { saveSet(OPENED_KEY, openedIds); }
 
 function whatsappHref(text) {
   return "https://wa.me/" + SUPPORT_WHATSAPP + "?text=" + encodeURIComponent(text);
@@ -533,6 +538,7 @@ function onClick(event) {
   } else if (act === "open-mobile") {
     // Tem que rodar dentro do próprio clique, senão o navegador bloqueia.
     copiedIds.add(String(t.getAttribute("data-id"))); // = "já abriu o Instagram"
+    saveSet(LINK_OPENED_KEY, copiedIds); // salva ANTES de sair da página
     openInBrowser();
     render();
   } else if (act === "copy-link") {
@@ -551,6 +557,7 @@ function onClick(event) {
     openedIds.delete(rid);
     copiedIds.add(rid);
     saveOpened();
+    saveSet(LINK_OPENED_KEY, copiedIds);
     render();
   } else if (act === "connect") {
     connectNow();
@@ -606,6 +613,13 @@ function bootstrap() {
   render();
 
   start();
+  // Ao voltar do Instagram para esta aba, relê o estado salvo e atualiza a tela.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible") return;
+    readSet(LINK_OPENED_KEY).forEach((id) => copiedIds.add(id));
+    readSet(OPENED_KEY).forEach((id) => openedIds.add(id));
+    if (loaded) render();
+  });
   // Se o login acontecer depois da página abrir, começa nesse momento.
   supabase.auth.onAuthStateChange((ev, s) => {
     if (ev === "SIGNED_OUT") {
