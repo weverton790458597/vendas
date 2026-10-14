@@ -59,6 +59,7 @@ function render(ov, cons, autos) {
   $("#ovFormats").innerHTML = donut(ov.formatos || []);
   $("#ovHours").innerHTML = hoursChart(ov.horas || []);
   $("#ovAccounts").innerHTML = rank(cons.map((c) => ({ label: "@" + esc(c.instagram_username), n: c.enviadas })));
+  window.dispatchEvent(new CustomEvent("overview-loaded", { detail: { enviadas: env, falhas: fal, taxa, ativas: autos.filter((a) => a.ativo).length, contas: cons.length, hoje: d.length ? d[d.length - 1] : null, dias: ov.dias } }));
   $("#ovErrors").innerHTML = (ov.erros || []).length ? rank(ov.erros.map((e) => ({ label: esc(e.erro), n: e.n }))) : empty("Nenhum erro de envio neste período.");
 }
 async function load() {
