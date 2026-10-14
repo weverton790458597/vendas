@@ -25,6 +25,11 @@ const fmtMonth = (v) => { const [y, m] = String(v).slice(0, 7).split("-"); retur
 let ready = false;
 let channel = null;
 let partners = [];
+let nomes = {}; // e-mail (minúsculo) -> nome
+const lbl = (email) => {
+  const n = nomes[String(email || "").toLowerCase()];
+  return (n ? "<strong>" + esc(n) + "</strong><br>" : "") + esc(email);
+};
 
 function msg(text, type) {
   const el = $("apMsg");
@@ -64,6 +69,7 @@ function setup() {
     '<section class="panel">' +
     '<div class="panel-heading-row"><h2>🤝 Convidar parceiro</h2></div>' +
     '<div class="produto-picker-row mb-sm">' +
+    '<div class="field flush"><span>Nome (opcional)</span><input type="text" id="apInviteNome" maxlength="80" placeholder="Nome do parceiro" /></div>' +
     '<div class="field flush"><span>E-mail do parceiro</span><input type="email" id="apInviteEmail" placeholder="parceiro@email.com" /></div>' +
     '<button type="button" id="apInviteBtn" class="btn btn-primary">Enviar convite de parceiro</button></div>' +
     '<p class="field-hint">O parceiro cria a senha pelo link e entra só em <strong>parceiro.html</strong> — sem acesso ao painel de automação.</p>' +
@@ -98,7 +104,11 @@ async function invitePartner() {
     const { data, error } = await sb.functions.invoke("admin-invite-partner", { body: { email } });
     if (error) throw new Error(await errMsg(error));
     if (data && data.error) throw new Error(data.error);
-    msg("Convite de parceiro enviado para " + email + ".", "success");
+    const nomeInput = $("apInviteNome");
+    const nomeConvidado = nomeInput ? nomeInput.value.trim() : "";
+    if (nomeConvidado && window.NomeUsuario) await window.NomeUsuario.setByEmail(email, nomeConvidado);
+    if (nomeInput) nomeInput.value = "";
+    msg("Convite de parceiro enviado para " + (nomeConvidado ? nomeConvidado + " (" + email + ")" : email) + ".", "success");
     input.value = "";
     await loadAll();
   } catch (e) {
@@ -119,8 +129,14 @@ async function loadAll() {
     $("apPartnersBody").innerHTML = "";
     return;
   }
-  renderRefs(refs.data || []);
   partners = pts.data || [];
+  const emails = [].concat(
+    (refs.data || []).map((r) => r.referred_email),
+    (refs.data || []).map((r) => r.partner_email),
+    partners.map((p) => p.email)
+  );
+  nomes = window.NomeUsuario ? await window.NomeUsuario.mapByEmail(emails) : {};
+  renderRefs(refs.data || []);
   renderPartners();
 }
 
@@ -145,8 +161,8 @@ function renderRefs(rows) {
       : r.payment_status === "atrasado" ? '<span class="badge badge-danger">Atrasado</span>'
       : '<span class="badge badge-muted">—</span>';
     return "<tr" + (isNew ? ' style="background:var(--warning-bg)"' : "") + ">" +
-      "<td>" + esc(r.referred_email) + (r.invite_type === "teste" ? ' <span class="badge badge-founder">Teste 7 dias</span>' : ' <span class="badge badge-muted">Pagante</span>') + (isNew ? ' <span class="badge badge-danger">novo</span>' : "") + "</td>" +
-      "<td>via " + esc(r.partner_email) + "</td>" +
+      "<td>" + lbl(r.referred_email) + (r.invite_type === "teste" ? ' <span class="badge badge-founder">Teste 7 dias</span>' : ' <span class="badge badge-muted">Pagante</span>') + (isNew ? ' <span class="badge badge-danger">novo</span>' : "") + "</td>" +
+      "<td>via " + esc(nomes[String(r.partner_email || "").toLowerCase()] || r.partner_email) + "</td>" +
       "<td>" + sit + "</td><td>" + pay + "</td>" +
       "<td>" + fmtDateTime(r.accepted_at || r.invited_at) + "</td>" +
       "<td>" + (isNew ? '<button type="button" class="btn btn-outline btn-sm" data-ap-seen="' + esc(r.id) + '">Marcar visto</button>' : "") + "</td></tr>";
@@ -159,7 +175,7 @@ function renderPartners() {
     return;
   }
   $("apPartnersBody").innerHTML = partners.map((p) =>
-    "<tr><td>" + esc(p.email) + "</td>" +
+    "<tr><td>" + lbl(p.email) + "</td>" +
     "<td>" + (p.is_active ? '<span class="badge badge-ativo">Ativo</span>' : '<span class="badge badge-inativo">Pausado</span>') + "</td>" +
     "<td>" + p.convidados + "</td><td>" + p.cadastrados + "</td><td>" + p.ativos + "</td>" +
     '<td><button type="button" class="btn btn-outline btn-sm" data-ap-comm="' + esc(p.id) + '">Comissões</button> ' +
