@@ -93,6 +93,10 @@ $("#authSubmitBtn").addEventListener("click", async () => {
     showBanner("authBanner", error.message, "error");
   }
 });
+["#authEmail", "#authPassword"].forEach((sel) =>
+  $(sel).addEventListener("keydown", (e) => { if (e.key === "Enter") $("#authSubmitBtn").click(); })
+);
+$("#newPassword").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#setPasswordBtn").click(); });
 $("#blockedLogoutBtn").addEventListener("click", () => supabase.auth.signOut().then(() => location.reload()));
 $("#logoutBtn").addEventListener("click", () => supabase.auth.signOut().then(() => location.reload()));
 function isInviteOrRecoveryLink() {
@@ -175,7 +179,8 @@ async function bootstrapSession() {
   handleInstagramOauthReturn();
   await loadIgConfig();
   await loadAutomations();
-  await loadLatestPosts();
+  // As publicações são carregadas por instagram-latest-posts.js (dono do grid).
+  // Antes os dois módulos disputavam o mesmo #latestPostsGrid e o último a responder vencia.
   if (profile.is_founder) await loadFounderIdeaTermsState();
 }
 // ---------- Planos / mais contas ----------
@@ -193,13 +198,13 @@ function updatePlanLinks() {
   const oneBtn = $("#planOneAccountBtn");
   if (oneBtn) {
     oneBtn.href = whatsappLink(
-      "Olá! " + introNome() + "Quero contratar o plano de 1 conta do Instagram (R$ 99,90/mês) no Respondi. Meu e-mail: " + email
+      "Olá! " + introNome() + "Quero contratar o plano de 1 conta do Instagram (R$ 99,90/mês) no Achei & Postei. Meu e-mail: " + email
     );
   }
   const threeBtn = $("#planThreeAccountsBtn");
   if (threeBtn) {
     threeBtn.href = whatsappLink(
-      "Olá! " + introNome() + "Quero contratar o plano de até 3 contas do Instagram (R$ 189,90/mês) no Respondi. Meu e-mail: " + email
+      "Olá! " + introNome() + "Quero contratar o plano de até 3 contas do Instagram (R$ 189,90/mês) no Achei & Postei. Meu e-mail: " + email
     );
   }
   const slider = $("#planAccountsSlider");
@@ -210,7 +215,7 @@ function updatePlanLinks() {
     $("#planAccountsCount").textContent = n;
     $("#planSliderPrice").textContent = formatBRL(price);
     sliderBtn.href = whatsappLink(
-      "Olá! " + introNome() + "Quero atualizar meu plano no Respondi para " + n + " contas do Instagram (" +
+      "Olá! " + introNome() + "Quero atualizar meu plano no Achei & Postei para " + n + " contas do Instagram (" +
       formatBRL(price) + "/mês). Meu e-mail: " + email
     );
   }
@@ -231,7 +236,7 @@ function renderFounderIdeaState(accepted) {
   pendingBox.classList.toggle("hidden", accepted);
   if (accepted && suggestBtn && currentUser) {
     suggestBtn.href = whatsappLink(
-      "Olá! " + introNome() + "Sou membro fundador do Respondi e já aceitei os Termos de Uso de Ideias. " +
+      "Olá! " + introNome() + "Sou membro fundador do Achei & Postei e já aceitei os Termos de Uso de Ideias. " +
       "Quero sugerir uma nova função pra plataforma: [descreva sua ideia aqui]. Meu e-mail: " + currentUser.email
     );
   }
@@ -620,7 +625,7 @@ async function enrichAutomationCards(rows) {
 function renderAutomations(rows) {
   const grid = $("#automationsTableBody");
   if (!rows || rows.length === 0) {
-    grid.innerHTML = '<div class="empty-state">Nenhuma automação encontrada. Cadastre a primeira acima.</div>';
+    grid.innerHTML = '<div class="empty-state">Nenhuma automação ainda. Toque em “+ Nova automação” para criar a primeira.</div>';
     return;
   }
   grid.innerHTML = rows.map((row) => {
@@ -686,8 +691,9 @@ async function loadAutomations() {
     loading.classList.add("hidden");
   }
 }
-$("#automationSearch").addEventListener("input", (e) => {
-  const term = e.target.value.trim().toLowerCase();
+function renderFilteredAutomations() {
+  const input = $("#automationSearch");
+  const term = input ? input.value.trim().toLowerCase() : "";
   if (!term) {
     renderAutomations(allAutomations);
     return;
@@ -701,7 +707,8 @@ $("#automationSearch").addEventListener("input", (e) => {
     automationAccountLabel(r).toLowerCase().includes(term)
   );
   renderAutomations(filtered);
-});
+}
+$("#automationSearch").addEventListener("input", renderFilteredAutomations);
 async function toggleActive(event) {
   const card = event.currentTarget.closest(".automation-card");
   const id = card.getAttribute("data-id");
@@ -709,7 +716,10 @@ async function toggleActive(event) {
   try {
     const { error } = await supabase.from(AUTOMATIONS_TABLE).update({ ativo: !currentAtivo }).eq("id", id);
     if (error) throw error;
-    await loadAutomations();
+    const row = allAutomations.find((r) => String(r.id) === String(id));
+    if (row) row.ativo = !currentAtivo;
+    updateAutomationKpis(allAutomations);
+    renderFilteredAutomations();
   } catch (error) {
     showBanner("statusBanner", "Erro ao alternar status: " + error.message, "error");
   }
@@ -722,7 +732,9 @@ async function deleteAutomation(event) {
     const { error } = await supabase.from(AUTOMATIONS_TABLE).delete().eq("id", id);
     if (error) throw error;
     showBanner("statusBanner", "Automação excluída.", "success");
-    await loadAutomations();
+    allAutomations = allAutomations.filter((r) => String(r.id) !== String(id));
+    updateAutomationKpis(allAutomations);
+    renderFilteredAutomations();
   } catch (error) {
     showBanner("statusBanner", "Erro ao excluir: " + error.message, "error");
   }
@@ -985,8 +997,14 @@ function userLabel(userId) {
   const u = allUsers.find((x) => x.id === userId);
   return (u && (u.nome ? u.nome + " (" + u.email + ")" : u.email)) || userId;
 }
+// Modais que já existem no index.html (ou foram injetados por outros módulos) só são
+// escondidos; remover do DOM quebrava "Novo produto"/seletor de produto depois do 1º Esc.
+const PERSISTENT_MODALS = ["produtoModal", "produtoPickerModal", "pwModal"];
 function closeModal() {
-  document.querySelectorAll(".modal-overlay").forEach((overlay) => overlay.remove());
+  document.querySelectorAll(".modal-overlay").forEach((overlay) => {
+    if (PERSISTENT_MODALS.includes(overlay.id)) overlay.classList.add("hidden");
+    else overlay.remove();
+  });
 }
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeModal();
@@ -1183,5 +1201,11 @@ async function openViewAutosModal(event) {
     $("#viewAutosError").classList.remove("hidden");
   }
 }
-supabase.auth.onAuthStateChange((_event, _session) => {});
+supabase.auth.onAuthStateChange((event) => {
+  if (event === "SIGNED_OUT" && currentUser) {
+    currentUser = null;
+    currentProfile = null;
+    showScreen("auth");
+  }
+});
 bootstrapSession();
