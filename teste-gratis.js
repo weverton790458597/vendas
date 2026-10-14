@@ -100,9 +100,9 @@ function showExpired(email) {
     '<div class="trial-card">' +
     '<div class="big">⏳</div>' +
     "<h1>Seu teste grátis terminou</h1>" +
-    "<p>Gostou do Respondi? Assine para continuar respondendo comentários e enviando produtos por DM automaticamente.</p>" +
+    "<p>Gostou do Achei &amp; Postei? Assine para continuar respondendo comentários e enviando produtos por DM automaticamente.</p>" +
     '<a class="btn btn-primary btn-full" target="_blank" rel="noopener" href="' +
-    esc(wa("Olá! " + who() + "Meu teste grátis de " + CONFIG.TRIAL_DAYS + " dias no Respondi terminou e quero assinar. Meu e-mail: " + email)) +
+    esc(wa("Olá! " + who() + "Meu teste grátis de " + CONFIG.TRIAL_DAYS + " dias no Achei & Postei terminou e quero assinar. Meu e-mail: " + email)) +
     '">Assinar pelo WhatsApp</a>' +
     '<button type="button" class="btn btn-outline btn-full" id="trialLogoutBtn">Sair</button>' +
     "</div>";
@@ -127,7 +127,7 @@ function showBanner(t, email) {
     '<div class="trial-copy"><strong>Teste grátis: restam ' + leftText(left) + "</strong>" +
     "<span>Seu acesso de teste termina em " + fmtDate(t.trial_ends_at) + ".</span></div>" +
     '<a class="btn btn-primary btn-sm" target="_blank" rel="noopener" href="' +
-    esc(wa("Olá! " + who() + "Estou testando o Respondi e quero assinar um plano. Meu e-mail: " + email)) +
+    esc(wa("Olá! " + who() + "Estou testando o Achei & Postei e quero assinar um plano. Meu e-mail: " + email)) +
     '">Assinar agora</a>';
 
   clearInterval(tickTimer);
