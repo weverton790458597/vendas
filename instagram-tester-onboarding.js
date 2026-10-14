@@ -326,7 +326,7 @@ function limitBanner() {
     '<div class="igw-limit"><p><strong>Seu plano está no limite de contas.</strong> ' +
     "Para conectar mais uma, chame a gente no WhatsApp e atualizamos seu plano.</p>" +
     '<a class="btn btn-primary btn-sm" target="_blank" rel="noopener" href="' +
-    escapeHtml(whatsappHref("Olá! Quero conectar mais uma conta do Instagram no Respondi e preciso aumentar meu plano.")) +
+    escapeHtml(whatsappHref("Olá! Quero conectar mais uma conta do Instagram no Achei & Postei e preciso aumentar meu plano.")) +
     '">Falar no WhatsApp</a></div>'
   );
 }
@@ -365,7 +365,7 @@ function render() {
 
   html +=
     '<p class="igw-help-foot">Precisa de ajuda? <a target="_blank" rel="noopener" href="' +
-    escapeHtml(whatsappHref("Olá! Preciso de ajuda para conectar meu Instagram no Respondi.")) +
+    escapeHtml(whatsappHref("Olá! Preciso de ajuda para conectar meu Instagram no Achei & Postei.")) +
     '">Chame no WhatsApp</a></p>';
 
   root.innerHTML = html;
