@@ -18,9 +18,6 @@ let allUsers = [];
 // Cache de publicações por conta (config_id -> Promise<Map<shortcode, post>>),
 // usado só para mostrar miniatura/legenda do post em cada automação cadastrada.
 const accountPostsCache = {};
-// Lista crua de posts por conta (config_id -> Promise<post[]>), compartilhada entre as
-// miniaturas das automações e o seletor de post da nova automação.
-const accountPostsListCache = {};
 const $ = (selector) => document.querySelector(selector);
 const bannerTimers = {};
 function showBanner(elId, message, type) {
@@ -490,7 +487,6 @@ async function loadLatestPosts() {
 }
 function fillAutomationForm(shortcode) {
   $("#instagramMediaId").value = shortcode || "";
-  syncPostPreview();
   $("#palavraChave").focus();
   const panel = $("#instagramMediaId").closest("section");
   if (panel) panel.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -549,229 +545,6 @@ async function openAllPostsModal(instagramConfigId, username) {
     if (modalGrid) modalGrid.innerHTML = '<div class="empty-state">Erro ao carregar: ' + escapeHtml(error.message) + "</div>";
   }
 }
-// ---------- Nova automação: escolher o post das contas conectadas ----------
-const POST_THUMB_FALLBACK =
-  '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="9" r="1.5"/><path d="M21 16l-5-5-8 8"/></svg>';
-let pickedPost = null;        // post escolhido no seletor (ou encontrado pelo link colado)
-let postPickerConfigId = null; // conta exibida no seletor
-let postPickerPosts = [];      // posts da conta exibida
-let postPickerToken = 0;       // descarta respostas antigas ao trocar de conta
-let postPreviewToken = 0;
-
-function igAccountLabel(acc) {
-  return acc && acc.instagram_username ? "@" + acc.instagram_username : "Conta conectada";
-}
-function postKey(post) {
-  return String(post.shortcode || post.media_id || "");
-}
-function postMatches(post, code) {
-  return !!code && (String(post.shortcode || "") === code || String(post.media_id || "") === code);
-}
-function uniquePosts(posts) {
-  const seen = new Set();
-  return (posts || []).filter((p) => {
-    const key = postKey(p);
-    if (!key || seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
-function automationCountForPost(post) {
-  return allAutomations.filter((r) =>
-    postMatches(post, String(r.instagram_media_id || ""))
-  ).length;
-}
-
-function renderPostPickerTabs() {
-  const box = $("#postPickerAccounts");
-  if (currentIgAccounts.length <= 1) {
-    box.classList.add("hidden");
-    box.innerHTML = "";
-    return;
-  }
-  box.innerHTML = currentIgAccounts.map((acc) =>
-    '<button type="button" class="pp-tab' + (String(acc.id) === String(postPickerConfigId) ? " active" : "") +
-    '" data-config-id="' + escapeHtml(acc.id) + '">' + escapeHtml(igAccountLabel(acc)) + "</button>"
-  ).join("");
-  box.classList.remove("hidden");
-}
-function renderPostPickerGrid() {
-  const body = $("#postPickerBody");
-  const term = $("#postPickerSearch").value.trim().toLowerCase();
-  const selectedCode = extractShortcode($("#instagramMediaId").value);
-  const posts = term
-    ? postPickerPosts.filter((p) => String(p.caption || "").toLowerCase().includes(term))
-    : postPickerPosts;
-  if (posts.length === 0) {
-    body.innerHTML = '<div class="empty-state">' +
-      (term ? "Nenhum post com essa legenda." : "Nenhuma publicação encontrada nesta conta.") + "</div>";
-    return;
-  }
-  body.innerHTML = '<div class="pp-grid">' + posts.map((post) => {
-    const key = postKey(post);
-    const caption = post.caption ? escapeHtml(post.caption.replace(/\s+/g, " ")) : "Sem legenda";
-    const count = automationCountForPost(post);
-    const selected = postMatches(post, selectedCode);
-    return (
-      '<button type="button" class="pp-tile' + (selected ? " is-selected" : "") + '" data-key="' + escapeHtml(key) +
-      '" aria-pressed="' + selected + '">' +
-      '<span class="pp-thumb">' +
-      (post.thumbnail_url
-        ? '<img loading="lazy" src="' + escapeHtml(safeUrl(post.thumbnail_url)) + '" alt="" />'
-        : '<span class="pp-thumb-empty">' + POST_THUMB_FALLBACK + "</span>") +
-      (count ? '<span class="pp-badge">' + count + (count === 1 ? " automação" : " automações") + "</span>" : "") +
-      "</span>" +
-      '<span class="pp-cap">' + caption + "</span>" +
-      "</button>"
-    );
-  }).join("") + "</div>";
-}
-async function loadPostPicker(configId) {
-  postPickerConfigId = configId;
-  const token = ++postPickerToken;
-  const body = $("#postPickerBody");
-  renderPostPickerTabs();
-  body.innerHTML = '<div class="loading-row">Carregando posts…</div>';
-  try {
-    const posts = await fetchAccountPosts(configId);
-    if (token !== postPickerToken) return;
-    postPickerPosts = uniquePosts(posts);
-    renderPostPickerGrid();
-  } catch (error) {
-    if (token !== postPickerToken) return;
-    postPickerPosts = [];
-    body.innerHTML = '<div class="empty-state">Não foi possível carregar os posts. ' +
-      '<button type="button" class="btn btn-outline btn-sm" id="postPickerRetryBtn">Tentar de novo</button></div>';
-  }
-}
-function openPostPicker() {
-  if (currentIgAccounts.length === 0) {
-    showBanner("statusBanner", "Conecte uma conta do Instagram para escolher um post.", "error");
-    return;
-  }
-  const selectedId = $("#automationIgAccount").value;
-  const start = currentIgAccounts.find((a) => String(a.id) === String(selectedId)) || currentIgAccounts[0];
-  $("#postPickerSearch").value = "";
-  $("#postPickerModal").classList.remove("hidden");
-  loadPostPicker(start.id);
-}
-function closePostPicker() {
-  $("#postPickerModal").classList.add("hidden");
-}
-function choosePost(post) {
-  const select = $("#automationIgAccount");
-  const configId = String(post.instagram_config_id || postPickerConfigId || "");
-  if (configId && Array.from(select.options).some((o) => o.value === configId)) select.value = configId;
-  $("#instagramMediaId").value = postKey(post);
-  pickedPost = Object.assign({}, post, { instagram_config_id: configId });
-  closePostPicker();
-  syncPostPreview();
-}
-
-function renderPostPreview(info) {
-  const box = $("#postPreview");
-  $("#pickPostBtn").classList.toggle("hidden", !!info);
-  $("#postManualField").classList.toggle("hidden", !!info);
-  box.classList.toggle("hidden", !info);
-  if (!info) {
-    box.innerHTML = "";
-    return;
-  }
-  const post = info.post;
-  const acc = currentIgAccounts.find((a) => String(a.id) === String(info.configId));
-  const owner = post && post.instagram_username ? "@" + post.instagram_username : acc ? igAccountLabel(acc) : "";
-  const title = post ? owner || "Post selecionado" : "Post informado";
-  const detail = post
-    ? (post.caption ? post.caption.replace(/\s+/g, " ") : "Sem legenda")
-    : info.code;
-  box.innerHTML =
-    (post && post.thumbnail_url
-      ? '<img class="post-preview-thumb" src="' + escapeHtml(safeUrl(post.thumbnail_url)) + '" alt="" />'
-      : '<span class="post-preview-thumb">' + POST_THUMB_FALLBACK + "</span>") +
-    '<div class="post-preview-info"><strong>' + escapeHtml(title) + "</strong><span>" + escapeHtml(detail) + "</span></div>" +
-    '<div class="post-preview-actions">' +
-    '<button type="button" class="btn btn-outline btn-sm" data-post-action="change">Trocar</button>' +
-    '<button type="button" class="btn btn-outline btn-sm" data-post-action="clear">Remover</button>' +
-    "</div>";
-}
-// Mostra o post atual (escolhido no seletor, colado ou vindo de "Últimas publicações").
-async function syncPostPreview() {
-  const raw = $("#instagramMediaId").value.trim();
-  const token = ++postPreviewToken;
-  if (!raw) {
-    pickedPost = null;
-    renderPostPreview(null);
-    return;
-  }
-  const code = extractShortcode(raw);
-  const configId = $("#automationIgAccount").value;
-  let post = null;
-  if (pickedPost && postMatches(pickedPost, code) &&
-      (!pickedPost.instagram_config_id || !configId || String(pickedPost.instagram_config_id) === String(configId))) {
-    post = pickedPost;
-  }
-  renderPostPreview({ code, post, configId });
-  if (post || !configId) return;
-  try {
-    const posts = await fetchAccountPosts(configId);
-    if (token !== postPreviewToken) return;
-    const found = posts.find((p) => postMatches(p, code));
-    if (found) renderPostPreview({ code, post: found, configId });
-  } catch (_) { /* sem miniatura: o preview simples já está na tela */ }
-}
-
-$("#pickPostBtn").addEventListener("click", openPostPicker);
-$("#closePostPickerBtn").addEventListener("click", closePostPicker);
-$("#postPickerModal").addEventListener("click", (event) => {
-  if (event.target === event.currentTarget) closePostPicker();
-});
-$("#postPickerSearch").addEventListener("input", renderPostPickerGrid);
-$("#postPickerAccounts").addEventListener("click", (event) => {
-  const tab = event.target.closest(".pp-tab");
-  if (!tab || tab.classList.contains("active")) return;
-  $("#postPickerSearch").value = "";
-  loadPostPicker(tab.getAttribute("data-config-id"));
-});
-$("#postPickerBody").addEventListener("click", (event) => {
-  if (event.target.closest("#postPickerRetryBtn")) {
-    loadPostPicker(postPickerConfigId);
-    return;
-  }
-  const tile = event.target.closest(".pp-tile");
-  if (!tile) return;
-  const post = postPickerPosts.find((p) => postKey(p) === tile.getAttribute("data-key"));
-  if (post) choosePost(post);
-});
-$("#postPreview").addEventListener("click", (event) => {
-  const action = event.target.closest("[data-post-action]");
-  if (!action) return;
-  if (action.getAttribute("data-post-action") === "change") {
-    openPostPicker();
-    return;
-  }
-  $("#instagramMediaId").value = "";
-  pickedPost = null;
-  syncPostPreview();
-  $("#instagramMediaId").focus();
-});
-$("#instagramMediaId").addEventListener("change", syncPostPreview);
-$("#automationIgAccount").addEventListener("change", syncPostPreview);
-
-// A folha "Nova automação" é aberta/fechada por outro módulo (só troca a classe "hidden"):
-// aqui só reagimos a isso — travar a rolagem do fundo no celular e atualizar o preview.
-(function watchNewAutomationSheet() {
-  const sheet = $("#subtab-new");
-  const tab = $("#tab-dashboard");
-  if (!sheet) return;
-  const sync = () => {
-    const open = sheet.getClientRects().length > 0;
-    document.body.classList.toggle("sheet-open", open);
-    if (open) syncPostPreview();
-  };
-  const observer = new MutationObserver(sync);
-  [sheet, tab].forEach((el) => el && observer.observe(el, { attributes: true, attributeFilter: ["class"] }));
-})();
-
 // ---------- Automações cadastradas: conta + post de cada automação ----------
 // Descobre a qual conta do Instagram a automação pertence. Automações antigas
 // sem instagram_config_id caem na única conta conectada (se houver só uma).
@@ -795,30 +568,16 @@ function instagramPostLink(mediaId) {
   if (/^\d{12,}$/.test(code)) return null;
   return "https://www.instagram.com/p/" + code + "/";
 }
-// Busca (uma vez por conta) a lista de publicações. Rejeita em caso de erro.
-function fetchAccountPosts(configId) {
-  if (!accountPostsListCache[configId]) {
-    accountPostsListCache[configId] = supabase.functions
-      .invoke("list-instagram-posts", { body: { mode: "all", instagram_config_id: configId } })
-      .then(({ data, error }) => {
-        if (error) throw error;
-        return (data && data.posts) || [];
-      })
-      .catch((err) => {
-        delete accountPostsListCache[configId]; // permite tentar de novo depois
-        throw err;
-      });
-  }
-  return accountPostsListCache[configId];
-}
 // Busca (uma vez por conta) as publicações para achar miniatura e legenda.
 function getAccountPosts(configId) {
   if (!configId) return Promise.resolve(new Map());
   if (!accountPostsCache[configId]) {
-    accountPostsCache[configId] = fetchAccountPosts(configId)
-      .then((posts) => {
+    accountPostsCache[configId] = supabase.functions
+      .invoke("list-instagram-posts", { body: { mode: "all", instagram_config_id: configId } })
+      .then(({ data, error }) => {
+        if (error) throw error;
         const map = new Map();
-        posts.forEach((p) => {
+        ((data && data.posts) || []).forEach((p) => {
           if (p.shortcode) map.set(String(p.shortcode), p);
           if (p.media_id) map.set(String(p.media_id), p);
         });
@@ -1046,8 +805,6 @@ $("#saveAutomationBtn").addEventListener("click", async () => {
     if (error) throw error;
     showBanner("statusBanner", "Automação salva com sucesso!", "success");
     mediaIdInput.value = "";
-    pickedPost = null;
-    syncPostPreview();
     palavraChaveInput.value = "";
     document.querySelector('input[name="triggerMode"][value="keyword"]').checked = true;
     $("#palavraChaveField").classList.remove("hidden");
@@ -1242,7 +999,7 @@ function userLabel(userId) {
 }
 // Modais que já existem no index.html (ou foram injetados por outros módulos) só são
 // escondidos; remover do DOM quebrava "Novo produto"/seletor de produto depois do 1º Esc.
-const PERSISTENT_MODALS = ["produtoModal", "produtoPickerModal", "postPickerModal", "pwModal"];
+const PERSISTENT_MODALS = ["produtoModal", "produtoPickerModal", "pwModal"];
 function closeModal() {
   document.querySelectorAll(".modal-overlay").forEach((overlay) => {
     if (PERSISTENT_MODALS.includes(overlay.id)) overlay.classList.add("hidden");
