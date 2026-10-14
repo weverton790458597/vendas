@@ -64,6 +64,7 @@ function injectStyles() {
     /* ---------- Janela de escolher post ---------- */
     .nf-overlay { position: fixed; inset: 0; z-index: 300; background: var(--overlay); display: flex; align-items: center; justify-content: center;
       padding: 1rem; backdrop-filter: blur(4px); }
+    .nf-overlay.hidden { display: none; }
     .nf-sheet { width: 100%; max-width: 680px; max-height: 88vh; display: flex; flex-direction: column; background: var(--surface);
       border: 1px solid var(--border-soft); border-radius: var(--radius-lg); box-shadow: var(--shadow-pop); overflow: hidden; }
     .nf-sheet-h { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 1rem 1.1rem; border-bottom: 1px solid var(--border-soft); }
@@ -79,14 +80,18 @@ function injectStyles() {
     .nf-search { padding: 0.8rem 1.1rem 0; }
     .nf-search input { margin: 0; }
     .nf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.6rem; padding: 0.9rem 1.1rem 1.2rem; overflow-y: auto; }
-    .nf-post { display: flex; flex-direction: column; padding: 0; border: 1px solid var(--border-soft); border-radius: 12px; background: var(--bg-soft);
-      overflow: hidden; cursor: pointer; text-align: left; color: var(--text); font: inherit; transition: border-color 0.15s var(--ease); }
-    .nf-post:hover, .nf-post:focus-visible { border-color: var(--accent-solid); outline: none; }
-    .nf-thumb { display: flex; align-items: center; justify-content: center; aspect-ratio: 1 / 1; background: var(--surface-2); font-size: 1.4rem; overflow: hidden; }
-    .nf-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .nf-cap { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; padding: 0.5rem 0.6rem 0; font-size: 0.76rem; line-height: 1.35; }
-    .nf-when { display: block; padding: 0.2rem 0.6rem 0.6rem; font-size: 0.7rem; color: var(--text-faint); }
     .nf-msg { grid-column: 1 / -1; padding: 2rem 1rem; text-align: center; color: var(--text-faint); font-size: 0.9rem; }
+
+    .nf-post { display: block; width: 100%; padding: 0; border: 1px solid var(--border-soft); border-radius: 12px;
+      background: var(--bg-soft); overflow: hidden; cursor: pointer; text-align: left; color: var(--text);
+      font: inherit; transition: border-color 0.15s var(--ease); }
+    .nf-post:hover, .nf-post:focus-visible { border-color: var(--accent-solid); outline: none; }
+    .nf-media { position: relative; width: 100%; padding-top: 100%; background: var(--surface-2); overflow: hidden; }
+    .nf-media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+    .nf-media-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; color: var(--text-faint); }
+    .nf-cap { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.6em;
+      padding: 0.5rem 0.6rem 0; font-size: 0.76rem; line-height: 1.35; color: var(--text); }
+    .nf-when { display: block; padding: 0.25rem 0.6rem 0.6rem; font-size: 0.7rem; color: var(--text-faint); }
 
     /* ---------- Celular: formulário em tela cheia com botão de fechar ---------- */
     @media (max-width: 900px) {
@@ -191,7 +196,9 @@ function renderPosts() {
     return;
   }
   const term = (($("nfSearch") && $("nfSearch").value) || "").trim().toLowerCase();
-  const list = term ? posts.filter((p) => String(p.caption || "").toLowerCase().includes(term)) : posts;
+  const list = term
+    ? posts.filter((p) => String(p.caption || "").toLowerCase().includes(term))
+    : posts;
   if (!list.length) {
     grid.innerHTML = '<div class="nf-msg">Nada encontrado para essa busca.</div>';
     return;
@@ -204,9 +211,14 @@ function renderPosts() {
       const when = p.timestamp ? new Date(p.timestamp).toLocaleDateString("pt-BR") : "";
       return (
         '<button type="button" class="nf-post" data-code="' + esc(code) + '">' +
-        '<span class="nf-thumb">' + (img ? '<img src="' + esc(img) + '" alt="" loading="lazy" />' : "📷") + "</span>" +
+        '<div class="nf-media">' +
+        (img
+          ? '<img src="' + esc(img) + '" alt="" loading="lazy" referrerpolicy="no-referrer" />'
+          : '<div class="nf-media-empty">📷</div>') +
+        "</div>" +
         '<span class="nf-cap">' + esc(cap) + "</span>" +
-        '<small class="nf-when">' + esc(when) + "</small></button>"
+        '<span class="nf-when">' + esc(when) + "</span>" +
+        "</button>"
       );
     })
     .join("");
