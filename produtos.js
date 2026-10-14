@@ -266,6 +266,7 @@ window.openProdutoPicker = openProdutoPicker;
 
 // ---------- Bootstrap ----------
 
+let bound = false;
 async function bootstrap() {
   const grid = $("#produtosGrid");
   const pickerModal = $("#produtoPickerModal");
@@ -276,6 +277,8 @@ async function bootstrap() {
   } = await supabase.auth.getSession();
   if (!session || !session.user) return;
   currentUserId = session.user.id;
+  if (bound) { if (grid) await loadAndRenderProdutos(); return; } // 2º login sem recarregar: só recarrega a lista
+  bound = true;
 
   if (grid) {
     await loadAndRenderProdutos();
@@ -313,7 +316,15 @@ async function bootstrap() {
   });
 }
 
-document.addEventListener("DOMContentLoaded", bootstrap);
+document.addEventListener("DOMContentLoaded", () => {
+  bootstrap();
+  // Login feito na própria tela (sem reload): o bootstrap inicial não achou sessão e saía sem
+  // ligar nenhum botão — Produtos ficava vazio e "Novo produto" não fazia nada até dar F5.
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === "SIGNED_OUT") { currentUserId = null; cachedProdutos = []; return; }
+    if (session && !currentUserId) setTimeout(bootstrap, 0);
+  });
+});
 
 /* ============================================================
    Markup esperado (index.html): ver seção "Produtos" dentro de
