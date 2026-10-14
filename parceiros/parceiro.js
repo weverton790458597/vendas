@@ -143,6 +143,7 @@ const pctFor = (n) => (n >= 21 ? 0.7 : n >= 11 ? 0.6 : 0.5);
 
 /* ------------------------------ estado ------------------------------ */
 let userEmail = "";
+let userNome = "";
 let referrals = [];
 let commissions = [];
 let level = { qtd_mes: 0, nivel: 1, percentual: 0.5 };
@@ -163,7 +164,7 @@ async function bootstrap() {
 
   const { data: profile, error } = await sb
     .from("profiles")
-    .select("is_partner, is_active, is_admin")
+    .select("is_partner, is_active, is_admin, nome")
     .eq("id", session.user.id)
     .maybeSingle();
   if (error || !profile) {
@@ -181,7 +182,9 @@ async function bootstrap() {
     return denied("Sua conta está pausada", "Fale com o suporte para reativar seu acesso de parceiro.", false);
   }
   userEmail = session.user.email || "";
-  $("#pcUserEmail").textContent = userEmail;
+  userNome = String(profile.nome || "").trim();
+  $("#pcUserEmail").textContent = userNome || userEmail;
+  $("#pcUserEmail").title = userEmail;
   show("App");
   renderTemplates();
   renderObjections();
@@ -206,6 +209,13 @@ $("#pcSetPasswordBtn").addEventListener("click", async () => {
   if (error) return banner("pcSetBanner", error.message, "error");
   history.replaceState(null, "", window.location.pathname);
   location.reload();
+});
+
+// Nome preenchido depois do login (nome-usuario.js): atualiza topo e saudação.
+window.addEventListener("user-nome-changed", (e) => {
+  userNome = String((e.detail && e.detail.nome) || "").trim();
+  $("#pcUserEmail").textContent = userNome || userEmail;
+  try { renderHome(); } catch (_) { /* painel ainda carregando */ }
 });
 
 /* ------------------------------ navegação ------------------------------ */
@@ -314,6 +324,7 @@ function greeting() {
 }
 
 function firstName() {
+  if (userNome) return userNome.split(" ")[0];
   const local = (userEmail.split("@")[0] || "parceiro").split(/[._-]/)[0];
   return local ? local.charAt(0).toUpperCase() + local.slice(1) : "parceiro";
 }
