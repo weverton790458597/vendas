@@ -940,7 +940,7 @@ function bind() {
   if (CONFIG.WHATSAPP) {
     const w = $('payWhatsBtn');
     if (w) {
-      w.href = 'https://wa.me/' + CONFIG.WHATSAPP + '?text=' + encodeURIComponent('Olá! Segue o comprovante do meu pagamento do Respondi.');
+      w.href = 'https://wa.me/' + CONFIG.WHATSAPP + '?text=' + encodeURIComponent('Olá! Segue o comprovante do meu pagamento do Achei & Postei.');
       w.classList.remove('hidden');
     }
   }
