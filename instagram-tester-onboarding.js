@@ -3,8 +3,8 @@
 // cada conta vira um "cartão" com 4 passos, e só o passo da vez tem botão.
 //   1. Enviar o @            (usuário digita e clica)
 //   2. Liberação do acesso   (automático — a tela atualiza sozinha)
-//   3. Aceitar o convite     (notebook: botão abre o Instagram; celular: copia o link
-//                             e guia pela "versão para computador")
+//   3. Aceitar o convite     (notebook: botão abre o Instagram; celular: botão
+//                             tenta abrir direto no navegador, sem copiar/colar)
 //   4. Conectar a conta      (botão inicia a conexão)
 // Funciona igual no notebook e no celular (os estilos são injetados aqui).
 // Não importa nem depende de app.js — usa o próprio client do Supabase. O único
@@ -50,6 +50,28 @@ let limitHit = false;     // plano no limite de contas
 let loaded = false;
 const openedIds = readOpened();
 const copiedIds = new Set(); // celular: quem já copiou o link do convite
+
+const IS_ANDROID = /android/i.test(navigator.userAgent);
+const IS_IOS =
+  /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+// Tenta abrir o link NO NAVEGADOR (e não no app do Instagram, que não tem a aba
+// "Convites do testador"). Android: pede ao Chrome via intent (com fallback para
+// o link normal). iPhone/iPad: esquema x-safari-. Computador: nova aba.
+function openInBrowser() {
+  const u = INVITES_URL;
+  if (IS_ANDROID) {
+    window.location.href =
+      "intent://" + u.replace(/^https:\/\//, "") +
+      "#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=" +
+      encodeURIComponent(u) + ";end";
+  } else if (IS_IOS) {
+    window.location.href = "x-safari-" + u;
+  } else {
+    window.open(u, "_blank", "noopener");
+  }
+}
 
 // Celular/tablet: lá a aba "Convites do testador" só aparece na versão para
 // computador do site do Instagram, então o passo 3 é diferente.
@@ -197,26 +219,25 @@ function helpSteps(user) {
   );
 }
 
-function mobileInviteStep(id, user, copied) {
-  if (!copied) {
+function mobileInviteStep(id, user, opened) {
+  if (!opened) {
     return stepRow(3, "active", "Aceite o convite no Instagram",
-      "<p>No celular, esse convite só aparece na <strong>versão para computador</strong> do site do Instagram. " +
-      "Vamos por partes. Primeiro, copie o link:</p>" +
-      '<button type="button" class="btn btn-primary btn-full igw-btn" data-igw="copy-link" data-id="' + id + '">Copiar o link</button>');
+      "<p>Toque no botão: vamos abrir o Instagram no navegador do seu celular.</p>" +
+      '<button type="button" class="btn btn-primary btn-full igw-btn" data-igw="open-mobile" data-id="' + id + '">Abrir o Instagram</button>');
   }
   return stepRow(3, "active", "Aceite o convite no Instagram",
-    "<p><strong>Link copiado!</strong> Agora faça assim:</p><ol>" +
-    "<li>Abra o <strong>Chrome</strong> ou o <strong>Safari</strong> (<strong>não o app do Instagram</strong>, ele não mostra essa opção), " +
-    "cole o link na barra de endereço e entre com a conta <strong>@" + user + "</strong>.</li>" +
-    "<li>Se não abrir direto em <strong>Apps e sites</strong>: toque na foto de perfil → <strong>☰</strong> → <strong>Configurações e privacidade</strong> → " +
-    "“Seu app e suas mídias” → <strong>Permissões do site do app</strong> → <strong>Apps e sites</strong>.</li>" +
-    "<li>Na aba <strong>“Convites do testador”</strong>, toque em <strong>Aceitar</strong>.</li></ol>" +
-    '<details class="igw-help"><summary>Não apareceu a aba “Convites do testador”?</summary>' +
-    "<p>Ative a <strong>“Versão para computador”</strong> no navegador (Chrome: botão <strong>⋮</strong> · Safari: botão <strong>aA</strong> → “Solicitar site para computador”), " +
-    "abra o link de novo e procure a aba.</p></details>" +
-    '<input type="text" class="igw-linkbox" readonly value="' + INVITES_URL + '" aria-label="Link do Instagram" onfocus="this.select()" />' +
+    "<p>Na página que abriu, entre com a conta <strong>@" + user + "</strong>, toque na aba " +
+    "<strong>“Convites do testador”</strong> e depois em <strong>Aceitar</strong>.</p>" +
     '<button type="button" class="btn btn-primary btn-full igw-btn" data-igw="accepted" data-id="' + id + '">Já aceitei o convite</button>' +
-    '<p class="igw-note"><button type="button" class="igw-link" data-igw="copy-link" data-id="' + id + '">Copiar o link de novo</button></p>');
+    '<details class="igw-help"><summary>Abriu o app do Instagram ou não achou a aba?</summary>' +
+    "<p>Abra pelo <strong>navegador</strong> (Chrome ou Safari): copie o link abaixo e cole na barra de endereço.</p>" +
+    '<input type="text" class="igw-linkbox" readonly value="' + INVITES_URL + '" aria-label="Link do Instagram" onfocus="this.select()" />' +
+    '<button type="button" class="btn btn-outline btn-sm" data-igw="copy-link">Copiar o link</button>' +
+    '<ol style="margin-top:.8rem">' +
+    "<li>Se não abrir direto em <strong>Apps e sites</strong>: foto de perfil → <strong>☰</strong> → <strong>Configurações e privacidade</strong> → " +
+    "“Seu app e suas mídias” → <strong>Permissões do site do app</strong> → <strong>Apps e sites</strong>.</li>" +
+    "<li>Se a aba “Convites do testador” não aparecer, ative a <strong>“Versão para computador”</strong> do navegador " +
+    "(Chrome: botão <strong>⋮</strong> · Safari: botão <strong>aA</strong>) e abra o link de novo.</li></ol></details>");
 }
 
 function formStep() {
@@ -509,12 +530,18 @@ function onClick(event) {
     openedIds.add(String(t.getAttribute("data-id")));
     saveOpened();
     render();
+  } else if (act === "open-mobile") {
+    // Tem que rodar dentro do próprio clique, senão o navegador bloqueia.
+    copiedIds.add(String(t.getAttribute("data-id"))); // = "já abriu o Instagram"
+    openInBrowser();
+    render();
   } else if (act === "copy-link") {
     try {
       if (navigator.clipboard) navigator.clipboard.writeText(INVITES_URL).catch(() => {});
     } catch (_e) {}
-    copiedIds.add(String(t.getAttribute("data-id")));
-    render();
+    const box = t.parentElement && t.parentElement.querySelector(".igw-linkbox");
+    if (box) box.select();
+    t.textContent = "Copiado!";
   } else if (act === "accepted") {
     openedIds.add(String(t.getAttribute("data-id")));
     saveOpened();
