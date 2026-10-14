@@ -543,9 +543,15 @@ async function informarPagamento(id, btn) {
 }
 
 /* ---------------------- Admin ---------------------- */
+// "Nome · e-mail" quando o cliente já tem nome; só o e-mail caso contrário.
+function clienteLabel(c) {
+  if (!c) return '';
+  return c.nome ? `${c.nome} · ${c.email}` : c.email;
+}
+
 async function loadAdmin() {
   const [{ data: profs, error: e1 }, { data: pend, error: e2 }] = await Promise.all([
-    sb.from('profiles').select('id, email, monthly_plan_value, payment_due_date').order('email'),
+    sb.from('profiles').select('id, email, nome, monthly_plan_value, payment_due_date').order('email'),
     sb.from('pagamentos').select('id, user_id, competencia, valor, vencimento, informado_em').eq('status', 'em_analise').order('informado_em'),
   ]);
   if (e1 || e2) { console.error('[pagamentos admin]', e1 || e2); showBanner('Erro ao carregar dados de admin.'); return; }
@@ -559,7 +565,7 @@ async function loadAdmin() {
     box.innerHTML = pend.map((p) => `
       <div class="ig-tester-admin-row">
         <div class="ig-tester-admin-info">
-          <strong>${esc(byId[p.user_id]?.email || p.user_id)}</strong>
+          <strong>${esc(clienteLabel(byId[p.user_id]) || p.user_id)}</strong>
           <span class="ig-tester-admin-date">${esc(fmtMonth(p.competencia))} · ${brl(p.valor)} · informado em ${p.informado_em ? new Date(p.informado_em).toLocaleString('pt-BR') : '—'}</span>
         </div>
         <div class="ig-tester-admin-actions">
@@ -571,7 +577,7 @@ async function loadAdmin() {
 
   const sel = $('payGenUser');
   const prev = sel.value;
-  sel.innerHTML = clients.map((c) => `<option value="${esc(c.id)}">${esc(c.email)}</option>`).join('');
+  sel.innerHTML = clients.map((c) => `<option value="${esc(c.id)}">${esc(clienteLabel(c))}</option>`).join('');
   if (prev) sel.value = prev;
   fillGenDefaults();
 }
@@ -784,7 +790,7 @@ function renderFechamento(semContas) {
     return `
       <div class="ig-tester-admin-row">
         <div class="ig-tester-admin-info">
-          <strong>${esc(i.email || i.userId)}</strong>
+          <strong>${esc(clienteLabel(clients.find((c) => c.id === i.userId)) || i.email || i.userId)}</strong>
           <span class="ig-tester-admin-date">${detalhe}</span>
         </div>
         <div class="ig-tester-admin-actions"><span class="badge ${st.badge}">${st.label}</span></div>
