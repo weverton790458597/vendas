@@ -72,7 +72,7 @@ function setup() {
     '<div class="field flush"><span>Nome (opcional)</span><input type="text" id="apInviteNome" maxlength="80" placeholder="Nome do parceiro" /></div>' +
     '<div class="field flush"><span>E-mail do parceiro</span><input type="email" id="apInviteEmail" placeholder="parceiro@email.com" /></div>' +
     '<button type="button" id="apInviteBtn" class="btn btn-primary">Enviar convite de parceiro</button></div>' +
-    '<p class="field-hint">O parceiro cria a senha pelo link e entra só em <strong>parceiro.html</strong> — sem acesso ao painel de automação.</p>' +
+    '<p class="field-hint">O parceiro cria a senha pelo link e entra só em <strong>parceiros/</strong> — sem acesso ao painel de automação.</p>' +
     '<div id="apMsg" class="banner"></div></section>' +
 
     '<section class="panel panel-plain"><div class="panel-heading-row"><h2>Indicações recentes</h2>' +
