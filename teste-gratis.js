@@ -1,4 +1,19 @@
-// teste-gratis.js — Módulo integrado de teste grátis e cobrança via Asaas
+// teste-gratis.js
+// Usuário de teste de 7 dias. Módulo isolado: não importa nem altera nenhum
+// outro arquivo do projeto. Toda a interface é injetada por aqui (nenhum
+// markup novo é necessário no index.html — só a tag <script>).
+//
+// Fluxo:
+//  - ADMIN: na aba Admin > "Convidar" aparece o painel "Convidar usuário de
+//    teste" (convida pelo mesmo admin-invite-user e marca o perfil como teste)
+//    e a lista de testes com +7 dias / Tornar pagante / Encerrar.
+//  - USUÁRIO EM TESTE: vê um aviso no topo com os dias restantes. O relógio
+//    dos 7 dias só começa no PRIMEIRO acesso (feito no banco, em get_my_trial).
+//  - FIM DO TESTE: o banco desativa o perfil (is_active = false) e esta tela
+//    mostra o aviso "Seu teste acabou" com botão de assinar pelo WhatsApp.
+//
+// Requer o SQL de teste-gratis.sql já rodado no Supabase.
+
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
 const CONFIG = {
@@ -6,9 +21,10 @@ const CONFIG = {
   SUPABASE_ANON_KEY:
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFiZGxpaW95emt5bGNjZnlsaWxzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNzkxMzIsImV4cCI6MjA4MzY1NTEzMn0.5s0zEdAgxx92pbC9yx75hHMfysHr2Aad86GhC1-tEmU",
   TRIAL_DAYS: 7,
-  WHATSAPP: "5598982672165", // suporte / fallback
+  WHATSAPP: "5598982672165", // suporte / assinatura
 };
 
+// Mesmo padrão dos outros módulos: só LÊ a sessão que o app.js estabeleceu.
 const sb = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, {
   auth: { persistSession: true, autoRefreshToken: false, detectSessionInUrl: false },
 });
@@ -25,6 +41,7 @@ let busy = false;
 let tickTimer = null;
 let adminReady = false;
 let myNome = "";
+const who = () => (myNome ? "Meu nome é " + myNome + ". " : "");
 window.addEventListener("user-nome-changed", (e) => { myNome = (e.detail && e.detail.nome) || ""; });
 
 /* ------------------------------ estilos ------------------------------ */
@@ -48,13 +65,11 @@ function injectStyles() {
     #trialAdminMsg { margin-top:.6rem; }
     .trial-overlay { position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center;
       padding:1.25rem; background:rgba(10,7,16,.82); backdrop-filter:blur(6px); }
-    .trial-overlay .trial-card { width:100%; max-width:440px; text-align:center; padding:2rem 1.5rem;
-      border-radius:20px; background:var(--surface); border:1px solid var(--border); color:var(--text); max-height:90vh; overflow-y:auto; }
+    .trial-overlay .trial-card { width:100%; max-width:420px; text-align:center; padding:2rem 1.5rem;
+      border-radius:20px; background:var(--surface); border:1px solid var(--border); color:var(--text); }
     .trial-overlay .trial-card .big { font-size:2.4rem; margin-bottom:.4rem; }
     .trial-overlay .trial-card h1 { font-size:1.3rem; margin:0 0 .5rem; }
     .trial-overlay .trial-card .btn { margin-top:.6rem; }
-    .trial-pix-box { background: var(--surface-2); border-radius: 12px; padding: 1rem; text-align: center; margin-top: 1rem; }
-    .trial-pix-box img { max-width: 160px; height: auto; margin: .4rem auto; display: block; border-radius: 8px; }
   `;
   document.head.appendChild(st);
 }
@@ -85,51 +100,14 @@ function showExpired(email) {
     '<div class="trial-card">' +
     '<div class="big">⏳</div>' +
     "<h1>Seu teste grátis terminou</h1>" +
-    "<p>Gostou do Achei &amp; Postei? Assine agora para continuar respondendo comentários e enviando produtos por DM automaticamente.</p>" +
-    '<button type="button" id="trialPayPixBtn" class="btn btn-primary btn-full">Pagar com Pix Agora</button>' +
-    '<div id="trialPayResult"></div>' +
-    '<a class="btn btn-outline btn-full" style="margin-top:.5rem;" target="_blank" rel="noopener" href="' +
-    esc(wa("Olá! " + (myNome ? "Meu nome é " + myNome + ". " : "") + "Meu teste grátis terminou e quero tirar dúvidas sobre a assinatura. Meu e-mail: " + email)) +
-    '">Falar com Suporte (WhatsApp)</a>' +
-    '<button type="button" class="btn btn-outline btn-full" id="trialLogoutBtn" style="margin-top:.5rem;">Sair</button>' +
+    "<p>Gostou do Achei &amp; Postei? Assine para continuar respondendo comentários e enviando produtos por DM automaticamente.</p>" +
+    '<a class="btn btn-primary btn-full" target="_blank" rel="noopener" href="' +
+    esc(wa("Olá! " + who() + "Meu teste grátis de " + CONFIG.TRIAL_DAYS + " dias no Achei & Postei terminou e quero assinar. Meu e-mail: " + email)) +
+    '">Assinar pelo WhatsApp</a>' +
+    '<button type="button" class="btn btn-outline btn-full" id="trialLogoutBtn">Sair</button>' +
     "</div>";
   document.body.appendChild(o);
-
   $("trialLogoutBtn").addEventListener("click", () => sb.auth.signOut().then(() => location.reload()));
-
-  $("trialPayPixBtn").addEventListener("click", async () => {
-    const btn = $("trialPayPixBtn");
-    const res = $("trialPayResult");
-    btn.disabled = true;
-    btn.textContent = "Gerando Pix no Asaas...";
-    res.innerHTML = "";
-
-    try {
-      const { data, error } = await sb.functions.invoke("asaas-create-payment", {
-        body: { plan_type: "Individual", value: 99.90 },
-      });
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
-
-      res.innerHTML = `
-        <div class="trial-pix-box">
-          <p style="font-size:0.85rem; margin-bottom:0.4rem;">Escaneie o QR Code ou copie o código:</p>
-          ${data.pix_qr_code_base64 ? `<img src="data:image/png;base64,${data.pix_qr_code_base64}" alt="QR Pix" />` : ""}
-          <textarea readonly style="width:100%; height:55px; font-size:11px; margin-top:.4rem; padding:.3rem; border-radius:6px; border:1px solid var(--border);">${esc(data.pix_copia_e_cola)}</textarea>
-          <button type="button" class="btn btn-outline btn-sm btn-full" id="trialCopyPix" style="margin-top:.4rem;">Copiar Pix Copia e Cola</button>
-        </div>
-      `;
-
-      $("trialCopyPix").addEventListener("click", () => {
-        navigator.clipboard.writeText(data.pix_copia_e_cola);
-        alert("Código Pix copiado!");
-      });
-    } catch (err) {
-      res.innerHTML = `<p class="banner error" style="margin-top:.5rem;">Erro: ${esc(err.message)}</p>`;
-      btn.disabled = false;
-      btn.textContent = "Pagar com Pix Agora";
-    }
-  });
 }
 
 function showBanner(t, email) {
@@ -149,14 +127,14 @@ function showBanner(t, email) {
     '<div class="trial-copy"><strong>Teste grátis: restam ' + leftText(left) + "</strong>" +
     "<span>Seu acesso de teste termina em " + fmtDate(t.trial_ends_at) + ".</span></div>" +
     '<a class="btn btn-primary btn-sm" target="_blank" rel="noopener" href="' +
-    esc(wa("Olá! " + (myNome ? "Meu nome é " + myNome + ". " : "") + "Estou testando o Achei & Postei e quero assinar um plano. Meu e-mail: " + email)) +
+    esc(wa("Olá! " + who() + "Estou testando o Achei & Postei e quero assinar um plano. Meu e-mail: " + email)) +
     '">Assinar agora</a>';
 
   clearInterval(tickTimer);
   tickTimer = setInterval(() => {
     if (Date.now() >= ends) {
       loaded = false;
-      load(); 
+      load(); // o banco confirma a expiração e desativa o perfil
     } else {
       showBanner(t, email);
     }
@@ -234,7 +212,7 @@ async function trialAction(act, id, btn) {
     if (res.error) throw res.error;
     adminMsg(
       act === "extend" ? "Teste estendido em " + CONFIG.TRIAL_DAYS + " dias." :
-      act === "convert" ? "Usuário agora é pagante." :
+      act === "convert" ? "Usuário agora é pagante. Defina a cobrança em Clientes > Editar cobrança." :
       "Teste encerrado.",
       "success"
     );
@@ -259,6 +237,7 @@ async function inviteTrial() {
     if (error) throw error;
     if (data && data.error) throw new Error(data.error);
 
+    // O perfil é criado pelo convite; pode levar um instante para existir.
     let lastErr = null;
     for (let i = 0; i < 6; i++) {
       const r = await sb.rpc("admin_set_trial", { p_email: email, p_days: CONFIG.TRIAL_DAYS });
@@ -286,7 +265,7 @@ async function inviteTrial() {
 
 function setupAdmin() {
   if (adminReady) return;
-  const host = $("seg-invites") \vert{}\vert{} $("tab-admin");
+  const host = $("seg-invites") || $("tab-admin");
   if (!host) return;
   adminReady = true;
 
@@ -299,7 +278,7 @@ function setupAdmin() {
     '<div class="field flush"><span>E-mail do usuário de teste</span>' +
     '<input type="email" id="trialInviteEmail" placeholder="teste@email.com" /></div>' +
     '<button type="button" id="trialInviteBtn" class="btn btn-primary">Enviar convite de teste</button></div>' +
-    '<p class="trial-hint">O prazo de ' + CONFIG.TRIAL_DAYS + " dias começa no primeiro acesso do usuário.</p>" +
+    '<p class="trial-hint">O prazo de ' + CONFIG.TRIAL_DAYS + " dias começa no primeiro acesso do usuário. O teste vale para 1 conta do Instagram e o acesso é desativado automaticamente ao fim do prazo.</p>" +
     '<div id="trialAdminMsg" class="banner"></div>';
 
   const list = document.createElement("section");
