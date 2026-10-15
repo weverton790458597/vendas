@@ -64,17 +64,21 @@ function injectStyles() {
     .nf-foot { display: flex; justify-content: flex-end; padding-top: 1.1rem; border-top: 1px solid var(--border-soft); }
     .nf-save { min-width: 200px; min-height: 46px; }
 
-    /* ---------- Janela "Escolher publicação" ---------- */
-    .nf-overlay { position: fixed; inset: 0; z-index: 300; background: var(--overlay); display: flex; align-items: center; justify-content: center;
-      padding: 24px; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); animation: nfFade 0.16s var(--ease); }
+    /* ---------- Janela "Escolher publicação" ----------
+       Layout em grid com linhas explícitas: cabeçalho, abas, busca e, por último,
+       a grade com a altura que sobra (minmax(0, 1fr)). Só a grade rola. */
+    .nf-overlay { position: fixed; inset: 0; z-index: 300; background: var(--overlay);
+      display: flex; align-items: center; justify-content: center; padding: 24px;
+      backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); animation: nfFade 0.16s var(--ease); }
     @keyframes nfFade { from { opacity: 0; } to { opacity: 1; } }
 
-    .nf-sheet { width: 100%; max-width: 760px; height: min(86vh, 820px); display: flex; flex-direction: column; min-height: 0;
-      background: var(--surface); border: 1px solid var(--border-soft); border-radius: 18px; box-shadow: var(--shadow-pop); overflow: hidden;
-      animation: nfPop 0.2s var(--ease); }
+    .nf-sheet { width: 100%; max-width: 760px; height: min(86vh, 820px); max-height: 86vh;
+      display: grid; grid-template-rows: auto auto auto minmax(0, 1fr); grid-template-columns: minmax(0, 1fr);
+      background: var(--surface); border: 1px solid var(--border-soft); border-radius: 18px; box-shadow: var(--shadow-pop);
+      overflow: hidden; animation: nfPop 0.2s var(--ease); }
     @keyframes nfPop { from { opacity: 0; transform: translateY(8px) scale(0.985); } to { opacity: 1; transform: none; } }
 
-    .nf-sheet-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1.1rem 1.25rem 0.9rem; flex-shrink: 0; }
+    .nf-sheet-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1.1rem 1.25rem 0.9rem; }
     .nf-title h3 { margin: 0; font-size: 1.08rem; font-family: var(--font-display); font-weight: 600; }
     .nf-title p { margin: 0.2rem 0 0; font-size: 0.82rem; color: var(--text-muted); }
     .nf-sheet-acts { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
@@ -82,7 +86,7 @@ function injectStyles() {
       border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted); cursor: pointer; transition: color .15s, border-color .15s; }
     .nf-iconbtn:hover { color: var(--text); border-color: var(--text-faint); }
 
-    .nf-tabs { display: flex; gap: 0.4rem; padding: 0 1.25rem 0.9rem; overflow-x: auto; scrollbar-width: none; flex-shrink: 0;
+    .nf-tabs { display: flex; gap: 0.4rem; padding: 0 1.25rem 0.9rem; overflow-x: auto; scrollbar-width: none;
       border-bottom: 1px solid var(--border-soft); }
     .nf-tabs::-webkit-scrollbar { display: none; }
     .nf-chip { display: inline-flex; align-items: center; gap: 0.5rem; flex-shrink: 0; padding: 0.35em 0.85em 0.35em 0.35em; border-radius: 999px;
@@ -94,16 +98,15 @@ function injectStyles() {
       background: var(--surface-2); color: var(--text-muted); font-size: 0.72rem; font-weight: 700; }
     .nf-chip.on .nf-av { background: var(--accent-solid); color: #fff; }
 
-    .nf-toolbar { display: flex; align-items: center; gap: 0.75rem; padding: 0.9rem 1.25rem; flex-shrink: 0; }
+    .nf-toolbar { display: flex; align-items: center; gap: 0.75rem; padding: 0.9rem 1.25rem; }
     .nf-search { flex: 1; position: relative; display: flex; align-items: center; min-width: 0; }
     .nf-search svg { position: absolute; left: 0.85rem; color: var(--text-faint); pointer-events: none; }
     .nf-search input { margin: 0; padding-left: 2.5rem; height: 42px; border-radius: 12px; background: var(--bg-soft); }
     .nf-count { font-size: 0.78rem; color: var(--text-faint); white-space: nowrap; }
 
-    /* A grade é a única parte que rola: a janela tem altura fixa */
-    .nf-grid { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+    .nf-grid { min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
       display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 12px; align-content: start;
-      padding: 0 1.25rem 1.25rem; scrollbar-gutter: stable; }
+      padding: 0 1.25rem 1.25rem; }
 
     .nf-post { display: flex; flex-direction: column; width: 100%; min-width: 0; padding: 0; border: 1px solid var(--border-soft); border-radius: 12px;
       background: var(--bg-soft); overflow: hidden; cursor: pointer; text-align: left; color: var(--text); font: inherit;
@@ -119,7 +122,7 @@ function injectStyles() {
     .nf-kind { position: absolute; top: 8px; right: 8px; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 8px;
       background: rgba(0,0,0,.55); color: #fff; font-size: 0.7rem; display: inline-flex; align-items: center; justify-content: center; }
 
-    /* Legenda com altura natural (até 3 linhas) */
+    /* Legenda com até 3 linhas */
     .nf-meta { display: flex; flex-direction: column; gap: 4px; padding: 0.6rem 0.7rem 0.7rem; }
     .nf-cap { font-size: 0.8rem; line-height: 1.35; color: var(--text); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
     .nf-when { font-size: 0.72rem; color: var(--text-faint); }
@@ -156,8 +159,8 @@ function injectStyles() {
       .nf-sheet { max-width: none; width: 100%; height: 92dvh; max-height: 92dvh; border-radius: 22px 22px 0 0; border: 0;
         animation: nfUp 0.24s var(--ease); padding-bottom: var(--safe-bottom); }
       @keyframes nfUp { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
-      .nf-sheet::before { content: ""; display: block; width: 40px; height: 4px; border-radius: 4px; background: var(--border); margin: 8px auto 0; flex-shrink: 0; }
-      .nf-sheet-h { padding: 0.7rem 1rem 0.8rem; }
+      .nf-sheet::before { content: none; }
+      .nf-sheet-h { padding: 0.9rem 1rem 0.8rem; }
       .nf-title h3 { font-size: 1.02rem; }
       .nf-tabs { padding: 0 1rem 0.8rem; }
       .nf-toolbar { padding: 0.8rem 1rem; }
@@ -281,12 +284,12 @@ function renderSkeleton() {
   grid.innerHTML = h;
 }
 
-function renderState(icon, text, retry) {
+function renderState(icon, html, retry) {
   const grid = $("nfGrid");
   if (!grid) return;
   setCount(null);
   grid.innerHTML =
-    '<div class="nf-state"><span class="nf-state-ico">' + icon + "</span><span>" + text + "</span>" +
+    '<div class="nf-state"><span class="nf-state-ico">' + icon + "</span><span>" + html + "</span>" +
     (retry ? '<button type="button" class="nf-retry" data-nf="reload">Tentar novamente</button>' : "") +
     "</div>";
 }
