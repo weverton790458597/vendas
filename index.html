@@ -6,7 +6,8 @@
 <title>Achei &amp; Postei — automação de comentários e DM do Instagram</title>
 <meta name="description" content="Responda comentários do Instagram no automático e envie o link do produto certo por DM, sem perder venda." />
 <link rel="manifest" href="manifest.json" />
-<meta name="theme-color" content="#1a1033" />
+<meta name="theme-color" content="#0e0e10" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#f7f7f8" media="(prefers-color-scheme: light)" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -31,7 +32,7 @@
     <div class="auth-brand-content">
       <div class="brand-mark">
         <span class="brand-glyph">
-          <img src="icons/apple-touch-icon.png" alt="Achei &amp; Postei">
+          <img src="icons/apple-touch-icon.png" alt="Achei & Postei Ícone">
         </span>
         <span>Achei &amp; Postei</span>
       </div>
@@ -118,7 +119,7 @@
     <div class="auth-form-card">
       <div class="auth-form-mobile-brand">
         <span class="brand-glyph">
-          <img src="icons/apple-touch-icon.png" alt="Achei &amp; Postei">
+          <img src="icons/apple-touch-icon.png" alt="Achei & Postei Ícone">
         </span>
         <span>Achei &amp; Postei</span>
       </div>
@@ -127,11 +128,11 @@
       <div id="authBanner" class="banner"></div>
       <div class="field">
         <label for="authEmail">E-mail</label>
-        <input type="email" id="authEmail" autocomplete="username" inputmode="email" enterkeyhint="next" autocapitalize="off" spellcheck="false" placeholder="voce@empresa.com" />
+        <input type="email" id="authEmail" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="voce@empresa.com" />
       </div>
       <div class="field">
         <label for="authPassword">Senha</label>
-        <input type="password" id="authPassword" autocomplete="current-password" enterkeyhint="go" placeholder="••••••••" />
+        <input type="password" id="authPassword" autocomplete="current-password" placeholder="••••••••" />
       </div>
       <button type="button" id="authSubmitBtn" class="btn btn-primary btn-full">Entrar</button>
 
@@ -166,7 +167,7 @@
   <header class="app-topbar">
     <div class="topbar-brand">
       <span class="brand-glyph">
-        <img src="icons/apple-touch-icon.png" alt="Achei &amp; Postei">
+        <img src="icons/apple-touch-icon.png" alt="Achei & Postei Ícone">
       </span>
       <span>Achei &amp; Postei</span>
     </div>
@@ -204,7 +205,7 @@
     <button type="button" class="nav-collapse" data-nav-collapse aria-label="Recolher menu" title="Recolher menu"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg><span class="nav-collapse-label">Recolher menu</span></button>
 </nav>
     <main class="app-main">
-      <div id="statusBanner" class="banner"></div>
+      <div id="statusBanner" class="banner" role="status" aria-live="polite"></div>
       <div id="tab-overview" class="tab-panel">
 <div class="page-head panel-heading-row"><div><h1>Visão geral</h1><p>Resumo do desempenho das suas automações.</p></div>
 <div class="range-nav"><button type="button" class="range-btn" data-dias="7">7 dias</button><button type="button" class="range-btn active" data-dias="30">30 dias</button><button type="button" class="range-btn" data-dias="90">90 dias</button></div></div>
@@ -233,85 +234,61 @@
           <button type="button" class="subtab-btn" data-subtab="fluxos">Fluxos</button>
         </nav>
         <div id="subtab-new" class="subtab-panel hidden">
-          <div class="nf">
-            <div class="nf-head">
-              <div class="nf-head-txt">
-                <h2>Nova automação</h2>
-                <p>Preencha de cima para baixo. Leva menos de um minuto.</p>
+          <button type="button" class="sheet-close-btn" data-close-sheet aria-label="Fechar">✕</button>
+          <section class="panel">
+            <div class="panel-heading-row"><h2>Nova automação</h2></div>
+            <p class="panel-lead">Escolha o post, defina a palavra-chave do comentário e o produto que deve ser enviado por DM.</p>
+            <div class="form-step"><b>1</b><span>Escolha o post</span></div><div class="produto-picker-row">
+              <div class="field flush">
+                <span>Post ou reel</span>
+                <input type="text" id="instagramMediaId" placeholder="Cole o link do post ou o media ID" />
               </div>
-              <button type="button" class="nf-close" data-close-sheet aria-label="Fechar">✕</button>
+              <button type="button" id="pickProdutoBtn" class="btn btn-outline"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg> Escolher produto cadastrado</button>
             </div>
-
-            <div class="nf-body">
-              <section class="nf-sec">
-                <header class="nf-sec-h"><b>1</b><span>Qual post?</span></header>
-                <div class="field">
-                  <span>Link ou ID do post</span>
-                  <div class="nf-row">
-                    <input type="text" id="instagramMediaId" placeholder="Cole o link do post" />
-                    <button type="button" id="escolherPostBtn" class="btn btn-outline">Escolher post da conta</button>
-                  </div>
-                </div>
-                <p id="postEscolhido" class="nf-picked hidden"></p>
-                <div class="field" id="automationIgAccountField">
-                  <span>Conta do Instagram</span>
-                  <select id="automationIgAccount"></select>
-                </div>
-              </section>
-
-              <section class="nf-sec">
-                <header class="nf-sec-h"><b>2</b><span>Quando enviar a mensagem?</span></header>
+            <div class="form-step"><b>2</b><span>Defina o gatilho e o destino</span></div><div class="automation-form-grid">
+              <div class="field field-full">
+                <span>Quando enviar o Direct?</span>
                 <div class="choice-group">
                   <label class="choice">
                     <input type="radio" name="triggerMode" value="keyword" checked />
-                    <span><strong>Palavra-chave</strong><small>Só quem comentar a palavra recebe.</small></span>
+                    <span><strong>Palavra-chave específica</strong><small>Só quem comentar a palavra recebe o Direct.</small></span>
                   </label>
                   <label class="choice">
                     <input type="radio" name="triggerMode" value="any" />
-                    <span><strong>Qualquer comentário</strong><small>Todo comentário no post recebe.</small></span>
+                    <span><strong>Qualquer comentário</strong><small>Todo comentário no post recebe o Direct.</small></span>
                   </label>
                 </div>
-                <div class="field" id="palavraChaveField" style="margin-top:.9rem">
-                  <span>Palavra-chave</span>
-                  <input type="text" id="palavraChave" placeholder="ex: quero" />
-                </div>
-              </section>
-
-              <section class="nf-sec">
-                <header class="nf-sec-h"><b>3</b><span>Para onde leva?</span></header>
-                <div class="field">
-                  <span>Link do produto</span>
-                  <div class="nf-row">
-                    <input type="text" id="produtoUrl" placeholder="https://" />
-                    <button type="button" id="pickProdutoBtn" class="btn btn-outline">Escolher produto cadastrado</button>
-                  </div>
-                </div>
-              </section>
-
-              <section class="nf-sec">
-                <header class="nf-sec-h"><b>4</b><span>Mensagem</span><button type="button" id="toggleImagemUrlBtn" class="nf-toggle">Personalizar</button></header>
-                <p class="nf-hint">Opcional: ajuste a imagem, o título e o preço exibidos no Direct.</p>
-                <div id="imagemUrlField" class="nf-grid-2 hidden">
-                  <div class="field nf-full">
-                    <span>Imagem do produto (URL)</span>
-                    <input type="text" id="imagemUrl" placeholder="https://" />
-                  </div>
-                  <div class="field">
-                    <span>Título do produto</span>
-                    <input type="text" id="tituloProduto" placeholder="Nome que aparece no Direct" />
-                  </div>
-                  <div class="field">
-                    <span>Preço</span>
-                    <input type="text" id="precoProduto" placeholder="R$ 0,00" />
-                  </div>
-                </div>
-              </section>
-
-              <div class="nf-foot">
-                <button type="button" id="saveAutomationBtn" class="btn btn-primary nf-save">Salvar automação</button>
+              </div>
+              <div class="field" id="palavraChaveField">
+                <span>Palavra-chave do comentário</span>
+                <input type="text" id="palavraChave" placeholder="ex: quero" />
+              </div>
+              <div class="field" id="automationIgAccountField">
+                <span>Conta do Instagram</span>
+                <select id="automationIgAccount"></select>
+              </div>
+              <div class="field field-full">
+                <span>Link do produto</span>
+                <input type="text" id="produtoUrl" placeholder="https://" />
               </div>
             </div>
-          </div>
+            <div class="form-step"><b>3</b><span>Personalize a mensagem</span></div><button type="button" id="toggleImagemUrlBtn" class="btn btn-outline btn-sm mb-md">Personalizar imagem, título e preço</button>
+            <div id="imagemUrlField" class="automation-form-grid hidden">
+              <div class="field field-full">
+                <span>Imagem do produto (URL)</span>
+                <input type="text" id="imagemUrl" placeholder="https://" />
+              </div>
+              <div class="field">
+                <span>Título do produto</span>
+                <input type="text" id="tituloProduto" placeholder="Nome que aparece no Direct" />
+              </div>
+              <div class="field">
+                <span>Preço</span>
+                <input type="text" id="precoProduto" placeholder="R$ 0,00" />
+              </div>
+            </div>
+            <button type="button" id="saveAutomationBtn" class="btn btn-primary">Salvar automação</button>
+          </section>
         </div>
         <div id="subtab-posts" class="subtab-panel hidden">
           <section class="panel panel-plain">
@@ -407,7 +384,7 @@
           <p class="panel-lead">Precisa conectar mais contas do Instagram? Veja os valores abaixo e chame no WhatsApp pra gente atualizar seu plano.</p>
           <div class="plans-grid">
             <div class="plan-card">
-              <span class="plan-card-tag">Mais simples</span>
+              <span class="plan-card-tag">Plano atual mais simples</span>
               <h3>1 conta</h3>
               <div class="plan-card-price"><b>R$ 99,90</b><span>/mês</span></div>
               <p class="plan-card-desc">Ideal pra quem tem uma única conta comercial do Instagram. Inclui 300 mensagens por mês.</p>
@@ -424,7 +401,7 @@
               <span class="plan-card-tag">Mais de 3 contas</span>
               <h3>Personalize a quantidade</h3>
               <div class="plan-slider-row">
-                <input type="range" id="planAccountsSlider" min="4" max="20" step="1" value="4" />
+                <input type="range" id="planAccountsSlider" min="3" max="20" step="1" value="4" />
                 <div class="plan-slider-value"><span id="planAccountsCount">4</span> contas</div>
               </div>
               <div class="plan-card-price"><b id="planSliderPrice">R$ 239,80</b><span>/mês</span></div>
