@@ -1,15 +1,18 @@
-// pagamentos.js — aba "Pagamentos" integrada ao Asaas
+// pagamentos.js — aba "Pagamentos" integrada ao Asaas (baseado no módulo original)
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
+/* =====================  CONFIGURAÇÕES  ===================== */
 const CONFIG = {
   SUPABASE_URL: 'https://abdliioyzkylccfylils.supabase.co',
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFiZGxpaW95emt5bGNjZnlsaWxzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNzkxMzIsImV4cCI6MjA4MzY1NTEzMn0.5s0zEdAgxx92pbC9yx75hHMfysHr2Aad86GhC1-tEmU',
-  WHATSAPP: '5598982672165',           // suporte / WhatsApp
+
+  WHATSAPP: '5598982672165',           // comprovante/suporte no WhatsApp
   FRANQUIA_MENSAGENS: 300,             // mensagens incluídas por conta, por mês
   PRECO_MENSAGEM_EXCEDENTE: 0.10,      // R$ cobrado por cada mensagem acima da franquia
 };
+/* ============================================================ */
 
-const TAB = 'payments';
+const TAB = 'pagamentos'; // Alinhado com o data-tab="pagamentos" do index.html
 const sb = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, {
   auth: { persistSession: true, autoRefreshToken: false },
 });
@@ -44,21 +47,21 @@ const STATUS_UI = {
   cancelado:  { label: 'Cancelado',  cls: 'badge-inativo' },
 };
 
-let me = null;
+let me = null;        
 let loaded = false;
 let loading = false;
 let rows = [];
-let clients = [];
+let clients = [];     
 let filter = 'abertas';
-let usage = null;
+let usage = null;     
 let usageError = '';
-let usageSeq = 0;
-let usagePlanValue = null;
-let closePlan = null;
+let usageSeq = 0;     
+let usagePlanValue = null; 
+let closePlan = null;      
 
-/* ==================== Asaas Pix Checkout ==================== */
+/* ====================  INTEGRAÇÃO ASAAS (PIX)  ==================== */
 async function gerarPixAsaas(valorPlano, btn) {
-  if (btn) { btn.disabled = true; btn.dataset.origText = btn.textContent; btn.textContent = 'A Gerar no Asaas…'; }
+  if (btn) { btn.disabled = true; btn.dataset.origText = btn.textContent; btn.textContent = 'Gerando Pix no Asaas…'; }
   const resDiv = $('payAsaasResult');
   if (resDiv) resDiv.innerHTML = '';
 
@@ -71,11 +74,11 @@ async function gerarPixAsaas(valorPlano, btn) {
 
     if (resDiv) {
       resDiv.innerHTML = `
-        <div class="pay-pix-box" style="margin-top:1rem; background:var(--bg-soft); padding:1rem; border-radius:var(--radius-md); text-align:center;">
-          <p><strong>Escaneie o QR Code ou copie a chave Pix:</strong></p>
-          ${data.pix_qr_code_base64 ? `<img src="data:image/png;base64,${data.pix_qr_code_base64}" alt="QR Code Pix" style="max-width:160px; margin:.5rem auto; display:block; border-radius:8px;" />` : ''}
-          <textarea readonly style="width:100%; height:55px; font-size:11px; margin-top:.4rem; padding:.3rem; border-radius:6px; border:1px solid var(--border);">${esc(data.pix_copia_e_cola)}</textarea>
-          <div style="display:flex; gap:.5rem; margin-top:.5rem;">
+        <div class="pay-pix-box" style="margin-top:1.2rem; background:var(--surface-2, #18181b); padding:1.2rem; border-radius:12px; text-align:center; border: 1px solid var(--border);">
+          <p style="margin-bottom:.5rem;"><strong>Escaneie o QR Code ou copie a chave Pix:</strong></p>
+          ${data.pix_qr_code_base64 ? `<img src="data:image/png;base64,${data.pix_qr_code_base64}" alt="QR Code Pix" style="max-width:180px; margin:.5rem auto; display:block; border-radius:8px;" />` : ''}
+          <textarea readonly style="width:100%; height:60px; font-size:12px; margin-top:.5rem; padding:.4rem; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--text);">${esc(data.pix_copia_e_cola)}</textarea>
+          <div style="display:flex; gap:.5rem; margin-top:.8rem;">
             <button type="button" class="btn btn-outline btn-sm btn-full" id="payCopyAsaasPix">Copiar Pix Copia e Cola</button>
             <a href="${esc(data.invoice_url)}" target="_blank" rel="noopener" class="btn btn-outline btn-sm btn-full">Abrir Fatura Asaas</a>
           </div>
@@ -93,7 +96,7 @@ async function gerarPixAsaas(valorPlano, btn) {
   }
 }
 
-/* ==================== Consumo de mensagens ==================== */
+/* ==================== Consumo de Mensagens ==================== */
 const num = (n) => Number(n || 0).toLocaleString('pt-BR');
 const plural = (n, um, varios) => (Number(n) === 1 ? um : varios);
 const round2 = (v) => Math.round(v * 100) / 100;
@@ -147,19 +150,28 @@ function injectUsageStyles() {
   const st = document.createElement('style');
   st.id = 'payUsageStyles';
   st.textContent = `
-    #payUsage .kpi-strip { background: var(--bg-soft); margin-bottom: 1rem; }
+    #payUsage .kpi-strip { background: var(--bg-soft, var(--surface-2)); margin-bottom: 1rem; }
     .use-list { display: flex; flex-direction: column; gap: 0.65rem; }
-    .use-item { background: var(--bg-soft); border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: 0.95rem 1.1rem; }
+    .use-item {
+      background: var(--bg-soft, var(--surface)); border: 1px solid var(--border);
+      border-radius: var(--radius-md, 12px); padding: 0.95rem 1.1rem;
+    }
     .use-item.over { border-color: rgba(239, 67, 96, 0.4); }
     .use-head { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; flex-wrap: wrap; }
+    .use-head strong { font-size: 0.95rem; overflow-wrap: anywhere; }
     .use-right { display: flex; align-items: center; gap: 0.6rem; }
     .use-count { font-family: var(--font-display); font-size: 0.95rem; color: var(--text-muted); }
     .use-count b { font-size: 1.05rem; color: var(--text); }
-    .use-bar { height: 8px; border-radius: var(--radius-pill); background: var(--border); overflow: hidden; margin: 0.6rem 0 0.45rem; }
-    .use-bar > i { display: block; height: 100%; border-radius: inherit; background: var(--accent-grad); transition: width 0.5s var(--ease); }
-    .use-total { margin-top: 1rem; border: 1px dashed var(--border); border-radius: var(--radius-md); padding: 0.9rem 1.1rem; }
+    .use-item.over .use-count b { color: var(--danger, #ef4444); }
+    .use-bar { height: 8px; border-radius: 999px; background: var(--border); overflow: hidden; margin: 0.6rem 0 0.45rem; }
+    .use-bar > i { display: block; height: 100%; border-radius: inherit; background: var(--primary, #6366f1); transition: width 0.5s ease; }
+    .use-item.warn .use-bar > i { background: var(--warning, #f59e0b); }
+    .use-item.over .use-bar > i { background: var(--danger, #ef4444); }
+    .use-note { font-size: 0.78rem; color: var(--text-faint, var(--text-muted)); }
+    .use-total { margin-top: 1rem; border: 1px dashed var(--border); border-radius: 12px; padding: 0.9rem 1.1rem; }
     .use-total-row { display: flex; justify-content: space-between; gap: 1rem; padding: 0.3rem 0; font-size: 0.92rem; color: var(--text-muted); }
-    .use-total-row.sum { margin-top: 0.35rem; padding-top: 0.7rem; border-top: 1px solid var(--border-soft); font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; color: var(--text); }
+    .use-total-row.sum { margin-top: 0.35rem; padding-top: 0.7rem; border-top: 1px solid var(--border); font-weight: 700; font-size: 1.1rem; color: var(--text); }
+    .use-total-note { font-size: 0.78rem; color: var(--text-faint, var(--text-muted)); margin: 0.5rem 0 0; }
   `;
   document.head.appendChild(st);
 }
@@ -180,8 +192,9 @@ async function loadUsage() {
   }
   if (seq !== usageSeq) return;
   if (error) {
+    console.error('[pagamentos] consumo de mensagens', error);
     usage = null;
-    usageError = 'Não consegui carregar o consumo de mensagens.';
+    usageError = 'Não foi possível carregar o consumo de mensagens.';
   } else {
     usageError = '';
     usage = (data || []).map((r) => ({
@@ -207,6 +220,7 @@ function renderUsage() {
     return;
   }
 
+  const preco = CONFIG.PRECO_MENSAGEM_EXCEDENTE;
   const itens = usage.map((a) => ({ ...a, ...usageOf(a.enviadas) }));
   const total = itens.reduce((sum, a) => sum + a.enviadas, 0);
   const restantes = itens.reduce((sum, a) => sum + a.restantes, 0);
@@ -216,100 +230,120 @@ function renderUsage() {
   const kpis = `
     <div class="kpi-strip">
       <div class="kpi-item accent"><span class="kpi-value">${num(total)}</span><span class="kpi-label">Enviadas em ${esc(mes.label)}</span></div>
-      <div class="kpi-item"><span class="kpi-value">${num(restantes)}</span><span class="kpi-label">Disponíveis sem custo extra</span></div>
-      <div class="kpi-item ${extra > 0 ? 'is-danger' : ''}"><span class="kpi-value">${brl(extra)}</span><span class="kpi-label">${excedentes > 0 ? `${num(excedentes)} excedentes` : 'Sem excedente'}</span></div>
+      <div class="kpi-item"><span class="kpi-value">${num(restantes)}</span><span class="kpi-label">Ainda disponíveis sem custo extra</span></div>
+      <div class="kpi-item ${extra > 0 ? 'is-danger' : ''}"><span class="kpi-value">${brl(extra)}</span><span class="kpi-label">${excedentes > 0 ? `${num(excedentes)} excedentes` : 'Nenhum excedente neste mês'}</span></div>
     </div>`;
 
-  const lista = itens.map((a) => `
-    <div class="use-item ${a.excedentes > 0 ? 'over' : ''}">
-      <div class="use-head">
-        <strong>@${esc(a.username)}</strong>
-        <span class="use-right"><span class="use-count"><b>${num(a.enviadas)}</b> / ${num(a.franquia)}</span></span>
-      </div>
-      <div class="use-bar"><i style="width:${a.pct.toFixed(1)}%"></i></div>
-    </div>`).join('');
+  const lista = itens.map((a) => {
+    const over = a.excedentes > 0;
+    const warn = !over && a.pct >= 80;
+    const nome = '@' + esc(a.username || 'conta');
+    const aviso = over ? '<span class="badge badge-danger">Excedeu a franquia</span>' : warn ? `<span class="badge badge-warn">Perto do limite</span>` : '';
+    return `
+      <div class="use-item ${over ? 'over' : warn ? 'warn' : ''}">
+        <div class="use-head">
+          <strong>${nome}</strong>
+          <span class="use-right">${aviso}<span class="use-count"><b>${num(a.enviadas)}</b> / ${num(a.franquia)}</span></span>
+        </div>
+        <div class="use-bar"><i style="width:${a.pct.toFixed(1)}%"></i></div>
+      </div>`;
+  }).join('');
 
-  body.innerHTML = kpis + `<div class="use-list">${lista}</div>`;
+  const mensal = mensalidadeDoMes();
+  const linhaMensal = mensal ? `<div class="use-total-row"><span>Mensalidade de ${esc(mes.label)}</span><span>${brl(mensal.valor)}</span></div>` : '';
+  const linhaFatura = mensal ? `<div class="use-total-row sum"><span>Fatura de ${esc(mes.label)}${mensal.paga ? ' (já paga)' : ''}</span><span>${brl(mensal.fatura)}</span></div>` : '';
+
+  body.innerHTML = kpis + `<div class="use-list">${lista}</div>` + `<div class="use-total">${linhaMensal}${linhaFatura}</div>`;
 }
 
-/* ==================== Montagem da UI ==================== */
+/* ---------------------- Montagem e Estrutura da UI ---------------------- */
 function ensureUI() {
-  if (!document.querySelector(`.nav-item[data-tab="${TAB}"]`)) {
-    const nav = document.querySelector('.app-nav');
-    if (nav) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'nav-item';
-      btn.dataset.tab = TAB;
-      btn.innerHTML =
-        '<span class="nav-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19"/><path d="M6.5 15h4"/></svg></span><span>Pagamentos</span>';
-      nav.insertBefore(btn, $('adminTabBtn') || null);
-    }
+  let panel = $('tab-' + TAB);
+  if (!panel) {
+    // Se o index.html contiver a div placeholder, reaproveitamos ela
+    panel = $('tab-pagamentos');
   }
-  if (!$('tab-' + TAB)) {
+
+  if (!panel) {
     const main = document.querySelector('.app-main');
     if (!main) return;
-    const panel = document.createElement('div');
+    panel = document.createElement('div');
     panel.id = 'tab-' + TAB;
     panel.className = 'tab-panel hidden';
-    panel.innerHTML = `
-      <div class="page-head panel-heading-row"><div><h1>Pagamentos e Assinatura</h1><p>Cobranças, Asaas Pix e consumo de mensagens.</p></div><button type="button" id="payRefreshBtn" class="btn btn-outline btn-sm">Atualizar</button></div>
-      <div id="payBanner" class="banner"></div>
-      <div id="payKpis" class="kpi-strip"></div>
-
-      <nav class="seg-nav">
-        <button type="button" class="seg-btn active" data-seg="seg-pay-list">Cobranças</button>
-        <button type="button" class="seg-btn" data-seg="seg-pay-pix">Gerar Pix (Asaas)</button>
-        <button type="button" class="seg-btn" data-seg="seg-pay-usage">Consumo</button>
-        <button type="button" class="seg-btn" data-seg="seg-pay-admin">Admin</button>
-      </nav>
-
-      <div id="seg-pay-list" class="seg-panel">
-        <section class="panel panel-plain">
-          <div class="panel-heading-row"><h2>Suas cobranças</h2>
-            <div class="pay-filter">
-              <button type="button" class="subtab-btn active" data-payfilter="abertas">Em aberto</button>
-              <button type="button" class="subtab-btn" data-payfilter="pagas">Pagas</button>
-              <button type="button" class="subtab-btn" data-payfilter="todas">Todas</button>
-            </div>
-          </div>
-          <div id="payLoading" class="loading-row hidden">Carregando pagamentos…</div>
-          <div id="payList" class="pay-list"></div>
-        </section>
-      </div>
-
-      <div id="seg-pay-pix" class="seg-panel hidden">
-        <section class="panel pay-pix" style="text-align:center; padding: 2rem;">
-          <h2>Pagar com Pix Automatizado (Asaas)</h2>
-          <p class="panel-lead">Clique no botão abaixo para gerar uma cobrança instantânea via Asaas com QR Code e Pix Copia e Cola.</p>
-          <button type="button" id="payGenAsaasBtn" class="btn btn-primary" style="margin: 1rem auto; max-width: 250px;">Gerar Pix de Pagamento</button>
-          <div id="payAsaasResult"></div>
-        </section>
-      </div>
-
-      <div id="seg-pay-usage" class="seg-panel hidden">
-        <section class="panel" id="payUsage">
-          <div class="panel-heading-row"><h2>Consumo de mensagens</h2><span class="badge badge-muted" id="payUsageMonth"></span></div>
-          <div id="payUsageBody"></div>
-        </section>
-      </div>
-
-      <div id="seg-pay-admin" class="seg-panel hidden">
-        <div id="payAdmin" class="pay-admin-stack hidden">
-          <section class="panel"><div class="panel-heading-row"><h2>Aguardando confirmação</h2></div><div id="payAdminPending"></div></section>
-          <section class="panel"><div class="panel-heading-row"><h2>Gerar cobranças</h2></div>
-            <div class="automation-form-grid">
-              <div class="field field-full"><span>Cliente</span><select id="payGenUser"></select></div>
-              <div class="field"><span>Valor mensal (R$)</span><input type="number" id="payGenValor" step="0.01" min="0" placeholder="99,90" /></div>
-              <div class="field"><span>Dia do vencimento (1–28)</span><input type="number" id="payGenDia" min="1" max="28" value="10" /></div>
-              <div class="field"><span>Quantidade de meses</span><input type="number" id="payGenMeses" min="1" max="36" value="12" /></div>
-            </div>
-            <button type="button" id="payGenBtn" class="btn btn-primary">Gerar cobranças</button>
-          </section>
-        </div>
-      </div>`;
     main.appendChild(panel);
   }
+
+  panel.innerHTML = `
+    <div class="page-head panel-heading-row">
+      <div><h1>Pagamentos e Assinatura</h1><p>Cobranças, faturamento via Pix (Asaas) e consumo de mensagens.</p></div>
+      <button type="button" id="payRefreshBtn" class="btn btn-outline btn-sm">Atualizar</button>
+    </div>
+    <div id="payBanner" class="banner"></div>
+    <div id="payKpis" class="kpi-strip"></div>
+
+    <nav class="seg-nav">
+      <button type="button" class="seg-btn active" data-seg="seg-pay-list">Cobranças</button>
+      <button type="button" class="seg-btn" data-seg="seg-pay-pix">Gerar Pix (Asaas)</button>
+      <button type="button" class="seg-btn" data-seg="seg-pay-usage">Consumo</button>
+      <button type="button" class="seg-btn" data-seg="seg-pay-admin">Admin</button>
+    </nav>
+
+    <div id="seg-pay-list" class="seg-panel">
+      <section class="panel panel-plain">
+        <div class="panel-heading-row">
+          <h2>Suas cobranças</h2>
+          <div class="pay-filter">
+            <button type="button" class="subtab-btn active" data-payfilter="abertas">Em aberto</button>
+            <button type="button" class="subtab-btn" data-payfilter="pagas">Pagas</button>
+            <button type="button" class="subtab-btn" data-payfilter="todas">Todas</button>
+          </div>
+        </div>
+        <div id="payLoading" class="loading-row hidden">Carregando pagamentos…</div>
+        <div id="payList" class="pay-list"></div>
+      </section>
+    </div>
+
+    <div id="seg-pay-pix" class="seg-panel hidden">
+      <section class="panel pay-pix" style="padding:1.5rem;">
+        <div class="pay-pix-info">
+          <h2>Pague com Pix via Asaas</h2>
+          <p class="panel-lead">Clique no botão abaixo para criar uma cobrança instantânea no Asaas. Você receberá o QR Code e o Pix Copia e Cola para pagamento imediato.</p>
+          
+          <div style="margin-top:1.2rem;">
+            <button type="button" id="payGenAsaasBtn" class="btn btn-primary">Gerar Pix de Pagamento</button>
+          </div>
+          <div id="payAsaasResult"></div>
+        </div>
+      </section>
+    </div>
+
+    <div id="seg-pay-usage" class="seg-panel hidden">
+      <section class="panel" id="payUsage">
+        <div class="panel-heading-row"><h2>Consumo de mensagens</h2><span class="badge badge-muted" id="payUsageMonth"></span></div>
+        <p class="panel-lead">Cada conta conectada inclui ${esc(num(CONFIG.FRANQUIA_MENSAGENS))} mensagens por mês. Acima disso, cada mensagem extra custa ${esc(brl(CONFIG.PRECO_MENSAGEM_EXCEDENTE))}.</p>
+        <div id="payUsageBody"></div>
+      </section>
+    </div>
+
+    <div id="seg-pay-admin" class="seg-panel hidden">
+      <div id="payAdmin" class="pay-admin-stack hidden">
+        <section class="panel">
+          <div class="panel-heading-row"><h2>Aguardando confirmação</h2></div>
+          <div id="payAdminPending"></div>
+        </section>
+        <section class="panel">
+          <div class="panel-heading-row"><h2>Gerar cobranças manuais</h2></div>
+          <div class="automation-form-grid">
+            <div class="field field-full"><span>Cliente</span><select id="payGenUser"></select></div>
+            <div class="field"><span>Valor mensal (R$)</span><input type="number" id="payGenValor" step="0.01" min="0" placeholder="99,90" /></div>
+            <div class="field"><span>Dia do vencimento (1–28)</span><input type="number" id="payGenDia" min="1" max="28" value="10" /></div>
+            <div class="field"><span>Quantidade de meses</span><input type="number" id="payGenMeses" min="1" max="36" value="12" /></div>
+          </div>
+          <button type="button" id="payGenBtn" class="btn btn-primary" style="margin-top:1rem;">Gerar cobranças</button>
+        </section>
+      </div>
+    </div>
+  `;
 }
 
 function showBanner(msg, type = 'error') {
@@ -351,28 +385,12 @@ async function loadPayments() {
     $('payAdmin')?.classList.toggle('hidden', !u.is_admin);
     if (u.is_admin) await loadAdmin();
   } catch (e) {
+    console.error('[pagamentos]', e);
     showBanner('Não consegui carregar os pagamentos.');
   } finally {
     loading = false;
     $('payLoading')?.classList.add('hidden');
   }
-}
-
-async function informarPagamento(id, btn) {
-  if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
-  const { error } = await sb.rpc('informar_pagamento', { p_id: id });
-  if (error) {
-    showBanner('Não foi possível registrar.');
-    if (btn) { btn.disabled = false; btn.textContent = 'Já paguei'; }
-    return;
-  }
-  showBanner('Pagamento informado!', 'success');
-  await loadPayments();
-}
-
-function clienteLabel(c) {
-  if (!c) return '';
-  return c.nome ? `${c.nome} · ${c.email}` : c.email;
 }
 
 async function loadAdmin() {
@@ -382,29 +400,27 @@ async function loadAdmin() {
   ]);
   clients = profs || [];
   const byId = Object.fromEntries(clients.map((c) => [c.id, c]));
-  const box = $('payAdminPending');
-  if (!box) return;
 
-  if (!pend?.length) {
-    box.innerHTML = '<div class="empty-state">Nenhum pagamento aguardando confirmação.</div>';
-  } else {
-    box.innerHTML = pend.map((p) => `
-      <div class="ig-tester-admin-row">
-        <div class="ig-tester-admin-info">
-          <strong>${esc(clienteLabel(byId[p.user_id]) || p.user_id)}</strong>
-          <span class="ig-tester-admin-date">${esc(fmtMonth(p.competencia))} · ${brl(p.valor)}</span>
-        </div>
-        <div class="ig-tester-admin-actions">
-          <button type="button" class="btn btn-primary btn-sm" data-pay-confirm="${esc(p.id)}" data-pay-user="${esc(p.user_id)}">Confirmar</button>
-        </div>
-      </div>`).join('');
+  const box = $('payAdminPending');
+  if (box) {
+    if (!pend?.length) {
+      box.innerHTML = '<div class="empty-state">Nenhum pagamento aguardando confirmação.</div>';
+    } else {
+      box.innerHTML = pend.map((p) => `
+        <div class="ig-tester-admin-row">
+          <div class="ig-tester-admin-info">
+            <strong>${esc((byId[p.user_id] && byId[p.user_id].email) || p.user_id)}</strong>
+            <span class="ig-tester-admin-date">${esc(fmtMonth(p.competencia))} · ${brl(p.valor)}</span>
+          </div>
+        </div>`).join('');
+    }
   }
 
   const sel = $('payGenUser');
-  if (sel) sel.innerHTML = clients.map((c) => `<option value="${esc(c.id)}">${esc(clienteLabel(c))}</option>`).join('');
+  if (sel) sel.innerHTML = clients.map((c) => `<option value="${esc(c.id)}">${esc(c.email)}</option>`).join('');
 }
 
-async function render() {
+function render() {
   const list = $('payList');
   const kpis = $('payKpis');
   if (!list || !kpis) return;
@@ -417,13 +433,13 @@ async function render() {
   const totalAberto = abertas.reduce((s, p) => s + Number(p.valor), 0);
 
   kpis.innerHTML = `
-    <div class="kpi-item accent"><span class="kpi-value">${proxima ? brl(proxima.valor) : '—'}</span><span class="kpi-label">${proxima ? 'Próxima cobrança' : 'Sem cobrança em aberto'}</span></div>
+    <div class="kpi-item accent"><span class="kpi-value">${proxima ? brl(proxima.valor) : '—'}</span><span class="kpi-label">${proxima ? 'Próxima cobrança' : 'Nenhuma cobrança em aberto'}</span></div>
     <div class="kpi-item"><span class="kpi-value">${brl(totalAberto)}</span><span class="kpi-label">Total em aberto</span></div>
     <div class="kpi-item ${atrasadas.length ? 'is-danger' : ''}"><span class="kpi-value">${atrasadas.length}</span><span class="kpi-label">Em atraso</span></div>`;
 
   let view = rows;
   if (filter === 'abertas') view = abertas;
-  if (filter === 'pagas') view = rows.filter((p) => p.status === 'pago');
+  if (filter === 'pagas') view = rows.filter((p) => p.status === 'pago').slice().reverse();
 
   if (!view.length) {
     list.innerHTML = '<div class="empty-state">Nenhuma cobrança encontrada.</div>';
@@ -441,26 +457,45 @@ async function render() {
         </div>
         <div class="pay-item-value">${brl(p.valor)}</div>
         <span class="badge ${ui.cls}">${ui.label}</span>
-        ${p.status === 'pendente' ? `<button type="button" class="btn btn-outline btn-sm" data-pay-informar="${esc(p.id)}">Já paguei</button>` : '<span></span>'}
       </div>`;
   }).join('');
 }
 
 function activateTab() {
-  document.querySelectorAll('.app-main > .tab-panel').forEach((p) => p.classList.toggle('hidden', p.id !== 'tab-' + TAB));
-  document.querySelectorAll('.app-nav .nav-item').forEach((b) => b.classList.toggle('active', b.dataset.tab === TAB));
+  document.querySelectorAll('.app-main > .tab-panel').forEach((p) => p.classList.add('hidden'));
+  const target = $('tab-' + TAB) \vert{}\vert{}$('tab-pagamentos');
+  if (target) target.classList.remove('hidden');
+
+  document.querySelectorAll('.app-nav .nav-item').forEach((b) => {
+    b.classList.toggle('active', b.dataset.tab === TAB || b.dataset.tab === 'pagamentos');
+  });
   loadPayments();
 }
 
 function bind() {
-  document.querySelectorAll('.app-nav .nav-item').forEach((b) =>
-    b.addEventListener('click', () => {
-      if (b.dataset.tab === TAB) setTimeout(activateTab, 0);
-      else $('tab-' + TAB)?.classList.add('hidden');
-    }));
+  // Ouve cliques na navegação lateral
+  document.addEventListener('click', (e) => {
+    const nav = e.target.closest('.app-nav .nav-item');
+    if (nav) {
+      const t = nav.dataset.tab;
+      if (t === TAB || t === 'pagamentos') {
+        activateTab();
+      } else {
+        const p = $('tab-' + TAB) \vert{}\vert{}$('tab-pagamentos');
+        if (p) p.classList.add('hidden');
+      }
+    }
+  });
 
-  $('payRefreshBtn')?.addEventListener('click', loadPayments);$('payGenAsaasBtn')?.addEventListener('click', (e) => gerarPixAsaas(99.90, e.currentTarget));
+  $('payRefreshBtn')?.addEventListener('click', loadPayments);
+  
+  // Botão de Gerar Pix no Asaas
+  $('payGenAsaasBtn')?.addEventListener('click', (e) => {
+    const val = usagePlanValue || 99.90;
+    gerarPixAsaas(val, e.currentTarget);
+  });
 
+  // Filtros (Em aberto / Pagas / Todas)
   document.querySelectorAll('[data-payfilter]').forEach((b) =>
     b.addEventListener('click', () => {
       filter = b.dataset.payfilter;
@@ -468,20 +503,17 @@ function bind() {
       render();
     }));
 
-  $('payList')?.addEventListener('click', (ev) => {
-    const btn = ev.target.closest('[data-pay-informar]');
-    if (btn && confirm('Confirmar pagamento?')) informarPagamento(btn.dataset.payInformar, btn);
-  });
-
-  // Alternância interna de abas (Cobranças / Pix Asaas / Consumo / Admin)
-  document.querySelectorAll('#tab-payments .seg-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const targetSeg = btn.dataset.seg;
-      document.querySelectorAll('#tab-payments .seg-btn').forEach((b) => b.classList.toggle('active', b === btn));
-      document.querySelectorAll('#tab-payments .seg-panel').forEach((panel) => {
-        panel.classList.toggle('hidden', panel.id !== targetSeg);
+  // Navegação das sub-abas internas (Cobranças / Pix / Consumo / Admin)
+  document.addEventListener('click', (e) => {
+    const segBtn = e.target.closest('.seg-nav .seg-btn');
+    if (segBtn && segBtn.closest('#tab-' + TAB || '#tab-pagamentos')) {
+      const targetId = segBtn.dataset.seg;
+      const parent = segBtn.closest('.tab-panel');
+      parent.querySelectorAll('.seg-btn').forEach((b) => b.classList.toggle('active', b === segBtn));
+      parent.querySelectorAll('.seg-panel').forEach((panel) => {
+        panel.classList.toggle('hidden', panel.id !== targetId);
       });
-    });
+    }
   });
 
   sb.auth.onAuthStateChange((event) => {
