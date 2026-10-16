@@ -1,8 +1,8 @@
-// Service worker mínimo do Respondi.
+// Service worker mínimo do Achei & Postei.
 // O Chrome só libera "Instalar app" se existir um handler de fetch.
 // Estratégia: sempre rede primeiro (o painel depende de dados ao vivo do
 // Supabase); só cai no cache da página inicial se estiver offline.
-const CACHE = "respondi-shell-v1";
+const CACHE = "achei-e-postei-shell-v1";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
