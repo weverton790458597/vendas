@@ -23,7 +23,7 @@
     } catch (e) {}
   })();
 </script>
-  <script type="module" crossorigin src="/assets/index-Y0yRWfgG.js"></script>
+  <script type="module" crossorigin src="/assets/index-BjkcZHUO.js"></script>
   <link rel="stylesheet" crossorigin href="/assets/index-BuMFE30e.css">
 </head>
 <body>
@@ -160,7 +160,8 @@
   <div class="center-card is-blocked">
     <div class="center-ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 9v6M14 9v6"/></svg></div>
     <h1>Sua conta está pausada</h1>
-    <p>Fale com o suporte para reativar o acesso ao seu painel de automações.</p>
+    <p id="blockedMsg">Fale com o suporte para reativar o acesso ao seu painel de automações.</p>
+    <button type="button" id="blockedPayBtn" class="btn btn-primary btn-full hidden">Assinar agora</button>
     <button type="button" id="blockedLogoutBtn" class="btn btn-outline btn-full">Sair</button>
   </div>
 </section>
@@ -531,7 +532,6 @@
     </div>
   </div>
 </div>
-<!-- Bibliotecas externas (CDNs) você pode manter no HTML ou importar via npm -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
 
 <!-- O seu ponto de entrada único do Vite -->
