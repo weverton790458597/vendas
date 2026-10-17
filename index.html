@@ -23,8 +23,8 @@
     } catch (e) {}
   })();
 </script>
-  <script type="module" crossorigin src="/assets/index-BJlmdCOw.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-BXFLtkA1.css">
+  <script type="module" crossorigin src="/assets/index-C5YiEoDz.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-NdC9pJGM.css">
 </head>
 <body>
 <section id="authScreen" class="auth-screen">
@@ -190,6 +190,32 @@
       </div>
     </div>
   </header>
+
+  <!-- Cabeçalho do celular: marca, saudação, título da aba e indicadores (só aparece no mobile) -->
+  <header id="mHero" class="m-hero">
+    <div class="m-hero-bar">
+      <div class="m-hero-brand">
+        <span class="m-hero-logo"><img src="icons/apple-touch-icon.png" alt="" /></span>
+        <span class="m-hero-name">Achei &amp; Postei</span>
+      </div>
+      <div class="m-hero-tools">
+        <button type="button" id="mHeroTheme" class="m-hero-btn" aria-label="Alternar tema"></button>
+        <button type="button" id="mHeroAvatar" class="m-hero-avatar" aria-label="Configurações da conta"></button>
+      </div>
+    </div>
+    <div class="m-hero-body">
+      <p id="mHeroKicker" class="m-hero-kicker"></p>
+      <h2 id="mHeroTitle" class="m-hero-title"></h2>
+    </div>
+    <div id="mHeroPills" class="m-hero-pills" aria-label="Indicadores">
+      <div class="m-pill"><b id="pillAtivas">—</b><span>Ativas</span></div>
+      <div class="m-pill"><b id="pillPausadas">—</b><span>Pausadas</span></div>
+      <div class="m-pill"><b id="pillDms">—</b><span>DMs enviadas</span></div>
+      <div class="m-pill"><b id="pillTaxa">—</b><span>Taxa de sucesso</span></div>
+    </div>
+  </header>
+  <div id="mHeroSpace" class="m-hero-space" aria-hidden="true"></div>
+
   <div class="app-body">
     <nav class="app-nav">
       <button type="button" class="nav-item active" data-tab="overview"><span class="nav-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg></span><span>Início</span></button>
