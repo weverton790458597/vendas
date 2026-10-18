@@ -23,8 +23,8 @@
     } catch (e) {}
   })();
 </script>
-  <script type="module" crossorigin src="/assets/index-BluFMI3G.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-NdC9pJGM.css">
+  <script type="module" crossorigin src="/assets/index-DVYysilV.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-BeKrsxhF.css">
 </head>
 <body>
 <section id="authScreen" class="auth-screen">
@@ -368,6 +368,17 @@
         <div class="page-head panel-heading-row"><div><h1>Contas do Instagram</h1><p>Conecte suas contas e gerencie o seu plano.</p></div></div>
         <nav class="seg-nav"><button type="button" class="seg-btn active" data-seg="seg-ig">Instagram</button><button type="button" class="seg-btn" data-seg="seg-plan">Plano e benefícios</button></nav>
         <div id="seg-ig" class="seg-panel">
+          <section class="panel panel-plain ig-official-connect" id="igOfficialConnect">
+            <div class="ig-official-text">
+              <h2>Entrar com o Instagram</h2>
+              <p class="panel-lead">Conexão oficial: você entra com seu e-mail e senha direto na tela do Instagram (ou usa a conta que já está logada no celular) e autoriza. A gente nunca vê a sua senha.</p>
+            </div>
+            <button type="button" id="igOfficialConnectBtn" class="btn btn-ig btn-full">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none"/></svg>
+              <span id="igOfficialConnectLabel">Conectar Instagram</span>
+            </button>
+            <p class="ig-official-hint hidden" id="igOfficialConnectHint"></p>
+          </section>
           <section class="panel panel-plain">
             <div class="panel-heading-row"><h2>Contas conectadas</h2></div>
             <div id="igLoadingStatus" class="loading-row">Verificando status da conexão…</div>
